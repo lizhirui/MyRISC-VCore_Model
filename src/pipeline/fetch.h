@@ -11,12 +11,12 @@ namespace pipeline
     {
         private:
             component::memory *memory;
-            component::fifo<fetch_decode_pack> *fetch_decode_fifo;
+            component::fifo<fetch_decode_pack_t> *fetch_decode_fifo;
             uint32_t pc;
             bool jump_wait;
 
         public:
-            fetch(component::memory *memory, component::fifo<fetch_decode_pack> *fetch_decode_fifo, uint32_t init_pc);
+            fetch(component::memory *memory, component::fifo<fetch_decode_pack_t> *fetch_decode_fifo, uint32_t init_pc);
             void run(pipeline::execute::bru_feedback_pack bru_feedback_pack);
     };
 }

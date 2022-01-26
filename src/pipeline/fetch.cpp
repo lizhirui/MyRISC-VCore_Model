@@ -8,7 +8,7 @@
 namespace pipeline
 {
     
-    fetch::fetch(component::memory *memory, component::fifo<fetch_decode_pack> *fetch_decode_fifo, uint32_t init_pc)
+    fetch::fetch(component::memory *memory, component::fifo<fetch_decode_pack_t> *fetch_decode_fifo, uint32_t init_pc)
     {
         this->memory = memory;
         this->fetch_decode_fifo = fetch_decode_fifo;
@@ -56,7 +56,7 @@ namespace pipeline
                 this->pc += 8;
             }
 
-            fetch_decode_pack t_fetch_decode_pack;
+            fetch_decode_pack_t t_fetch_decode_pack;
 
             t_fetch_decode_pack.op_info[0].value = i0_enable ? i0 : 0;
             t_fetch_decode_pack.op_info[0].enable = i0_enable;

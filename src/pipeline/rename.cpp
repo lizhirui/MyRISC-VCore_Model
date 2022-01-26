@@ -6,7 +6,7 @@
 
 namespace pipeline
 {
-    rename::rename(component::fifo<decode_rename_pack> *decode_rename_fifo, component::port<rename_readreg_pack> *rename_readreg_port, component::rat *rat, component::rob *rob)
+    rename::rename(component::fifo<decode_rename_pack_t> *decode_rename_fifo, component::port<rename_readreg_pack_t> *rename_readreg_port, component::rat *rat, component::rob *rob)
     {
         this->decode_rename_fifo = decode_rename_fifo;
         this->rename_readreg_port = rename_readreg_port;
@@ -15,9 +15,9 @@ namespace pipeline
         this->busy = false;
     }
 
-    void rename::run(issue_feedback_pack issue_pack)
+    void rename::run(issue_feedback_pack_t issue_pack)
     {
-        decode_rename_pack rev_pack;
+        decode_rename_pack_t rev_pack;
         bool stall = issue_pack.stall;
 
         memset(&rev_pack, 0, sizeof(rev_pack));
@@ -35,7 +35,7 @@ namespace pipeline
 
             if(this->busy)
             {
-                rename_readreg_pack send_pack;
+                rename_readreg_pack_t send_pack;
                 memset(&send_pack, 0, sizeof(send_pack));
 
                 //generate base send_pack

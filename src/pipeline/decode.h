@@ -9,11 +9,11 @@ namespace pipeline
     class decode
     {
         private:
-            component::fifo<fetch_decode_pack> *fetch_decode_fifo;
-            component::fifo<decode_rename_pack> *decode_rename_fifo;
+            component::fifo<fetch_decode_pack_t> *fetch_decode_fifo;
+            component::fifo<decode_rename_pack_t> *decode_rename_fifo;
 
         public:
-            decode(component::fifo<fetch_decode_pack> *fetch_decode_fifo, component::fifo<decode_rename_pack> *decode_rename_fifo);
+            decode(component::fifo<fetch_decode_pack_t> *fetch_decode_fifo, component::fifo<decode_rename_pack_t> *decode_rename_fifo);
             void run();
     };
 }

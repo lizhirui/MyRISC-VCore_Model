@@ -8,20 +8,20 @@
 
 namespace pipeline
 {
-    typedef struct readreg_feedback_pack
+    typedef struct readreg_feedback_pack_t
     {
         
-    }readreg_feedback_pack;
+    }readreg_feedback_pack_t;
 
     class readreg
     {
         private:
-            component::port<rename_readreg_pack> *rename_readreg_port;
-            component::port<readreg_issue_pack> *readreg_issue_port;
-            component::regfile<phy_regfile_item> *phy_regfile;
+            component::port<rename_readreg_pack_t> *rename_readreg_port;
+            component::port<readreg_issue_pack_t> *readreg_issue_port;
+            component::regfile<phy_regfile_item_t> *phy_regfile;
 
         public:
-            readreg(component::port<rename_readreg_pack> *rename_readreg_port, component::port<readreg_issue_pack> *readreg_issue_port, component::regfile<phy_regfile_item> *phy_regfile);
-            void run(issue_feedback_pack issue_pack);
+            readreg(component::port<rename_readreg_pack_t> *rename_readreg_port, component::port<readreg_issue_pack_t> *readreg_issue_port, component::regfile<phy_regfile_item_t> *phy_regfile);
+            void run(issue_feedback_pack_t issue_pack);
     };
 }

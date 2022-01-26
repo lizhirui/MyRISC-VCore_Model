@@ -6,23 +6,23 @@
 
 namespace pipeline
 {
-    readreg::readreg(component::port<rename_readreg_pack> *rename_readreg_port, component::port<readreg_issue_pack> *readreg_issue_port, component::regfile<phy_regfile_item> *phy_regfile)
+    readreg::readreg(component::port<rename_readreg_pack_t> *rename_readreg_port, component::port<readreg_issue_pack_t> *readreg_issue_port, component::regfile<phy_regfile_item_t> *phy_regfile)
     {
         this->rename_readreg_port = rename_readreg_port;
         this->readreg_issue_port = readreg_issue_port;
         this->phy_regfile = phy_regfile;
     }
 
-    void readreg::run(issue_feedback_pack issue_pack)
+    void readreg::run(issue_feedback_pack_t issue_pack)
     {
-        rename_readreg_pack rev_pack;
+        rename_readreg_pack_t rev_pack;
         bool stall = issue_pack.stall;
 
         memset(&rev_pack, 0, sizeof(rev_pack));
 
         if(!stall)
         {
-            readreg_issue_pack send_pack;
+            readreg_issue_pack_t send_pack;
             memset(&send_pack, 0, sizeof(send_pack));
 
             //generate base send_pack

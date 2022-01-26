@@ -3,8 +3,8 @@
 
 namespace pipeline
 {
-    typedef struct issue_feedback_pack
+    typedef struct issue_feedback_pack_t
     {
         bool stall;
-    }issue_feedback_pack;
+    }issue_feedback_pack_t;
 }

@@ -3,7 +3,7 @@
 
 namespace pipeline
 {
-    enum class op_unit
+    enum class op_unit_t
     {
         alu,
         mul,
@@ -13,14 +13,14 @@ namespace pipeline
         csr
     };
 
-    enum class arg_src
+    enum class arg_src_t
     {
         reg,
         imm,
         disable
     };
 
-    enum class op
+    enum class op_t
     {
         add,
         addi,
@@ -79,7 +79,7 @@ namespace pipeline
         mulhu
     };
 
-    enum class alu_op
+    enum class alu_op_t
     {
         add,
         _and,
@@ -99,7 +99,7 @@ namespace pipeline
         _xor
     };
 
-    enum class bru_op
+    enum class bru_op_t
     {
         beq,
         bge,
@@ -111,7 +111,7 @@ namespace pipeline
         jalr
     };
 
-    enum class div_op
+    enum class div_op_t
     {
         div,
         divu,
@@ -119,7 +119,7 @@ namespace pipeline
         remu
     };
 
-    enum class lsu_op
+    enum class lsu_op_t
     {
         lb,
         lbu,
@@ -131,7 +131,7 @@ namespace pipeline
         sw
     };
 
-    enum class mul_op
+    enum class mul_op_t
     {
         mul,
         mulh,
@@ -139,16 +139,16 @@ namespace pipeline
         mulhu
     };
 
-    enum class csr_op
+    enum class csr_op_t
     {
         csrrc,
         csrrs,
         csrrw
     };
 
-    typedef struct phy_regfile_item
+    typedef struct phy_regfile_item_t
     {
         uint32_t value;
         bool valid;
-    }phy_regfile_item;
+    }phy_regfile_item_t;
 }

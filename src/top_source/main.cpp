@@ -20,26 +20,26 @@
 
 void run()
 {
-    component::fifo<pipeline::fetch_decode_pack> fetch_decode_fifo(16);
-    component::fifo<pipeline::decode_rename_pack> decode_rename_fifo(16);
-    pipeline::rename_readreg_pack default_rename_readreg_pack;
+    component::fifo<pipeline::fetch_decode_pack_t> fetch_decode_fifo(16);
+    component::fifo<pipeline::decode_rename_pack_t> decode_rename_fifo(16);
+    pipeline::rename_readreg_pack_t default_rename_readreg_pack;
     memset(&default_rename_readreg_pack, 0, sizeof(default_rename_readreg_pack));
-    component::port<pipeline::rename_readreg_pack> rename_readreg_port(default_rename_readreg_pack);
-    pipeline::readreg_issue_pack default_readreg_issue_pack;
+    component::port<pipeline::rename_readreg_pack_t> rename_readreg_port(default_rename_readreg_pack);
+    pipeline::readreg_issue_pack_t default_readreg_issue_pack;
     memset(&default_readreg_issue_pack, 0, sizeof(default_readreg_issue_pack));
-    component::port<pipeline::readreg_issue_pack> readreg_issue_port(default_readreg_issue_pack);
+    component::port<pipeline::readreg_issue_pack_t> readreg_issue_port(default_readreg_issue_pack);
 
     component::memory memory(0x80000000, 64 * 0x1000);
     component::rat rat(PHY_REG_NUM, ARCH_REG_NUM);
     component::rob rob(16);
-    component::regfile<pipeline::phy_regfile_item> phy_regfile(PHY_REG_NUM);
+    component::regfile<pipeline::phy_regfile_item_t> phy_regfile(PHY_REG_NUM);
 
     pipeline::fetch fetch(&memory, &fetch_decode_fifo, 0x80000000);
     pipeline::decode decode(&fetch_decode_fifo, &decode_rename_fifo);
     pipeline::rename rename(&decode_rename_fifo, &rename_readreg_port, &rat, &rob);
     pipeline::readreg readreg(&rename_readreg_port, &readreg_issue_port, &phy_regfile);
 
-    pipeline::issue_feedback_pack t_issue_feedback_pack;
+    pipeline::issue_feedback_pack_t t_issue_feedback_pack;
     std::memset(&t_issue_feedback_pack, 0, sizeof(t_issue_feedback_pack));
     pipeline::execute::bru_feedback_pack t_bru_feedback_pack;
     std::memset(&t_bru_feedback_pack, 0, sizeof(t_bru_feedback_pack));
