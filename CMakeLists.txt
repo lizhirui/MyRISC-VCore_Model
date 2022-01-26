@@ -8,7 +8,7 @@ project ("MyRISC-VCore_Model")
 include_directories(./src/top_header)
 
 # 将源代码添加到此项目的可执行文件。
-file(GLOB_RECURSE src_files CONFIGURE_DEPENDS "*.cpp" "*.h")
+file(GLOB_RECURSE src_files CONFIGURE_DEPENDS "./src/*.cpp" "./src/*.h")
 add_executable(sim ${src_files})
 
 # TODO: 如有需要，请添加测试并安装目标。
