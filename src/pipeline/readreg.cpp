@@ -1,0 +1,94 @@
+#include "common.h"
+#include "config.h"
+#include "pipeline_common.h"
+#include "readreg.h"
+#include "issue.h"
+
+namespace pipeline
+{
+    readreg::readreg(component::port<rename_readreg_pack> *rename_readreg_port, component::port<readreg_issue_pack> *readreg_issue_port, component::regfile<phy_regfile_item> *phy_regfile)
+    {
+        this->rename_readreg_port = rename_readreg_port;
+        this->readreg_issue_port = readreg_issue_port;
+        this->phy_regfile = phy_regfile;
+    }
+
+    void readreg::run(issue_feedback_pack issue_pack)
+    {
+        rename_readreg_pack rev_pack;
+        bool stall = issue_pack.stall;
+
+        memset(&rev_pack, 0, sizeof(rev_pack));
+
+        if(!stall)
+        {
+            readreg_issue_pack send_pack;
+            memset(&send_pack, 0, sizeof(send_pack));
+
+            //generate base send_pack
+            for(uint32_t i = 0;i < RENAME_WIDTH;i++)
+            {
+                send_pack.op_info[i].enable = rev_pack.op_info[i].enable;
+                send_pack.op_info[i].valid = rev_pack.op_info[i].valid;
+                send_pack.op_info[i].pc = rev_pack.op_info[i].pc;
+                send_pack.op_info[i].imm = rev_pack.op_info[i].imm;
+
+                send_pack.op_info[i].rs1 = rev_pack.op_info[i].rs1;
+                send_pack.op_info[i].arg1_src = rev_pack.op_info[i].arg1_src;
+                send_pack.op_info[i].rs1_need_map = rev_pack.op_info[i].rs1_need_map;
+                send_pack.op_info[i].rs1_phy = rev_pack.op_info[i].rs1_phy;
+
+                send_pack.op_info[i].rs2 = rev_pack.op_info[i].rs2;
+                send_pack.op_info[i].arg2_src = rev_pack.op_info[i].arg2_src;
+                send_pack.op_info[i].rs2_need_map = rev_pack.op_info[i].rs2_need_map;
+                send_pack.op_info[i].rs2_phy = rev_pack.op_info[i].rs2_phy;
+
+                send_pack.op_info[i].rd = rev_pack.op_info[i].rd;
+                send_pack.op_info[i].rd_enable = rev_pack.op_info[i].rd_enable;
+                send_pack.op_info[i].need_rename = rev_pack.op_info[i].need_rename;
+
+                send_pack.op_info[i].csr = rev_pack.op_info[i].csr;
+                send_pack.op_info[i].op = rev_pack.op_info[i].op;
+                send_pack.op_info[i].op_unit = rev_pack.op_info[i].op_unit;
+                memcpy(&send_pack.op_info[i].sub_op, &rev_pack.op_info[i].sub_op, sizeof(rev_pack.op_info[i].sub_op));
+            }
+
+            for(uint32_t i = 0;i < READREG_WIDTH;i++)
+            {
+                if(rev_pack.op_info[i].rs1_need_map)
+                {
+                    auto reg_item = phy_regfile->read(rev_pack.op_info[i].rs1_phy);
+
+                    if(reg_item.valid)
+                    {
+                        send_pack.op_info[i].src1_value = reg_item.value;
+                        send_pack.op_info[i].src1_loaded = true;
+                    }
+                }
+                else
+                {
+                    send_pack.op_info[i].src1_value = 0;
+                    send_pack.op_info[i].src1_loaded = true;
+                }
+
+                if(rev_pack.op_info[i].rs2_need_map)
+                {
+                    auto reg_item = phy_regfile->read(rev_pack.op_info[i].rs2_phy);
+
+                    if(reg_item.valid)
+                    {
+                        send_pack.op_info[i].src2_value = reg_item.value;
+                        send_pack.op_info[i].src2_loaded = true;
+                    }
+                }
+                else
+                {
+                    send_pack.op_info[i].src2_value = 0;
+                    send_pack.op_info[i].src2_loaded = true;
+                }
+            }
+
+            readreg_issue_port->set(send_pack);
+        }
+    }
+}
