@@ -55,36 +55,39 @@ namespace pipeline
 
             for(uint32_t i = 0;i < READREG_WIDTH;i++)
             {
-                if(rev_pack.op_info[i].rs1_need_map)
+                if(rev_pack.op_info[i].enable && rev_pack.op_info[i].valid)
                 {
-                    auto reg_item = phy_regfile->read(rev_pack.op_info[i].rs1_phy);
-
-                    if(reg_item.valid)
+                    if(rev_pack.op_info[i].rs1_need_map)
                     {
-                        send_pack.op_info[i].src1_value = reg_item.value;
+                        auto reg_item = phy_regfile->read(rev_pack.op_info[i].rs1_phy);
+
+                        if(reg_item.valid)
+                        {
+                            send_pack.op_info[i].src1_value = reg_item.value;
+                            send_pack.op_info[i].src1_loaded = true;
+                        }
+                    }
+                    else
+                    {
+                        send_pack.op_info[i].src1_value = 0;
                         send_pack.op_info[i].src1_loaded = true;
                     }
-                }
-                else
-                {
-                    send_pack.op_info[i].src1_value = 0;
-                    send_pack.op_info[i].src1_loaded = true;
-                }
 
-                if(rev_pack.op_info[i].rs2_need_map)
-                {
-                    auto reg_item = phy_regfile->read(rev_pack.op_info[i].rs2_phy);
-
-                    if(reg_item.valid)
+                    if(rev_pack.op_info[i].rs2_need_map)
                     {
-                        send_pack.op_info[i].src2_value = reg_item.value;
+                        auto reg_item = phy_regfile->read(rev_pack.op_info[i].rs2_phy);
+
+                        if(reg_item.valid)
+                        {
+                            send_pack.op_info[i].src2_value = reg_item.value;
+                            send_pack.op_info[i].src2_loaded = true;
+                        }
+                    }
+                    else
+                    {
+                        send_pack.op_info[i].src2_value = 0;
                         send_pack.op_info[i].src2_loaded = true;
                     }
-                }
-                else
-                {
-                    send_pack.op_info[i].src2_value = 0;
-                    send_pack.op_info[i].src2_loaded = true;
                 }
             }
 

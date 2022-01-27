@@ -7,3 +7,11 @@ const uint32_t READREG_WIDTH = 2;
 const uint32_t ISSUE_WIDTH = 2;
 const uint32_t PHY_REG_NUM = 512;
 const uint32_t ARCH_REG_NUM = 32;
+
+const uint32_t ISSUE_QUEUE_SIZE = 16;
+const uint32_t ALU_UNIT_NUM = 2;
+const uint32_t BRU_UNIT_NUM = 1;
+const uint32_t CSR_UNIT_NUM = 1;
+const uint32_t DIV_UNIT_NUM = 1;
+const uint32_t LSU_UNIT_NUM = 1;
+const uint32_t MUL_UNIT_NUM = 2;
