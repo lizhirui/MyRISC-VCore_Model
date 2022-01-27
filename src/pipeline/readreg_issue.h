@@ -1,4 +1,7 @@
 #pragma once
+#include "common.h"
+#include "config.h"
+#include "pipeline_common.h"
 
 namespace pipeline
 {
