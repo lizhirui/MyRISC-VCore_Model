@@ -8,8 +8,8 @@ namespace test
     {
         void test()
         {
-            component::fifo<int> u_fifo(5);
-            int x;
+            component::fifo<if_print_fake<int>> u_fifo(5);
+            if_print_fake<int> x;
 
             assert(u_fifo.is_empty());
             assert(u_fifo.push(1));

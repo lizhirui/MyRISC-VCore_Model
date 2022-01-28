@@ -7,7 +7,7 @@
 
 namespace pipeline
 {
-    class fetch
+    class fetch : public if_print_t
     {
         private:
             component::memory *memory;
@@ -18,5 +18,6 @@ namespace pipeline
         public:
             fetch(component::memory *memory, component::fifo<fetch_decode_pack_t> *fetch_decode_fifo, uint32_t init_pc);
             void run(pipeline::execute::bru_feedback_pack bru_feedback_pack);
+            virtual void print(std::string indent);
     };
 }

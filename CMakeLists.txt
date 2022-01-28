@@ -8,6 +8,13 @@ project ("MyRISC-VCore_Model")
 include_directories(./src/top_header)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
+include(CheckCXXCompilerFlag)
+CHECK_CXX_COMPILER_FLAG("/std:c++17" _cpp_17_flag_supported)
+
+if(_cpp_17_flag_supported)
+	add_compile_options("/std:c++17")
+endif()
+
 # 将源代码添加到此项目的可执行文件。
 file(GLOB_RECURSE src_files CONFIGURE_DEPENDS "./src/*.cpp" "./src/*.h")
 add_executable(sim ${src_files})

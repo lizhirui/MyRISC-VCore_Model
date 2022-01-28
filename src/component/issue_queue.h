@@ -90,7 +90,7 @@ namespace component
                     return false;
                 }
                 
-                *tail_id = this->wptr - 1;
+                *tail_id = (wptr + this->size - 1) % this->size;
                 return true;
             }
             

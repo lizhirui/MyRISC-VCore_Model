@@ -4,7 +4,7 @@
 namespace component
 {
     template<typename T>
-    class port
+    class port : public if_print_t
     {
         private:
             T value;
@@ -17,12 +17,18 @@ namespace component
 
             void set(T value)
             {
-                this -> value = value;
+                this->value = value;
             }
 
             T get()
             {
-                return this -> value;
+                return this->value;
+            }
+
+            virtual void print(std::string indent)
+            {
+                if_print_t *if_print = dynamic_cast<if_print_t *>(&this->value);
+                if_print->print(indent);
             }
     };
 }

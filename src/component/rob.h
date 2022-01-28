@@ -4,7 +4,7 @@
 
 namespace component
 {
-    typedef struct rob_item_t
+    typedef struct rob_item_t : public if_print_t
     {
         uint32_t old_phy_reg_id;
         bool old_phy_reg_id_valid;

@@ -3,7 +3,6 @@
 
 namespace pipeline
 {
-        
     issue::issue(component::port<readreg_issue_pack_t> *readreg_issue_port, component::fifo<issue_execute_pack_t> **issue_alu_fifo, component::fifo<issue_execute_pack_t> **issue_bru_fifo, component::fifo<issue_execute_pack_t> **issue_csr_fifo, component::fifo<issue_execute_pack_t> **issue_div_fifo, component::fifo<issue_execute_pack_t> **issue_lsu_fifo, component::fifo<issue_execute_pack_t> **issue_mul_fifo) : issue_q(component::issue_queue<issue_queue_item_t>(ISSUE_QUEUE_SIZE))
     {
         this->readreg_issue_port = readreg_issue_port;
@@ -222,5 +221,10 @@ namespace pipeline
         feedback_pack.stall = this->busy;
         issue_q.sync();
         return feedback_pack;
+    }
+
+    void issue::print(std::string indent)
+    {
+        issue_q.print(indent);
     }
 }

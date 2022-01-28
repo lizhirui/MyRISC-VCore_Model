@@ -8,8 +8,9 @@ namespace test
     {
         void test()
         {
-            component::issue_queue<uint32_t> u_fifo(5);
-            uint32_t x, y;
+            component::issue_queue<if_print_fake<uint32_t>> u_fifo(5);
+            if_print_fake<uint32_t> x;
+            uint32_t y1, y2;
             
             assert(u_fifo.is_empty());
             assert(u_fifo.push(1));
@@ -34,20 +35,20 @@ namespace test
             assert(u_fifo.is_empty());
             assert(x == 5);
             assert(!u_fifo.get_front(&x));
-            assert(!u_fifo.get_front_id(&x));
+            assert(!u_fifo.get_front_id(&y1));
             assert(u_fifo.push(3));
             assert(u_fifo.get_front(&x));
             assert(x == 3);
-            assert(u_fifo.get_front_id(&x));
+            assert(u_fifo.get_front_id(&y1));
             assert(u_fifo.push(4));
-            assert(u_fifo.get_next_id(x, &x));
-            assert(u_fifo.get_tail_id(&y));
-            assert(x == y);
-            assert(u_fifo.get_tail_id(&y));
-            u_fifo.set_item_sync(y, 1);
-            assert(u_fifo.get_item(y) == 4);
+            assert(u_fifo.get_next_id(y1, &y1));
+            assert(u_fifo.get_tail_id(&y2));
+            assert(y1 == y2);
+            assert(u_fifo.get_tail_id(&y2));
+            u_fifo.set_item_sync(y2, 1);
+            assert(u_fifo.get_item(y2) == 4);
             u_fifo.sync();
-            assert(u_fifo.get_item(y) == 1);
+            assert(u_fifo.get_item(y2) == 1);
             u_fifo.pop_sync();
             assert(u_fifo.get_front(&x));
             assert(x == 3);

@@ -7,6 +7,11 @@
 #include <iostream>
 #include <cstring>
 #include <queue>
+#include <string>
+#include <iomanip>
+#include <type_traits>
+
+#include "magic_enum.h"
 
 //machine types
 using size_t = std::size_t;
@@ -25,6 +30,11 @@ using int64_t = std::int64_t;
 
 #define bitsizeof(x) (sizeof(x) * 8)
 
+#define fillzero(length) std::setw(length) << std::setfill('0')
+#define outhex(x) std::hex << (x) << std::dec
+#define outbool(x) std::boolalpha << (x)
+#define outenum(x) magic_enum::enum_name(x)
+
 inline bool is_align(uint32_t x, uint32_t access_size)
 {
     return !(x & (access_size - 1));
@@ -37,3 +47,31 @@ inline uint32_t sign_extend(uint32_t imm, uint32_t imm_length)
     auto extended_imm = (((sign_bit << (32 - imm_length)) - 1) << imm_length) | imm;
     return extended_imm;
 }
+
+typedef struct if_print_t
+{
+    virtual void print(std::string indent)
+    {
+        std::cout << "<Not Implemented Method>" << std::endl;
+    }
+}if_print_t;
+
+template<typename T> class if_print_fake : public if_print_t
+{
+    private:
+        T value;
+
+    public:
+        if_print_fake()
+        {
+        }
+
+        if_print_fake(const T& value) : value(value)
+        {
+        }
+
+        bool operator==(const T& x)
+        {
+           return this->value == x; 
+        }
+};

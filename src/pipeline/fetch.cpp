@@ -7,7 +7,6 @@
 
 namespace pipeline
 {
-    
     fetch::fetch(component::memory *memory, component::fifo<fetch_decode_pack_t> *fetch_decode_fifo, uint32_t init_pc)
     {
         this->memory = memory;
@@ -67,5 +66,11 @@ namespace pipeline
 
             this->fetch_decode_fifo->push(t_fetch_decode_pack);
         }
+    }
+
+    void fetch::print(std::string indent)
+    {
+        std::cout << indent << "pc = 0x" << fillzero(8) << outhex(this->pc);
+        std::cout << "    jump_wait = " << outbool(this->jump_wait) << std::endl;
     }
 }

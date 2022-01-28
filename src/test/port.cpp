@@ -8,7 +8,7 @@ namespace test
     {
         void test()
         {
-            component::port<int> u_port(0);
+            component::port<if_print_fake<int>> u_port(0);
 
             assert(u_port.get() == 0);
             u_port.set(1);

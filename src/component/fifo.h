@@ -4,7 +4,7 @@
 namespace component
 {
     template<typename T>
-    class fifo
+    class fifo : public if_print_t
     {
         protected:
             T *buffer;
@@ -19,8 +19,12 @@ namespace component
             ~fifo();
             bool push(T element);
             bool pop(T *element);
+            bool get_front(T *element);
+            bool get_tail(T *element);
+            uint32_t get_size();
             bool is_empty();
             bool is_full();
+            virtual void print(std::string indent);
     };
 
     template<typename T>
@@ -79,6 +83,36 @@ namespace component
     }
 
     template<typename T>
+    bool fifo<T>::get_front(T *element)
+    {
+        if(this->is_empty())
+        {
+            return false;
+        }
+
+        *element = this->buffer[rptr];
+        return true;
+    }
+
+    template<typename T>
+    bool fifo<T>::get_tail(T *element)
+    {
+        if(this->is_empty())
+        {
+            return false;
+        }
+
+        *element = this->buffer[(wptr + this->size - 1) % this->size];
+        return true;
+    }
+
+    template<typename T>
+    uint32_t fifo<T>::get_size()
+    {
+        return this->is_full() ? this->size : ((this->wptr + this->size - this->rptr) % this->size);
+    }
+
+    template<typename T>
     bool fifo<T>::is_empty()
     {
         return (rptr == wptr) && (rstage == wstage);
@@ -88,5 +122,36 @@ namespace component
     bool fifo<T>::is_full()
     {
         return (rptr == wptr) && (rstage != wstage);
+    }
+
+    template<typename T>
+    void fifo<T>::print(std::string indent)
+    {
+        std::cout << indent << "Item Count = " << this->get_size() << "/" << this->size << std::endl;
+        std::cout << indent << "Input:" << std::endl;
+        T item;
+        if_print_t *if_print;
+
+        if(!this->get_tail(&item))
+        {
+            std::cout << indent << "\t<Empty>" << std::endl;
+        }
+        else
+        {
+            if_print = dynamic_cast<if_print_t *>(&item);
+            if_print->print(indent + "\t");
+        }
+
+        std::cout << "\tOutput:" << std::endl;
+
+        if(!this->get_front(&item))
+        {
+            std::cout << indent << "\t<Empty>" << std::endl;
+        }
+        else
+        {
+            if_print = dynamic_cast<if_print_t *>(&item);
+            if_print->print(indent + "\t");
+        }
     }
 }
