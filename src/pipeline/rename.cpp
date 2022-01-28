@@ -18,12 +18,16 @@ namespace pipeline
     void rename::run(issue_feedback_pack_t issue_pack)
     {
         decode_rename_pack_t rev_pack;
+        rename_readreg_pack_t null_send_pack;
         bool stall = issue_pack.stall;
 
         memset(&rev_pack, 0, sizeof(rev_pack));
+        memset(&null_send_pack, 0, sizeof(null_send_pack));
 
         if(!stall)
         {
+            this->rename_readreg_port->set(null_send_pack);//bubble
+
             if(!this->busy)
             {
                 if(!decode_rename_fifo->is_empty())
@@ -60,8 +64,9 @@ namespace pipeline
                     memcpy(&send_pack.op_info[i].sub_op, &rev_pack.op_info[i].sub_op, sizeof(rev_pack.op_info[i].sub_op));
                 }
 
-                //count new physical registers requirement
+                //count new physical registers requirement and rob requirement
                 uint32_t phy_reg_req_cnt = 0;
+                uint32_t rob_req_cnt = 0;
             
                 for(uint32_t i = 0;i < RENAME_WIDTH;i++)
                 {
@@ -69,13 +74,41 @@ namespace pipeline
                     {
                         phy_reg_req_cnt++;
                     }
+
+                    if(rev_pack.op_info[i].enable && rev_pack.op_info[i].valid)
+                    {
+                        rob_req_cnt++;
+                    }
                 }
 
                 //start to rename
                 uint32_t new_phy_reg_id[RENAME_WIDTH];
 
-                if(rat->get_free_phy_id(phy_reg_req_cnt, new_phy_reg_id))
+                if(rat->get_free_phy_id(phy_reg_req_cnt, new_phy_reg_id) && rob->get_free_space() >= (rob_req_cnt))
                 {
+                    //generate rob items
+                    for(uint32_t i = 0;i < RENAME_WIDTH;i++)
+                    {
+                        if(rev_pack.op_info[i].enable && rev_pack.op_info[i].valid)
+                        {
+                            component::rob_item_t item;
+
+                            if(rev_pack.op_info[i].rs1_need_map)
+                            {
+                                item.old_phy_reg_id_valid = true;
+                                assert(rat->get_phy_id(rev_pack.op_info[i].rs1, &item.old_phy_reg_id));
+                            }
+                            else
+                            {
+                                item.old_phy_reg_id_valid = false;
+                                item.old_phy_reg_id = 0;
+                            }
+
+                            item.finish = false;
+                            assert(rob->push(item, &send_pack.op_info[i].rob_id));
+                        }
+                    }
+
                     for(uint32_t i = 0,j = 0;i < RENAME_WIDTH;i++)
                     {
                         if(rev_pack.op_info[i].enable && rev_pack.op_info[i].valid && rev_pack.op_info[i].need_rename)
@@ -86,7 +119,7 @@ namespace pipeline
                     }
 
                     //start to map source registers
-                    for(uint32_t i = 0,j = 0;i < RENAME_WIDTH;i++)
+                    for(uint32_t i = 0;i < RENAME_WIDTH;i++)
                     {
                         if(rev_pack.op_info[i].enable && rev_pack.op_info[i].valid && rev_pack.op_info[i].rs1_need_map)
                         {
@@ -102,7 +135,7 @@ namespace pipeline
                         }
                     }
 
-                    //feedback
+                    //source registers feedback
                     if(rev_pack.op_info[0].enable && rev_pack.op_info[0].valid && rev_pack.op_info[0].rd_enable && rev_pack.op_info[1].enable && rev_pack.op_info[1].valid)
                     {
                         if(rev_pack.op_info[1].rs1_need_map && (rev_pack.op_info[1].rs1 == rev_pack.op_info[0].rd))

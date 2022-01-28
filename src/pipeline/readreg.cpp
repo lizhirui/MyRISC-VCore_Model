@@ -16,12 +16,12 @@ namespace pipeline
     void readreg::run(issue_feedback_pack_t issue_pack)
     {
         rename_readreg_pack_t rev_pack;
-        bool stall = issue_pack.stall;
-
-        memset(&rev_pack, 0, sizeof(rev_pack));
+        bool stall = issue_pack.stall;       
 
         if(!stall)
-        {
+        {   
+            rev_pack = this->rename_readreg_port->get();
+
             readreg_issue_pack_t send_pack;
             memset(&send_pack, 0, sizeof(send_pack));
 
@@ -30,6 +30,7 @@ namespace pipeline
             {
                 send_pack.op_info[i].enable = rev_pack.op_info[i].enable;
                 send_pack.op_info[i].valid = rev_pack.op_info[i].valid;
+                send_pack.op_info[i].rob_id = rev_pack.op_info[i].rob_id;
                 send_pack.op_info[i].pc = rev_pack.op_info[i].pc;
                 send_pack.op_info[i].imm = rev_pack.op_info[i].imm;
 

@@ -22,13 +22,14 @@ namespace pipeline
 
         memset(&feedback_pack, 0, sizeof(feedback_pack));
         
-        //deal output
+        //handle output
         if(!issue_q.is_empty())
         {
             issue_queue_item_t items[ISSUE_WIDTH];
             memset(&items, 0, sizeof(items));
             uint32_t id;
             
+            //get up to 2 items from issue_queue
             assert(this->issue_q.get_front_id(&id));
             
             for(uint32_t i = 0;i < ISSUE_WIDTH;i++)
@@ -41,6 +42,7 @@ namespace pipeline
                 }
             }
             
+            //generate output to execute stage
             for(uint32_t i = 0; i < ISSUE_WIDTH;i++)
             {
                 if(items[i].enable)
@@ -50,6 +52,7 @@ namespace pipeline
                     
                     send_pack.enable = items[i].enable;
                     send_pack.valid = items[i].valid;
+                    send_pack.rob_id = items[i].rob_id;
                     send_pack.pc = items[i].pc;
                     send_pack.imm = items[i].imm;
                     
@@ -77,6 +80,7 @@ namespace pipeline
                     send_pack.op_unit = items[i].op_unit;
                     memcpy(&send_pack.sub_op, &items[i].sub_op, sizeof(items[i].sub_op));
                     
+                    //ready to dispatch
                     uint32_t *unit_index = NULL;
                     uint32_t unit_cnt = 0;
                     component::fifo<issue_execute_pack_t> **unit_fifo = NULL;
@@ -120,6 +124,7 @@ namespace pipeline
                             break;
                     }
                     
+                    //RR dispatch with full check
                     auto selected_index = *unit_index;
                     bool found = false;
                     
@@ -143,7 +148,7 @@ namespace pipeline
                     {
                         *unit_index = (selected_index + 1) % unit_cnt;
                         assert(unit_fifo[selected_index]->push(send_pack));
-                        this->issue_q.pop_sync();
+                        this->issue_q.pop_sync();//handle ok, pop this item
                     }
                     else
                     {
@@ -153,14 +158,11 @@ namespace pipeline
             }
         }    
         
-        if(this->busy || this->issue_q.is_full())
-        {
-            feedback_pack.stall = true;
-        }
-        else if(!this->busy)
+        //handle input
+        if(!this->busy)
         {
             this->busy = true;
-            this->last_index = 0;
+            this->last_index = 0;//from item 0
         }
         
         auto finish = true;
@@ -172,6 +174,7 @@ namespace pipeline
                 continue;
             }
             
+            //if issue_queue is full, pause to handle this input until next cycle
             if(this->issue_q.is_full())
             {
                 finish = false;
@@ -183,6 +186,7 @@ namespace pipeline
             auto cur_op = rev_pack.op_info[this->last_index];
             t_item.enable = cur_op.enable;
             t_item.valid = cur_op.valid;
+            t_item.rob_id = cur_op.rob_id;
             t_item.pc = cur_op.pc;
             t_item.imm = cur_op.imm;
             

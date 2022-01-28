@@ -21,6 +21,7 @@ namespace pipeline
             {
                 bool enable;//this item has op
                 bool valid;//this item has valid op
+                uint32_t rob_id;
                 uint32_t pc;
                 uint32_t imm;
 
