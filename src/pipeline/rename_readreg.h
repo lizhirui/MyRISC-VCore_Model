@@ -51,7 +51,7 @@ namespace pipeline
         {
             std::string blank = "  ";
 
-            for(auto i = 0;i < FETCH_WIDTH;i++)
+            for(auto i = 0;i < RENAME_WIDTH;i++)
             {
                 std::cout << indent << "Item " << i << ":" << std::endl;
 
