@@ -15,7 +15,13 @@
 #include "../pipeline/readreg_issue.h"
 #include "../pipeline/issue.h"
 #include "../pipeline/issue_execute.h"
+#include "../pipeline/execute/alu.h"
 #include "../pipeline/execute/bru.h"
+#include "../pipeline/execute/csr.h"
+#include "../pipeline/execute/div.h"
+#include "../pipeline/execute/lsu.h"
+#include "../pipeline/execute/mul.h"
+#include "../pipeline/execute_wb.h"
 
 #ifdef WIN32
     #include <windows.h>
@@ -28,6 +34,7 @@ static uint64_t cpu_clock_cycle = 0;
 static component::fifo<pipeline::fetch_decode_pack_t> fetch_decode_fifo(16);
 static component::fifo<pipeline::decode_rename_pack_t> decode_rename_fifo(16);
 static pipeline::rename_readreg_pack_t default_rename_readreg_pack;
+static pipeline::execute_wb_pack_t default_execute_wb_pack;
 
 static component::port<pipeline::rename_readreg_pack_t> rename_readreg_port(default_rename_readreg_pack);
 static pipeline::readreg_issue_pack_t default_readreg_issue_pack;
@@ -39,6 +46,13 @@ static component::fifo<pipeline::issue_execute_pack_t> *issue_div_fifo[DIV_UNIT_
 static component::fifo<pipeline::issue_execute_pack_t> *issue_lsu_fifo[LSU_UNIT_NUM];
 static component::fifo<pipeline::issue_execute_pack_t> *issue_mul_fifo[MUL_UNIT_NUM];
 
+static component::port<pipeline::execute_wb_pack_t> *alu_wb_port[ALU_UNIT_NUM];
+static component::port<pipeline::execute_wb_pack_t> *bru_wb_port[BRU_UNIT_NUM];
+static component::port<pipeline::execute_wb_pack_t> *csr_wb_port[CSR_UNIT_NUM];
+static component::port<pipeline::execute_wb_pack_t> *div_wb_port[DIV_UNIT_NUM];
+static component::port<pipeline::execute_wb_pack_t> *lsu_wb_port[LSU_UNIT_NUM];
+static component::port<pipeline::execute_wb_pack_t> *mul_wb_port[MUL_UNIT_NUM];
+
 static component::memory memory(0x80000000, 64 * 0x1000);
 static component::rat rat(PHY_REG_NUM, ARCH_REG_NUM);
 static component::rob rob(16);
@@ -49,6 +63,7 @@ static pipeline::decode decode_stage(&fetch_decode_fifo, &decode_rename_fifo);
 static pipeline::rename rename_stage(&decode_rename_fifo, &rename_readreg_port, &rat, &rob);
 static pipeline::readreg readreg_stage(&rename_readreg_port, &readreg_issue_port, &phy_regfile);
 static pipeline::issue issue_stage(&readreg_issue_port, issue_alu_fifo, issue_bru_fifo, issue_csr_fifo, issue_div_fifo, issue_lsu_fifo, issue_mul_fifo);
+static pipeline::execute::alu *execute_alu_stage[ALU_UNIT_NUM];
 
 static pipeline::issue_feedback_pack_t t_issue_feedback_pack;
 static pipeline::execute::bru_feedback_pack t_bru_feedback_pack;
@@ -57,6 +72,7 @@ static void init()
 {
     memset(&default_rename_readreg_pack, 0, sizeof(default_rename_readreg_pack));
     memset(&default_readreg_issue_pack, 0, sizeof(default_readreg_issue_pack));
+    memset(&default_execute_wb_pack, 0, sizeof(default_execute_wb_pack));
 
     for(auto i = 0;i < ALU_UNIT_NUM;i++)
     {
@@ -86,6 +102,41 @@ static void init()
     for(auto i = 0;i < MUL_UNIT_NUM;i++)
     {
         issue_mul_fifo[i] = new component::fifo<pipeline::issue_execute_pack_t>(16);
+    }
+
+    for(auto i = 0;i < ALU_UNIT_NUM;i++)
+    {
+        alu_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(default_execute_wb_pack);
+    }
+    
+    for(auto i = 0;i < BRU_UNIT_NUM;i++)
+    {
+        bru_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(default_execute_wb_pack);
+    }
+ 
+    for(auto i = 0;i < CSR_UNIT_NUM;i++)
+    {
+        csr_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(default_execute_wb_pack);
+    }
+
+    for(auto i = 0;i < DIV_UNIT_NUM;i++)
+    {
+        div_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(default_execute_wb_pack);
+    }
+
+    for(auto i = 0;i < LSU_UNIT_NUM;i++)
+    {
+        lsu_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(default_execute_wb_pack);
+    }
+
+    for(auto i = 0;i < MUL_UNIT_NUM;i++)
+    {
+        mul_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(default_execute_wb_pack);
+    }
+
+    for(auto i = 0;i < ALU_UNIT_NUM;i++)
+    {
+        execute_alu_stage[i] = new pipeline::execute::alu(issue_alu_fifo[i], alu_wb_port[i]);
     }
 
     std::memset(&t_issue_feedback_pack, 0, sizeof(t_issue_feedback_pack));
@@ -195,6 +246,55 @@ static void cmd_print()
     }
    
     std::cout << std::endl;
+    std::cout << "EXECUTE->WB:" << std::endl;
+
+    for(auto i = 0;i < ALU_UNIT_NUM;i++)
+    {
+        std::cout << "\tALU_UNIT[" << i << "]:" << std::endl;
+        alu_wb_port[i] -> print("\t\t");
+    }
+
+    std::cout << std::endl;
+
+    for(auto i = 0;i < BRU_UNIT_NUM;i++)
+    {
+        std::cout << "\tBRU_UNIT[" << i << "]:" << std::endl;
+        bru_wb_port[i] -> print("\t\t");
+    }
+
+    std::cout << std::endl;
+
+    for(auto i = 0;i < CSR_UNIT_NUM;i++)
+    {
+        std::cout << "\tCSR_UNIT[" << i << "]:" << std::endl;
+        csr_wb_port[i] -> print("\t\t");
+    }
+
+    std::cout << std::endl;
+
+    for(auto i = 0;i < DIV_UNIT_NUM;i++)
+    {
+        std::cout << "\tDIV_UNIT[" << i << "]:" << std::endl;
+        div_wb_port[i] -> print("\t\t");
+    }
+
+    std::cout << std::endl;
+
+    for(auto i = 0;i < LSU_UNIT_NUM;i++)
+    {
+        std::cout << "\tLSU_UNIT[" << i << "]:" << std::endl;
+        lsu_wb_port[i] -> print("\t\t");
+    }
+
+    std::cout << std::endl;
+
+    for(auto i = 0;i < MUL_UNIT_NUM;i++)
+    {
+        std::cout << "\tMUL_UNIT[" << i << "]:" << std::endl;
+        mul_wb_port[i] -> print("\t\t");
+    }
+   
+    std::cout << std::endl;
 }
 
 typedef void (*cmd_handler)();
@@ -279,8 +379,12 @@ static void run()
             ctrl_c_detected = false;
         }
 
+        for(auto i = 0;i < ALU_UNIT_NUM;i++)
+        {
+            execute_alu_stage[i]->run();
+        }
+
         t_issue_feedback_pack = issue_stage.run();
-        //std::cout << "stall = " << t_issue_feedback_pack.stall << std::endl;
         readreg_stage.run(t_issue_feedback_pack);
         rename_stage.run(t_issue_feedback_pack);
         decode_stage.run();

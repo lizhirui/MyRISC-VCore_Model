@@ -90,6 +90,12 @@ namespace pipeline
                         send_pack.op_info[i].src2_loaded = true;
                     }
                 }
+                else
+                {
+                    //pass issue stage for invalid items
+                    send_pack.op_info[i].src1_loaded = true;
+                    send_pack.op_info[i].src2_loaded = true;
+                }
             }
 
             readreg_issue_port->set(send_pack);

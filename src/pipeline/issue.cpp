@@ -46,6 +46,12 @@ namespace pipeline
             {
                 if(items[i].enable)
                 {
+                    //wait src load
+                    if(!(items[i].src1_loaded && items[i].src2_loaded))
+                    {
+                        break;
+                    }
+
                     issue_execute_pack_t send_pack;
                     memset(&send_pack, 0, sizeof(send_pack));
                     
