@@ -8,6 +8,7 @@ namespace pipeline
     typedef struct issue_execute_pack_t : public if_print_t
     {
         bool enable;//this item has op
+        uint32_t value;
         bool valid;//this item has valid op
         uint32_t rob_id;
         uint32_t pc;
@@ -50,6 +51,7 @@ namespace pipeline
         {
             std::string blank = "  ";
             std::cout << indent << "\tenable = " << outbool(enable);
+            std::cout << blank << "value = 0x" << fillzero(8) << outhex(value);
             std::cout << blank << "valid = " << outbool(valid);
             std::cout << blank << "rob_id = " << rob_id;
             std::cout << blank << "pc = 0x" << fillzero(8) << outhex(pc);

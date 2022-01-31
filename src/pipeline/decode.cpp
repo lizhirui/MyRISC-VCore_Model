@@ -632,6 +632,7 @@ namespace pipeline
                     op_info.rs1_need_map = (op_info.arg1_src == arg_src_t::reg) && (op_info.rs1 > 0);
                     op_info.rs2_need_map = (op_info.arg2_src == arg_src_t::reg) && (op_info.rs2 > 0);
                     op_info.need_rename = op_info.rd_enable && (op_info.rd > 0);
+                    op_info.value = rev_pack.op_info[i].value;
                     send_pack.op_info[i] = op_info;
                 }
             }

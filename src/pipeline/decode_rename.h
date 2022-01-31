@@ -8,6 +8,7 @@ namespace pipeline
     typedef struct decode_rename_op_info_t
     {
         bool enable;//this item has op
+        uint32_t value;
         bool valid;//this item has valid op
         uint32_t pc;
         uint32_t imm;
@@ -48,6 +49,7 @@ namespace pipeline
                 std::cout << indent << "Item " << i << ":" << std::endl;
 
                 std::cout << indent << "\tenable = " << outbool(op_info[i].enable);
+                std::cout << blank << "value = 0x" << fillzero(8) << outhex(op_info[i].value);
                 std::cout << blank << "valid = " << outbool(op_info[i].valid);
                 std::cout << blank << "pc = 0x" << fillzero(8) << outhex(op_info[i].pc);
                 std::cout << blank << "imm = 0x" << fillzero(8) << outhex(op_info[i].imm);

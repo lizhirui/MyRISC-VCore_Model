@@ -46,6 +46,7 @@ namespace pipeline
                 for(uint32_t i = 0;i < RENAME_WIDTH;i++)
                 {
                     send_pack.op_info[i].enable = rev_pack.op_info[i].enable;
+                    send_pack.op_info[i].value = rev_pack.op_info[i].value;
                     send_pack.op_info[i].valid = rev_pack.op_info[i].valid;
                     send_pack.op_info[i].pc = rev_pack.op_info[i].pc;
                     send_pack.op_info[i].imm = rev_pack.op_info[i].imm;

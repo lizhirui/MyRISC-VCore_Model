@@ -64,12 +64,40 @@ static pipeline::rename rename_stage(&decode_rename_fifo, &rename_readreg_port, 
 static pipeline::readreg readreg_stage(&rename_readreg_port, &readreg_issue_port, &phy_regfile);
 static pipeline::issue issue_stage(&readreg_issue_port, issue_alu_fifo, issue_bru_fifo, issue_csr_fifo, issue_div_fifo, issue_lsu_fifo, issue_mul_fifo);
 static pipeline::execute::alu *execute_alu_stage[ALU_UNIT_NUM];
+static pipeline::execute::bru *execute_bru_stage[BRU_UNIT_NUM];
+static pipeline::execute::div *execute_div_stage[DIV_UNIT_NUM];
+static pipeline::execute::mul *execute_mul_stage[MUL_UNIT_NUM];
 
 static pipeline::issue_feedback_pack_t t_issue_feedback_pack;
-static pipeline::execute::bru_feedback_pack t_bru_feedback_pack;
+static pipeline::execute::bru_feedback_pack_t t_bru_feedback_pack;
 
 static void init()
 {
+    std::ifstream binfile("../../../testprgenv/main/test.bin", std::ios::binary);
+
+    if(!binfile || !binfile.is_open())
+    {
+        std::cout << "test.bin Open Failed!" << std::endl;
+        exit(1);
+    }
+
+    char buf[4096];
+    size_t n = 0;
+
+    while(!binfile.eof())
+    {
+        binfile.read((char *)&buf, sizeof(buf));
+
+        for(auto i = 0;i < sizeof(buf);i++)
+        {
+            memory.write8(0x80000000 + i, buf[i]);
+        }
+
+        n += sizeof(buf);
+    }
+
+    std::cout << "test.bin Read OK!Bytes(" << sizeof(buf) << "Byte-Block):" << n << std::endl;
+
     memset(&default_rename_readreg_pack, 0, sizeof(default_rename_readreg_pack));
     memset(&default_readreg_issue_pack, 0, sizeof(default_readreg_issue_pack));
     memset(&default_execute_wb_pack, 0, sizeof(default_execute_wb_pack));
@@ -139,6 +167,21 @@ static void init()
         execute_alu_stage[i] = new pipeline::execute::alu(issue_alu_fifo[i], alu_wb_port[i]);
     }
 
+    for(auto i = 0;i < BRU_UNIT_NUM;i++)
+    {
+        execute_bru_stage[i] = new pipeline::execute::bru(issue_bru_fifo[i], bru_wb_port[i]);
+    }
+
+    for(auto i = 0;i < DIV_UNIT_NUM;i++)
+    {
+        execute_div_stage[i] = new pipeline::execute::div(issue_div_fifo[i], div_wb_port[i]);
+    }
+
+    for(auto i = 0;i < MUL_UNIT_NUM;i++)
+    {
+        execute_mul_stage[i] = new pipeline::execute::mul(issue_mul_fifo[i], mul_wb_port[i]);
+    }
+
     std::memset(&t_issue_feedback_pack, 0, sizeof(t_issue_feedback_pack));
     std::memset(&t_bru_feedback_pack, 0, sizeof(t_bru_feedback_pack));
 
@@ -147,6 +190,10 @@ static void init()
     for(uint32_t i = 1;i < 32;i++)
     {
         rat.set_map(i, i);
+        pipeline::phy_regfile_item_t t_item;
+        t_item.value = 0;
+        t_item.valid = true;
+        phy_regfile.write(i, t_item);
     }
 
     rat.init_finish();
@@ -297,6 +344,12 @@ static void cmd_print()
     std::cout << std::endl;
 }
 
+static void cmd_rat()
+{
+    rat.print("");
+    std::cout << std::endl;
+}
+
 typedef void (*cmd_handler)();
 
 typedef struct cmd_desc_t
@@ -310,6 +363,7 @@ static cmd_desc_t cmd_list[] = {
                                {"c", cmd_continue},
                                {"s", cmd_step},
                                {"p", cmd_print},
+                               {"rat", cmd_rat},
                                {"", NULL}
                                };
 
@@ -382,6 +436,21 @@ static void run()
         for(auto i = 0;i < ALU_UNIT_NUM;i++)
         {
             execute_alu_stage[i]->run();
+        }
+
+        for(auto i = 0;i < BRU_UNIT_NUM;i++)
+        {
+            t_bru_feedback_pack = execute_bru_stage[i]->run();
+        }
+
+        for(auto i = 0;i < DIV_UNIT_NUM;i++)
+        {
+            execute_div_stage[i]->run();
+        }
+
+        for(auto i = 0;i < MUL_UNIT_NUM;i++)
+        {
+            execute_mul_stage[i]->run();
         }
 
         t_issue_feedback_pack = issue_stage.run();

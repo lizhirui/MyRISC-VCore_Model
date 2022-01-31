@@ -16,7 +16,7 @@ namespace pipeline
         this->jump_wait = false;
     }
 
-    void fetch::run(pipeline::execute::bru_feedback_pack bru_feedback_pack)
+    void fetch::run(pipeline::execute::bru_feedback_pack_t bru_feedback_pack)
     {
         uint32_t cur_pc = this->pc;
         uint32_t i0_pc = cur_pc;

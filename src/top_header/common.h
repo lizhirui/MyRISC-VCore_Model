@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cassert>
 #include <iostream>
+#include <fstream>
 #include <cstring>
 #include <queue>
 #include <string>
@@ -35,6 +36,26 @@ using int64_t = std::int64_t;
 #define outbool(x) std::boolalpha << (x)
 #define outenum(x) magic_enum::enum_name(x)
 
+enum class riscv_exception_t
+{
+    instruction_address_misaligned = 0,
+    instruction_access_fault,
+    illegal_instruction,
+    breakpoint,
+    load_address_misaligned,
+    load_access_fault,
+    store_amo_address_misaligned,
+    store_amo_access_fault,
+    environment_call_from_u_mode,
+    environment_call_from_s_mode,
+    reserved_10,
+    environment_call_from_m_mode,
+    instruction_page_fault,
+    load_page_fault,
+    reserved_14,
+    store_amo_page_fault,
+};
+
 inline bool is_align(uint32_t x, uint32_t access_size)
 {
     return !(x & (access_size - 1));
@@ -44,7 +65,7 @@ inline uint32_t sign_extend(uint32_t imm, uint32_t imm_length)
 {
     assert((imm_length > 0) && (imm_length < 32));
     auto sign_bit = (imm >> (imm_length - 1));
-    auto extended_imm = (((sign_bit << (32 - imm_length)) - 1) << imm_length) | imm;
+    auto extended_imm = ((sign_bit == 0) ? 0 : (((sign_bit << (32 - imm_length)) - 1) << imm_length)) | imm;
     return extended_imm;
 }
 

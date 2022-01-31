@@ -26,9 +26,10 @@ namespace pipeline
             memset(&send_pack, 0, sizeof(send_pack));
 
             //generate base send_pack
-            for(uint32_t i = 0;i < RENAME_WIDTH;i++)
+            for(uint32_t i = 0;i < READREG_WIDTH;i++)
             {
                 send_pack.op_info[i].enable = rev_pack.op_info[i].enable;
+                send_pack.op_info[i].value = rev_pack.op_info[i].value;
                 send_pack.op_info[i].valid = rev_pack.op_info[i].valid;
                 send_pack.op_info[i].rob_id = rev_pack.op_info[i].rob_id;
                 send_pack.op_info[i].pc = rev_pack.op_info[i].pc;
@@ -68,6 +69,11 @@ namespace pipeline
                             send_pack.op_info[i].src1_loaded = true;
                         }
                     }
+                    else if(rev_pack.op_info[i].arg1_src == arg_src_t::imm)
+                    {
+                        send_pack.op_info[i].src1_value = rev_pack.op_info[i].imm;
+                        send_pack.op_info[i].src1_loaded = true;
+                    }
                     else
                     {
                         send_pack.op_info[i].src1_value = 0;
@@ -83,6 +89,11 @@ namespace pipeline
                             send_pack.op_info[i].src2_value = reg_item.value;
                             send_pack.op_info[i].src2_loaded = true;
                         }
+                    }
+                    else if(rev_pack.op_info[i].arg2_src == arg_src_t::imm)
+                    {
+                        send_pack.op_info[i].src2_value = rev_pack.op_info[i].imm;
+                        send_pack.op_info[i].src2_loaded = true;
                     }
                     else
                     {

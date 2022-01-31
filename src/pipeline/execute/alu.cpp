@@ -26,6 +26,7 @@ namespace pipeline
                 assert(issue_alu_fifo->pop(&rev_pack));
                 
                 send_pack.enable = rev_pack.enable;
+                send_pack.value = rev_pack.value;
                 send_pack.valid = rev_pack.valid;
                 send_pack.rob_id = rev_pack.rob_id;
                 send_pack.pc = rev_pack.pc;
@@ -54,6 +55,13 @@ namespace pipeline
                 send_pack.op = rev_pack.op;
                 send_pack.op_unit = rev_pack.op_unit;
                 memcpy(&send_pack.sub_op, &rev_pack.sub_op, sizeof(rev_pack.sub_op));
+
+                if(send_pack.enable && (!send_pack.valid))
+                {
+                    send_pack.has_exception = true;
+                    send_pack.exception_id = riscv_exception_t::illegal_instruction;
+                    send_pack.exception_value = rev_pack.value;
+                }
 
                 if(rev_pack.enable && rev_pack.valid)
                 {

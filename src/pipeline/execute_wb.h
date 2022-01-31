@@ -8,10 +8,14 @@ namespace pipeline
 	typedef struct execute_wb_pack_t : public if_print_t
 	{
 		bool enable;//this item has op
+        uint32_t value;
         bool valid;//this item has valid op
         uint32_t rob_id;
         uint32_t pc;
         uint32_t imm;
+        bool has_exception;
+        riscv_exception_t exception_id;
+        uint32_t exception_value;
 
         uint32_t rs1;
         arg_src_t arg1_src;
@@ -51,12 +55,16 @@ namespace pipeline
         {
             std::string blank = "  ";
             std::cout << indent << "\tenable = " << outbool(enable);
+            std::cout << blank << "value = 0x" << fillzero(8) << outhex(value);
             std::cout << blank << "valid = " << outbool(valid);
             std::cout << blank << "rob_id = " << rob_id;
             std::cout << blank << "pc = 0x" << fillzero(8) << outhex(pc);
             std::cout << blank << "imm = 0x" << fillzero(8) << outhex(imm);
-
-            std::cout << blank << "rs1 = " << rs1;
+            std::cout << blank << "has_exception = " << outbool(has_exception);
+            std::cout << blank << "exception_id = " << outenum(exception_id);
+            std::cout << blank << "exception_value = 0x" << fillzero(8) << outhex(exception_value) << std::endl; 
+            
+            std::cout << indent << "\trs1 = " << rs1;
             std::cout << blank << "arg1_src = " << outenum(arg1_src);
             std::cout << blank << "rs1_need_map = " << outbool(rs1_need_map);
             std::cout << blank << "rs1_phy = " << rs1_phy;

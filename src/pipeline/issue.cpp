@@ -56,6 +56,7 @@ namespace pipeline
                     memset(&send_pack, 0, sizeof(send_pack));
                     
                     send_pack.enable = items[i].enable;
+                    send_pack.value = items[i].value;
                     send_pack.valid = items[i].valid;
                     send_pack.rob_id = items[i].rob_id;
                     send_pack.pc = items[i].pc;
@@ -190,6 +191,7 @@ namespace pipeline
             memset(&t_item, 0, sizeof(t_item));
             auto cur_op = rev_pack.op_info[this->last_index];
             t_item.enable = cur_op.enable;
+            t_item.value = cur_op.value;
             t_item.valid = cur_op.valid;
             t_item.rob_id = cur_op.rob_id;
             t_item.pc = cur_op.pc;
@@ -211,6 +213,8 @@ namespace pipeline
             
             t_item.rd = cur_op.rd;
             t_item.rd_enable = cur_op.rd_enable;
+            t_item.need_rename = cur_op.need_rename;
+            t_item.rd_phy = cur_op.rd_phy;
             t_item.op = cur_op.op;
             t_item.op_unit = cur_op.op_unit;
             memcpy(&t_item.sub_op, &cur_op.sub_op, sizeof(t_item.sub_op));

@@ -3,7 +3,7 @@
 
 namespace component
 {
-    class rat
+    class rat : if_print_t
     {
         private:
             uint32_t phy_reg_num;
@@ -226,6 +226,55 @@ namespace component
                             release_map(t_req.arg1);
                             break;
                     }
+                }
+            }
+
+            virtual void print(std::string indent)
+            {
+                auto col = 6;
+
+                std::cout << indent << "Register Allocation Table:" << std::endl;
+
+                for(auto i = 0;i < col;i++)
+                {
+                    if(i == 0)
+                    {
+                        std::cout << indent;
+                    }
+                    else
+                    {
+                        std::cout << "\t\t";
+                    }
+
+                    std::cout << "Phy_ID\tArch_ID\tVisible\tValid";
+                }
+                
+                std::cout << std::endl;
+
+                auto numbycol = (phy_reg_num + col - 1) / col;
+                
+                for(uint32_t i = 0;i < numbycol;i++)
+                {
+                    for(auto j = 0;j < col;j++)
+                    {
+                        auto phy_id = j * numbycol + i;
+
+                        if(phy_id < phy_reg_num)
+                        {
+                            if(j == 0)
+                            {
+                                std::cout << indent;
+                            }
+                            else
+                            {
+                                std::cout << "\t\t";
+                            }
+
+                            std::cout << phy_id << "\t" << phy_map_table[phy_id] << "\t" << outbool(get_visible(phy_id)) << "\t" << outbool(get_valid(phy_id));
+                        }
+                    }
+
+                    std::cout << std::endl;
                 }
             }
     };
