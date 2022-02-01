@@ -13,6 +13,9 @@ namespace pipeline
         uint32_t rob_id;
         uint32_t pc;
         uint32_t imm;
+        bool has_exception;
+        riscv_exception_t exception_id;
+        uint32_t exception_value;
 
         uint32_t rs1;
         arg_src_t arg1_src;
@@ -62,6 +65,9 @@ namespace pipeline
                 std::cout << blank << "rob_id = " << op_info[i].rob_id;
                 std::cout << blank << "pc = 0x" << fillzero(8) << outhex(op_info[i].pc);
                 std::cout << blank << "imm = 0x" << fillzero(8) << outhex(op_info[i].imm);
+                std::cout << blank << "has_exception = " << outbool(op_info[i].has_exception);
+                std::cout << blank << "exception_id = " << outenum(op_info[i].exception_id);
+                std::cout << blank << "exception_value = 0x" << fillzero(8) << outhex(op_info[i].exception_value) << std::endl;
 
                 std::cout << blank << "rs1 = " << op_info[i].rs1;
                 std::cout << blank << "arg1_src = " << outenum(op_info[i].arg1_src);

@@ -61,6 +61,9 @@ namespace pipeline
                     send_pack.rob_id = items[i].rob_id;
                     send_pack.pc = items[i].pc;
                     send_pack.imm = items[i].imm;
+                    send_pack.has_exception = items[i].has_exception;
+                    send_pack.exception_id = items[i].exception_id;
+                    send_pack.exception_value = items[i].exception_value;
                     
                     send_pack.rs1 = items[i].rs1;
                     send_pack.arg1_src = items[i].arg1_src;

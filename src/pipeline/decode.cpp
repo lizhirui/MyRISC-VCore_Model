@@ -41,7 +41,7 @@ namespace pipeline
 
                     auto op_info = send_pack.op_info[i];
                     op_info.enable = true;
-                    op_info.valid = true;
+                    op_info.valid = !rev_pack.op_info[i].has_exception;
                     op_info.pc = rev_pack.op_info[i].pc;
 
                     switch(opcode)
@@ -633,6 +633,9 @@ namespace pipeline
                     op_info.rs2_need_map = (op_info.arg2_src == arg_src_t::reg) && (op_info.rs2 > 0);
                     op_info.need_rename = op_info.rd_enable && (op_info.rd > 0);
                     op_info.value = rev_pack.op_info[i].value;
+                    op_info.has_exception = rev_pack.op_info[i].has_exception;
+                    op_info.exception_id = rev_pack.op_info[i].exception_id;
+                    op_info.exception_value = rev_pack.op_info[i].exception_value;
                     send_pack.op_info[i] = op_info;
                 }
             }

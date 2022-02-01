@@ -31,6 +31,9 @@ namespace pipeline
                 send_pack.rob_id = rev_pack.rob_id;
                 send_pack.pc = rev_pack.pc;
                 send_pack.imm = rev_pack.imm;
+                send_pack.has_exception = rev_pack.has_exception;
+                send_pack.exception_id = rev_pack.exception_id;
+                send_pack.exception_value = rev_pack.exception_value;
 
                 send_pack.rs1 = rev_pack.rs1;
                 send_pack.arg1_src = rev_pack.arg1_src;
@@ -56,80 +59,89 @@ namespace pipeline
                 send_pack.op_unit = rev_pack.op_unit;
                 memcpy(&send_pack.sub_op, &rev_pack.sub_op, sizeof(rev_pack.sub_op));
 
-                if(send_pack.enable && (!send_pack.valid))
+                if(rev_pack.enable && (!rev_pack.has_exception))
                 {
-                    send_pack.has_exception = true;
-                    send_pack.exception_id = riscv_exception_t::illegal_instruction;
-                    send_pack.exception_value = rev_pack.value;
-                }
-
-                if(rev_pack.enable && rev_pack.valid)
-                {
-                    switch(rev_pack.sub_op.alu_op)
+                    if(rev_pack.enable && (!rev_pack.valid))
                     {
-                        case alu_op_t::add:
-                            send_pack.rd_value = rev_pack.src1_value + rev_pack.src2_value;
-                            break;
+                        send_pack.has_exception = true;
+                        send_pack.exception_id = riscv_exception_t::illegal_instruction;
+                        send_pack.exception_value = rev_pack.value;
+                    }
 
-                        case alu_op_t::_and:
-                            send_pack.rd_value = rev_pack.src1_value & rev_pack.src2_value;
-                            break;
+                    if(rev_pack.enable && rev_pack.valid)
+                    {
+                        switch(rev_pack.sub_op.alu_op)
+                        {
+                            case alu_op_t::add:
+                                send_pack.rd_value = rev_pack.src1_value + rev_pack.src2_value;
+                                break;
 
-                        case alu_op_t::auipc:
-                            send_pack.rd_value = rev_pack.imm + rev_pack.pc;
-                            break;
+                            case alu_op_t::_and:
+                                send_pack.rd_value = rev_pack.src1_value & rev_pack.src2_value;
+                                break;
 
-                        case alu_op_t::ebreak:
-                            send_pack.rd_value = 0;
-                            break;
+                            case alu_op_t::auipc:
+                                send_pack.rd_value = rev_pack.imm + rev_pack.pc;
+                                break;
 
-                        case alu_op_t::ecall:
-                            send_pack.rd_value = 0;
-                            break;
+                            case alu_op_t::ebreak:
+                                send_pack.rd_value = 0;
+                                send_pack.has_exception = true;
+                                send_pack.exception_id = riscv_exception_t::breakpoint;
+                                send_pack.exception_value = 0;
+                                break;
 
-                        case alu_op_t::fence:
-                            send_pack.rd_value = 0;
-                            break;
+                            case alu_op_t::ecall:
+                                send_pack.rd_value = 0;
+                                send_pack.has_exception = true;
+                                send_pack.exception_id = riscv_exception_t::environment_call_from_m_mode;
+                                send_pack.exception_value = 0;
+                                break;
 
-                        case alu_op_t::fence_i:
-                            send_pack.rd_value = 0;
-                            break;
+                            case alu_op_t::fence:
+                                send_pack.rd_value = 0;
+                                break;
 
-                        case alu_op_t::lui:
-                            send_pack.rd_value = rev_pack.imm;
-                            break;
+                            case alu_op_t::fence_i:
+                                send_pack.rd_value = 0;
+                                break;
 
-                        case alu_op_t::_or:
-                            send_pack.rd_value = rev_pack.src1_value | rev_pack.src2_value;
-                            break;
+                            case alu_op_t::lui:
+                                send_pack.rd_value = rev_pack.imm;
+                                break;
 
-                        case alu_op_t::sll:
-                            send_pack.rd_value = rev_pack.src1_value << (rev_pack.src2_value & 0x1f);
-                            break;
+                            case alu_op_t::_or:
+                                send_pack.rd_value = rev_pack.src1_value | rev_pack.src2_value;
+                                break;
 
-                        case alu_op_t::slt:
-                            send_pack.rd_value = (((int32_t)rev_pack.src1_value) < ((int32_t)rev_pack.src2_value)) ? 1 : 0;
-                            break;
+                            case alu_op_t::sll:
+                                send_pack.rd_value = rev_pack.src1_value << (rev_pack.src2_value & 0x1f);
+                                break;
 
-                        case alu_op_t::sltu:
-                            send_pack.rd_value = (rev_pack.src1_value < (rev_pack.src2_value & 0xfff)) ? 1 : 0;
-                            break;
+                            case alu_op_t::slt:
+                                send_pack.rd_value = (((int32_t)rev_pack.src1_value) < ((int32_t)rev_pack.src2_value)) ? 1 : 0;
+                                break;
 
-                        case alu_op_t::sra:
-                            send_pack.rd_value = (uint32_t)(((int32_t)rev_pack.src1_value) >> (rev_pack.src2_value & 0x1f));
-                            break;
+                            case alu_op_t::sltu:
+                                send_pack.rd_value = (rev_pack.src1_value < (rev_pack.src2_value & 0xfff)) ? 1 : 0;
+                                break;
 
-                        case alu_op_t::srl:
-                            send_pack.rd_value = rev_pack.src1_value >> (rev_pack.src2_value & 0x1f);
-                            break;
+                            case alu_op_t::sra:
+                                send_pack.rd_value = (uint32_t)(((int32_t)rev_pack.src1_value) >> (rev_pack.src2_value & 0x1f));
+                                break;
 
-                        case alu_op_t::sub:
-                            send_pack.rd_value = rev_pack.src1_value - rev_pack.src2_value;
-                            break;
+                            case alu_op_t::srl:
+                                send_pack.rd_value = rev_pack.src1_value >> (rev_pack.src2_value & 0x1f);
+                                break;
 
-                        case alu_op_t::_xor:
-                            send_pack.rd_value = rev_pack.src1_value ^ rev_pack.src2_value;
-                            break;
+                            case alu_op_t::sub:
+                                send_pack.rd_value = rev_pack.src1_value - rev_pack.src2_value;
+                                break;
+
+                            case alu_op_t::_xor:
+                                send_pack.rd_value = rev_pack.src1_value ^ rev_pack.src2_value;
+                                break;
+                        }
                     }
                 }
             }

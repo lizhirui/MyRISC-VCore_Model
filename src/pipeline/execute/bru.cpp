@@ -30,6 +30,9 @@ namespace pipeline
                 send_pack.rob_id = rev_pack.rob_id;
                 send_pack.pc = rev_pack.pc;
                 send_pack.imm = rev_pack.imm;
+                send_pack.has_exception = rev_pack.has_exception;
+                send_pack.exception_id = rev_pack.exception_id;
+                send_pack.exception_value = rev_pack.exception_value;
 
                 send_pack.rs1 = rev_pack.rs1;
                 send_pack.arg1_src = rev_pack.arg1_src;

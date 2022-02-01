@@ -29,6 +29,9 @@ namespace pipeline
                 send_pack.rob_id = rev_pack.rob_id;
                 send_pack.pc = rev_pack.pc;
                 send_pack.imm = rev_pack.imm;
+                send_pack.has_exception = rev_pack.has_exception;
+                send_pack.exception_id = rev_pack.exception_id;
+                send_pack.exception_value = rev_pack.exception_value;
 
                 send_pack.rs1 = rev_pack.rs1;
                 send_pack.arg1_src = rev_pack.arg1_src;
@@ -63,33 +66,33 @@ namespace pipeline
                     {
                         case lsu_op_t::lb:
                         case lsu_op_t::lbu:
-                            send_pack.has_exception = memory->check_align(addr, 1) || memory->check_boundary(addr, 1);
+                            send_pack.has_exception = !memory->check_align(addr, 1) || !memory->check_boundary(addr, 1);
                             send_pack.exception_id = !memory->check_align(addr, 1) ? riscv_exception_t::load_address_misaligned : riscv_exception_t::load_access_fault;
                             break;
 
                         case lsu_op_t::lh:
                         case lsu_op_t::lhu:
-                            send_pack.has_exception = memory->check_align(addr, 2) || memory->check_boundary(addr, 2);
+                            send_pack.has_exception = !memory->check_align(addr, 2) || !memory->check_boundary(addr, 2);
                             send_pack.exception_id = !memory->check_align(addr, 2) ? riscv_exception_t::load_address_misaligned : riscv_exception_t::load_access_fault;
                             break;
 
                         case lsu_op_t::lw:
-                            send_pack.has_exception = memory->check_align(addr, 4) || memory->check_boundary(addr, 4);
+                            send_pack.has_exception = !memory->check_align(addr, 4) || !memory->check_boundary(addr, 4);
                             send_pack.exception_id = !memory->check_align(addr, 4) ? riscv_exception_t::load_address_misaligned : riscv_exception_t::load_access_fault;
                             break;
 
                         case lsu_op_t::sb:
-                            send_pack.has_exception = memory->check_align(addr, 1) || memory->check_boundary(addr, 1);
+                            send_pack.has_exception = !memory->check_align(addr, 1) || !memory->check_boundary(addr, 1);
                             send_pack.exception_id = !memory->check_align(addr, 1) ? riscv_exception_t::store_amo_address_misaligned : riscv_exception_t::store_amo_access_fault;
                             break;
 
                         case lsu_op_t::sh:
-                            send_pack.has_exception = memory->check_align(addr, 2) || memory->check_boundary(addr, 2);
+                            send_pack.has_exception = !memory->check_align(addr, 2) || !memory->check_boundary(addr, 2);
                             send_pack.exception_id = !memory->check_align(addr, 2) ? riscv_exception_t::store_amo_address_misaligned : riscv_exception_t::store_amo_access_fault;
                             break;
 
                         case lsu_op_t::sw:
-                            send_pack.has_exception = memory->check_align(addr, 4) || memory->check_boundary(addr, 4);
+                            send_pack.has_exception = !memory->check_align(addr, 4) || !memory->check_boundary(addr, 4);
                             send_pack.exception_id = !memory->check_align(addr, 4) ? riscv_exception_t::store_amo_address_misaligned : riscv_exception_t::store_amo_access_fault;
                             break;
                     }

@@ -50,6 +50,9 @@ namespace pipeline
                     send_pack.op_info[i].valid = rev_pack.op_info[i].valid;
                     send_pack.op_info[i].pc = rev_pack.op_info[i].pc;
                     send_pack.op_info[i].imm = rev_pack.op_info[i].imm;
+                    send_pack.op_info[i].has_exception = rev_pack.op_info[i].has_exception;
+                    send_pack.op_info[i].exception_id = rev_pack.op_info[i].exception_id;
+                    send_pack.op_info[i].exception_value = rev_pack.op_info[i].exception_value;
                     send_pack.op_info[i].rs1 = rev_pack.op_info[i].rs1;
                     send_pack.op_info[i].arg1_src = rev_pack.op_info[i].arg1_src;
                     send_pack.op_info[i].rs1_need_map = rev_pack.op_info[i].rs1_need_map;
