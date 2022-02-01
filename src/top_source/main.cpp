@@ -5,6 +5,8 @@
 #include "../component/port.h"
 #include "../component/memory.h"
 #include "../component/regfile.h"
+#include "../component/csrfile.h"
+#include "../component/csr_all.h"
 #include "../pipeline/fetch.h"
 #include "../pipeline/fetch_decode.h"
 #include "../pipeline/decode.h"
@@ -57,6 +59,7 @@ static component::memory memory(0x80000000, 64 * 0x1000);
 static component::rat rat(PHY_REG_NUM, ARCH_REG_NUM);
 static component::rob rob(16);
 static component::regfile<pipeline::phy_regfile_item_t> phy_regfile(PHY_REG_NUM);
+static component::csrfile csr_file;
 
 static pipeline::fetch fetch_stage(&memory, &fetch_decode_fifo, 0x80000000);
 static pipeline::decode decode_stage(&fetch_decode_fifo, &decode_rename_fifo);
@@ -197,6 +200,33 @@ static void init()
     }
 
     rat.init_finish();
+
+    csr_file.map(0xf11, true, std::make_shared<component::csr::mvendorid>());
+    csr_file.map(0xf12, true, std::make_shared<component::csr::marchid>());
+    csr_file.map(0xf13, true, std::make_shared<component::csr::mimpid>());
+    csr_file.map(0xf14, true, std::make_shared<component::csr::mhartid>());
+    csr_file.map(0xf15, true, std::make_shared<component::csr::mconfigptr>());
+    csr_file.map(0x300, false, std::make_shared<component::csr::mstatus>());
+    csr_file.map(0x301, false, std::make_shared<component::csr::misa>());
+    csr_file.map(0x304, false, std::make_shared<component::csr::mie>());
+    csr_file.map(0x305, false, std::make_shared<component::csr::mtvec>());
+    csr_file.map(0x306, false, std::make_shared<component::csr::mcounteren>());
+    csr_file.map(0x310, false, std::make_shared<component::csr::mstatush>());
+    csr_file.map(0x340, false, std::make_shared<component::csr::mscratch>());
+    csr_file.map(0x341, false, std::make_shared<component::csr::mepc>());
+    csr_file.map(0x342, false, std::make_shared<component::csr::mcause>());
+    csr_file.map(0x343, false, std::make_shared<component::csr::mtval>());
+    csr_file.map(0x344, false, std::make_shared<component::csr::mip>());
+
+    for(auto i = 0;i < 16;i++)
+    {
+        csr_file.map(0x3A0 + i, false, std::make_shared<component::csr::pmpcfg>(i));
+    }
+
+    for(auto i = 0;i < 64;i++)
+    {
+        csr_file.map(0x3B0 + i, false, std::make_shared<component::csr::pmpaddr>(i));
+    }
 }
 
 static bool pause_state = false;
@@ -350,6 +380,12 @@ static void cmd_rat()
     std::cout << std::endl;
 }
 
+static void cmd_csr()
+{
+    csr_file.print("");
+    std::cout << std::endl;
+}
+
 typedef void (*cmd_handler)();
 
 typedef struct cmd_desc_t
@@ -364,6 +400,7 @@ static cmd_desc_t cmd_list[] = {
                                {"s", cmd_step},
                                {"p", cmd_print},
                                {"rat", cmd_rat},
+                               {"csr", cmd_csr},
                                {"", NULL}
                                };
 

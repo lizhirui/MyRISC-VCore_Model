@@ -6,6 +6,21 @@ namespace component
     class rat : if_print_t
     {
         private:
+            enum class sync_request_type_t
+            {
+                set_map,
+                release_map
+            };
+
+            typedef struct sync_request_t
+            {
+                sync_request_type_t req;
+                uint32_t arg1;
+                uint32_t arg2;
+            }sync_request_t;
+
+            std::queue<sync_request_t> sync_request_q;
+
             uint32_t phy_reg_num;
             uint32_t arch_reg_num;
             uint32_t *phy_map_table;
@@ -13,21 +28,6 @@ namespace component
             uint64_t *phy_map_table_visible;
             uint32_t bitmap_size;
             bool init_rat;
-
-            enum class sync_request_type_t
-            {
-                set_map,
-                release_map
-            };
-
-            typedef struct sync_request
-            {
-                sync_request_type_t req;
-                uint32_t arg1;
-                uint32_t arg2;
-            }sync_request;
-
-            std::queue<sync_request> sync_request_q;
 
             void set_valid(uint32_t phy_id, bool v)
             {
@@ -190,7 +190,7 @@ namespace component
 
             void set_map_sync(uint32_t arch_id, uint32_t phy_id)
             {
-                sync_request t_req;
+                sync_request_t t_req;
 
                 t_req.req = sync_request_type_t::set_map;
                 t_req.arg1 = arch_id;
@@ -200,7 +200,7 @@ namespace component
 
             void release_map_sync(uint32_t phy_id)
             {
-                sync_request t_req;
+                sync_request_t t_req;
 
                 t_req.req = sync_request_type_t::release_map;
                 t_req.arg1 = phy_id;
@@ -209,7 +209,7 @@ namespace component
 
             void sync()
             {
-                sync_request t_req;
+                sync_request_t t_req;
 
                 while(!sync_request_q.empty())
                 {

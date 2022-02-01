@@ -6,12 +6,19 @@
 #include <cassert>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <cstring>
 #include <queue>
 #include <string>
 #include <iomanip>
 #include <type_traits>
-
+#include <unordered_map>
+#include <memory>
+#include <utility>
+#include <algorithm>
+#include <map>
+#include <vector>
+#include <cctype>
 #include "magic_enum.h"
 
 //machine types
@@ -32,7 +39,7 @@ using int64_t = std::int64_t;
 #define bitsizeof(x) (sizeof(x) * 8)
 
 #define fillzero(length) std::setw(length) << std::setfill('0')
-#define outhex(x) std::hex << (x) << std::dec
+#define outhex(x) std::setiosflags(std::ios::uppercase) << std::hex << (x) << std::dec
 #define outbool(x) std::boolalpha << (x)
 #define outenum(x) magic_enum::enum_name(x)
 
