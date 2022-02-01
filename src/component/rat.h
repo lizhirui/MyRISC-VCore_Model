@@ -14,7 +14,7 @@ namespace component
             uint32_t bitmap_size;
             bool init_rat;
 
-            enum class sync_request_type
+            enum class sync_request_type_t
             {
                 set_map,
                 release_map
@@ -22,7 +22,7 @@ namespace component
 
             typedef struct sync_request
             {
-                sync_request_type req;
+                sync_request_type_t req;
                 uint32_t arg1;
                 uint32_t arg2;
             }sync_request;
@@ -192,7 +192,7 @@ namespace component
             {
                 sync_request t_req;
 
-                t_req.req = sync_request_type::set_map;
+                t_req.req = sync_request_type_t::set_map;
                 t_req.arg1 = arch_id;
                 t_req.arg2 = phy_id;
                 sync_request_q.push(t_req);
@@ -202,7 +202,7 @@ namespace component
             {
                 sync_request t_req;
 
-                t_req.req = sync_request_type::release_map;
+                t_req.req = sync_request_type_t::release_map;
                 t_req.arg1 = phy_id;
                 sync_request_q.push(t_req);
             }
@@ -218,11 +218,11 @@ namespace component
 
                     switch(t_req.req)
                     {
-                        case sync_request_type::set_map:
+                        case sync_request_type_t::set_map:
                             set_map(t_req.arg1, t_req.arg2);
                             break;
 
-                        case sync_request_type::release_map:
+                        case sync_request_type_t::release_map:
                             release_map(t_req.arg1);
                             break;
                     }

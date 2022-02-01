@@ -19,5 +19,10 @@ endif()
 file(GLOB_RECURSE src_files CONFIGURE_DEPENDS "./src/*.cpp" "./src/*.h")
 add_executable(sim ${src_files})
 
+target_compile_options(sim PRIVATE
+  $<$<CXX_COMPILER_ID:MSVC>:/WX>
+  $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Werror>
+)
+
 # TODO: 如有需要，请添加测试并安装目标。
 add_custom_target(run COMMAND sim DEPENDS sim WORKING_DIRECTORY ${CMAKE_PROJECT_DIR})

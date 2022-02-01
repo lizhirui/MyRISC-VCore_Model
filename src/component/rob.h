@@ -25,7 +25,7 @@ namespace component
                 sync_request_type_t req;
                 uint32_t arg1;
                 rob_item_t arg2;
-            }sync_request;
+            }sync_request_t;
 
             std::queue<sync_request_t> sync_request_q;
 

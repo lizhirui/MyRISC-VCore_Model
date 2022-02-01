@@ -7,19 +7,19 @@ namespace component
     class regfile
     {
         private:
-            enum class sync_request_type
+            enum class sync_request_type_t
             {
                 write
             };
 
-            typedef struct sync_request
+            typedef struct sync_request_t
             {
-                sync_request_type req;
+                sync_request_type_t req;
                 uint32_t arg1;
                 T arg2;
-            }sync_request;
+            }sync_request_t;
 
-            std::queue<sync_request> sync_request_q;
+            std::queue<sync_request_t> sync_request_q;
             
             T *reg_data;
             uint32_t size;
@@ -51,9 +51,9 @@ namespace component
 
             void write_sync(uint32_t addr, T value)
             {
-                sync_request t_req;
+                sync_request_t t_req;
 
-                t_req.req = sync_request_type::write;
+                t_req.req = sync_request_type_t::write;
                 t_req.arg1 = addr;
                 t_req.arg2 = value;
                 sync_request_q.push(t_req);
@@ -61,7 +61,7 @@ namespace component
 
             void sync()
             {
-                sync_request t_req;
+                sync_request_t t_req;
 
                 while(!sync_request_q.empty())
                 {
@@ -70,7 +70,7 @@ namespace component
 
                     switch(t_req.req)
                     {
-                        case sync_request_type::write:
+                        case sync_request_type_t::write:
                             write(t_req.arg1, t_req.arg2);
                             break;
                     }
