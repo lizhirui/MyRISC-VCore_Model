@@ -110,8 +110,8 @@ OUTPUT(test.elf elf32-littleriscv)
  .debug_aranges
                 0x0000000000000000       0x20 build/src/main.o
 
-.debug_str      0x0000000000000000       0x58
- .debug_str     0x0000000000000000       0x58 build/src/main.o
+.debug_str      0x0000000000000000       0x6a
+ .debug_str     0x0000000000000000       0x6a build/src/main.o
 
 Cross Reference Table
 

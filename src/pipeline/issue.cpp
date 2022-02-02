@@ -218,6 +218,8 @@ namespace pipeline
             t_item.rd_enable = cur_op.rd_enable;
             t_item.need_rename = cur_op.need_rename;
             t_item.rd_phy = cur_op.rd_phy;
+
+            t_item.csr = cur_op.csr;
             t_item.op = cur_op.op;
             t_item.op_unit = cur_op.op_unit;
             memcpy(&t_item.sub_op, &cur_op.sub_op, sizeof(t_item.sub_op));

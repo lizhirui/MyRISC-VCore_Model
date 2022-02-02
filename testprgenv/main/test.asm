@@ -5,7 +5,11 @@ test.elf:     file format elf32-littleriscv
 Disassembly of section .text:
 
 80000000 <_start>:
-80000000:	00208093          	addi	ra,ra,2
+    .section .text.entry
+    .global _start
+_start:
+    csrrwi x0, mtvec, 0xf
+80000000:	3057d073          	csrwi	mtvec,15
 80000004:	ffdff06f          	j	80000000 <_start>
 
 Disassembly of section .osdebug:
@@ -89,7 +93,7 @@ Disassembly of section .debug_info:
   18:	0000                	unimp
   1a:	0000                	unimp
   1c:	0000000b          	0xb
-  20:	004c                	addi	a1,sp,4
+  20:	005e                	c.slli	zero,0x17
   22:	0000                	unimp
   24:	8001                	c.srli64	s0
 
@@ -146,18 +150,22 @@ Disassembly of section .debug_str:
   2a:	65726f43          	0x65726f43
   2e:	646f6d2f          	0x646f6d2f
   32:	6c65                	lui	s8,0x19
-  34:	7365542f          	0x7365542f
-  38:	5074                	lw	a3,100(s0)
-  3a:	6772                	flw	fa4,28(sp)
-  3c:	6e45                	lui	t3,0x11
-  3e:	6976                	flw	fs2,92(sp)
-  40:	6f72                	flw	ft10,28(sp)
-  42:	6d6e                	flw	fs10,216(sp)
-  44:	6e65                	lui	t3,0x19
-  46:	2f74                	fld	fa3,216(a4)
-  48:	00637273          	csrrci	tp,0x6,6
-  4c:	20554e47          	fmsub.s	ft8,fa0,ft5,ft4,rmm
-  50:	5341                	li	t1,-16
-  52:	3220                	fld	fs0,96(a2)
-  54:	332e                	fld	ft6,232(sp)
-  56:	0032                	c.slli	zero,0xc
+  34:	52794d2f          	0x52794d2f
+  38:	5349                	li	t1,-14
+  3a:	43562d43          	fmadd.d	fs10,fa2,fs5,fs0,rdn
+  3e:	5f65726f          	jal	tp,57634 <STACK_SIZE+0x53634>
+  42:	6f4d                	lui	t5,0x13
+  44:	6564                	flw	fs1,76(a0)
+  46:	5f6c                	lw	a1,124(a4)
+  48:	6b614d43          	fmadd.d	fs10,ft2,fs6,fa3,rmm
+  4c:	2f65                	jal	804 <STACK_SIZE-0x37fc>
+  4e:	6574                	flw	fa3,76(a0)
+  50:	72707473          	csrrci	s0,0x727,0
+  54:	766e6567          	0x766e6567
+  58:	69616d2f          	0x69616d2f
+  5c:	006e                	c.slli	zero,0x1b
+  5e:	20554e47          	fmsub.s	ft8,fa0,ft5,ft4,rmm
+  62:	5341                	li	t1,-16
+  64:	3220                	fld	fs0,96(a2)
+  66:	332e                	fld	ft6,232(sp)
+  68:	0032                	c.slli	zero,0xc

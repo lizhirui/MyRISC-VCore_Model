@@ -63,7 +63,7 @@ namespace pipeline
             std::cout << blank << "exception_id = " << outenum(exception_id);
             std::cout << blank << "exception_value = 0x" << fillzero(8) << outhex(exception_value) << std::endl;
 
-            std::cout << blank << "rs1 = " << rs1;
+            std::cout << indent << "\trs1 = " << rs1;
             std::cout << blank << "arg1_src = " << outenum(arg1_src);
             std::cout << blank << "rs1_need_map = " << outbool(rs1_need_map);
             std::cout << blank << "rs1_phy = " << rs1_phy;

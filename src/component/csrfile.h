@@ -15,6 +15,7 @@ namespace component
 
 			enum class sync_request_type_t
             {
+				write,
                 write_sys
             };
 
@@ -101,6 +102,7 @@ namespace component
 				t_req.req = sync_request_type_t::write_sys;
 				t_req.arg1 = addr;
 				t_req.arg2 = value;
+				this->sync_request_q.push(t_req);
 			}
 
 			uint32_t read_sys(uint32_t addr)
@@ -109,7 +111,7 @@ namespace component
 				return csr_map_table[addr].csr->read();
 			}
 
-			bool write(uint32_t addr, uint32_t value)
+			bool write_check(uint32_t addr, uint32_t value)
 			{
 				if(csr_map_table.find(addr) == csr_map_table.end())
 				{
@@ -121,8 +123,28 @@ namespace component
 					return false;
 				}
 
+				return true;
+			}
+
+			bool write(uint32_t addr, uint32_t value)
+			{
+				if(!write_check(addr, value))
+				{
+					return false;
+				}
+
 				csr_map_table[addr].csr->write(value);
 				return true;
+			}	
+
+			void write_sync(uint32_t addr, uint32_t value)
+			{
+				sync_request_t t_req;
+
+				t_req.req = sync_request_type_t::write;
+				t_req.arg1 = addr;
+				t_req.arg2 = value;
+				this->sync_request_q.push(t_req);
 			}
 
 			bool read(uint32_t addr, uint32_t *value)
@@ -147,6 +169,10 @@ namespace component
 
                     switch(t_req.req)
                     {
+						case sync_request_type_t::write:
+							assert(write(t_req.arg1, t_req.arg2));
+							break;
+
                         case sync_request_type_t::write_sys:
                             write_sys(t_req.arg1, t_req.arg2);
                             break;

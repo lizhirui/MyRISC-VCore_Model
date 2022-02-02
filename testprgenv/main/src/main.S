@@ -1,5 +1,5 @@
     .section .text.entry
     .global _start
 _start:
-    addi x1, x1, 2
+    csrrwi x0, mtvec, 0xf
     j _start

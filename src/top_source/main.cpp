@@ -68,7 +68,9 @@ static pipeline::readreg readreg_stage(&rename_readreg_port, &readreg_issue_port
 static pipeline::issue issue_stage(&readreg_issue_port, issue_alu_fifo, issue_bru_fifo, issue_csr_fifo, issue_div_fifo, issue_lsu_fifo, issue_mul_fifo);
 static pipeline::execute::alu *execute_alu_stage[ALU_UNIT_NUM];
 static pipeline::execute::bru *execute_bru_stage[BRU_UNIT_NUM];
+static pipeline::execute::csr *execute_csr_stage[CSR_UNIT_NUM];
 static pipeline::execute::div *execute_div_stage[DIV_UNIT_NUM];
+static pipeline::execute::lsu *execute_lsu_stage[LSU_UNIT_NUM];
 static pipeline::execute::mul *execute_mul_stage[MUL_UNIT_NUM];
 
 static pipeline::issue_feedback_pack_t t_issue_feedback_pack;
@@ -175,9 +177,19 @@ static void init()
         execute_bru_stage[i] = new pipeline::execute::bru(issue_bru_fifo[i], bru_wb_port[i]);
     }
 
+    for(auto i = 0;i < CSR_UNIT_NUM;i++)
+    {
+        execute_csr_stage[i] = new pipeline::execute::csr(issue_csr_fifo[i], csr_wb_port[i], &csr_file);
+    }
+
     for(auto i = 0;i < DIV_UNIT_NUM;i++)
     {
         execute_div_stage[i] = new pipeline::execute::div(issue_div_fifo[i], div_wb_port[i]);
+    }
+
+    for(auto i = 0;i < LSU_UNIT_NUM;i++)
+    {
+        execute_lsu_stage[i] = new pipeline::execute::lsu(issue_lsu_fifo[i], lsu_wb_port[i], &memory);
     }
 
     for(auto i = 0;i < MUL_UNIT_NUM;i++)
@@ -480,9 +492,19 @@ static void run()
             t_bru_feedback_pack = execute_bru_stage[i]->run();
         }
 
+        for(auto i = 0;i < CSR_UNIT_NUM;i++)
+        {
+            execute_csr_stage[i]->run();
+        }
+
         for(auto i = 0;i < DIV_UNIT_NUM;i++)
         {
             execute_div_stage[i]->run();
+        }
+
+        for(auto i = 0;i < LSU_UNIT_NUM;i++)
+        {
+            execute_lsu_stage[i]->run();
         }
 
         for(auto i = 0;i < MUL_UNIT_NUM;i++)
@@ -498,6 +520,7 @@ static void run()
         rat.sync();
         rob.sync();
         phy_regfile.sync();
+        csr_file.sync();
         cpu_clock_cycle++;
     }
 }
