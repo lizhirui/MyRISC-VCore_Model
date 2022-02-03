@@ -93,28 +93,27 @@ namespace pipeline
                     if(rat->get_free_phy_id(phy_reg_req_cnt, new_phy_reg_id) && rob->get_free_space() >= (rob_req_cnt))
                     {
                         //generate rob items
+                        component::rob_item_t rob_item[RENAME_WIDTH];
+
                         for(uint32_t i = 0;i < RENAME_WIDTH;i++)
                         {
                             if(rev_pack.op_info[i].enable)
                             {
-                                component::rob_item_t item;
-
                                 if(rev_pack.op_info[i].valid)
                                 {
-                                    if(rev_pack.op_info[i].rs1_need_map)
+                                    if(rev_pack.op_info[i].need_rename)
                                     {
-                                        item.old_phy_reg_id_valid = true;
-                                        assert(rat->get_phy_id(rev_pack.op_info[i].rs1, &item.old_phy_reg_id));
+                                        rob_item[i].old_phy_reg_id_valid = true;
+                                        assert(rat->get_phy_id(rev_pack.op_info[i].rd, &rob_item[i].old_phy_reg_id));
                                     }
                                     else
                                     {
-                                        item.old_phy_reg_id_valid = false;
-                                        item.old_phy_reg_id = 0;
+                                        rob_item[i].old_phy_reg_id_valid = false;
+                                        rob_item[i].old_phy_reg_id = 0;
                                     }
                                 }
 
-                                item.finish = false;
-                                assert(rob->push(item, &send_pack.op_info[i].rob_id));
+                                rob_item[i].finish = false;
                             }
                         }
 
@@ -124,6 +123,33 @@ namespace pipeline
                             {
                                 send_pack.op_info[i].rd_phy = new_phy_reg_id[j++];
                                 rat->set_map_sync(rev_pack.op_info[i].rd, send_pack.op_info[i].rd_phy);
+                            }
+                        }
+
+                        //old_phy_reg_id feedback
+                        for(auto i = 1;i < RENAME_WIDTH;i++)
+                        {
+                            if(rev_pack.op_info[i].enable && rev_pack.op_info[i].valid && rev_pack.op_info[i].need_rename)
+                            {
+                                for(auto j = i - 1;j >= 0;j--)
+                                {
+                                    if(rev_pack.op_info[j].enable && rev_pack.op_info[j].valid && rev_pack.op_info[j].need_rename)
+                                    {
+                                        if(rev_pack.op_info[i].rd == rev_pack.op_info[j].rd)
+                                        {
+                                            rob_item[i].old_phy_reg_id = send_pack.op_info[j].rd_phy;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        //write to rob
+                        for(uint32_t i = 0;i < RENAME_WIDTH;i++)
+                        {
+                            if(rev_pack.op_info[i].enable)
+                            {
+                                assert(rob->push(rob_item[i], &send_pack.op_info[i].rob_id));
                             }
                         }
 

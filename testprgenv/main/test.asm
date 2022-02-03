@@ -8,18 +8,79 @@ Disassembly of section .text:
     .section .text.entry
     .global _start
 _start:
-    csrrwi x0, mtvec, 0xf
-80000000:	3057d073          	csrwi	mtvec,15
-80000004:	ffdff06f          	j	80000000 <_start>
+    li x1, 0
+80000000:	00000093          	li	ra,0
+    li x2, 0
+80000004:	00000113          	li	sp,0
+    li x3, 0
+80000008:	00000193          	li	gp,0
+    li x4, 0
+8000000c:	00000213          	li	tp,0
+    li x5, 0
+80000010:	00000293          	li	t0,0
+    li x6, 0
+80000014:	00000313          	li	t1,0
+    li x7, 0
+80000018:	00000393          	li	t2,0
+    li x8, 0
+8000001c:	00000413          	li	s0,0
+    li x9, 0
+80000020:	00000493          	li	s1,0
+    li x10, 0
+80000024:	00000513          	li	a0,0
+
+80000028 <loop>:
+loop:
+    addi x1, x1, 1
+80000028:	00108093          	addi	ra,ra,1
+    addi x2, x2, 1
+8000002c:	00110113          	addi	sp,sp,1
+    addi x3, x3, 1
+80000030:	00118193          	addi	gp,gp,1
+    addi x4, x4, 1
+80000034:	00120213          	addi	tp,tp,1 # 1 <STACK_SIZE-0x3fff>
+    addi x5, x5, 1
+80000038:	00128293          	addi	t0,t0,1
+    addi x6, x6, 1
+8000003c:	00130313          	addi	t1,t1,1
+    addi x7, x7, 1
+80000040:	00138393          	addi	t2,t2,1
+    addi x8, x8, 1
+80000044:	00140413          	addi	s0,s0,1
+    addi x9, x9, 1
+80000048:	00148493          	addi	s1,s1,1
+    addi x10, x10, 1
+8000004c:	00150513          	addi	a0,a0,1
+    addi x1, x1, 1
+80000050:	00108093          	addi	ra,ra,1
+    addi x2, x2, 1
+80000054:	00110113          	addi	sp,sp,1
+    addi x3, x3, 1
+80000058:	00118193          	addi	gp,gp,1
+    addi x4, x4, 1
+8000005c:	00120213          	addi	tp,tp,1 # 1 <STACK_SIZE-0x3fff>
+    addi x5, x5, 1
+80000060:	00128293          	addi	t0,t0,1
+    addi x6, x6, 1
+80000064:	00130313          	addi	t1,t1,1
+    addi x7, x7, 1
+80000068:	00138393          	addi	t2,t2,1
+    addi x8, x8, 1
+8000006c:	00140413          	addi	s0,s0,1
+    addi x9, x9, 1
+80000070:	00148493          	addi	s1,s1,1
+    addi x10, x10, 1
+80000074:	00150513          	addi	a0,a0,1
+80000078:	fb1ff06f          	j	80000028 <loop>
 
 Disassembly of section .osdebug:
 
-80000008 <_osdebug_start>:
+80000080 <_osdebug_start>:
 	...
 
 Disassembly of section .bss:
 
-80002008 <sbss>:
+80002080 <sbss>:
 	...
 
 Disassembly of section .riscv.attributes:
@@ -44,7 +105,8 @@ Disassembly of section .riscv.attributes:
 Disassembly of section .debug_line:
 
 00000000 <.debug_line>:
-   0:	0000003b          	0x3b
+   0:	00e9                	addi	ra,ra,26
+   2:	0000                	unimp
    4:	00210003          	lb	zero,2(sp)
    8:	0000                	unimp
    a:	0101                	addi	sp,sp,0
@@ -69,10 +131,97 @@ Disassembly of section .debug_line:
   32:	0315                	addi	t1,t1,5
   34:	0901                	addi	s2,s2,0
   36:	0004                	0x4
-  38:	0901                	addi	s2,s2,0
-  3a:	0004                	0x4
-  3c:	0100                	addi	s0,sp,128
-  3e:	01              	Address 0x000000000000003e is out of bounds.
+  38:	0301                	addi	t1,t1,0
+  3a:	0901                	addi	s2,s2,0
+  3c:	0004                	0x4
+  3e:	0301                	addi	t1,t1,0
+  40:	0901                	addi	s2,s2,0
+  42:	0004                	0x4
+  44:	0301                	addi	t1,t1,0
+  46:	0901                	addi	s2,s2,0
+  48:	0004                	0x4
+  4a:	0301                	addi	t1,t1,0
+  4c:	0901                	addi	s2,s2,0
+  4e:	0004                	0x4
+  50:	0301                	addi	t1,t1,0
+  52:	0901                	addi	s2,s2,0
+  54:	0004                	0x4
+  56:	0301                	addi	t1,t1,0
+  58:	0901                	addi	s2,s2,0
+  5a:	0004                	0x4
+  5c:	0301                	addi	t1,t1,0
+  5e:	0901                	addi	s2,s2,0
+  60:	0004                	0x4
+  62:	0301                	addi	t1,t1,0
+  64:	0901                	addi	s2,s2,0
+  66:	0004                	0x4
+  68:	0301                	addi	t1,t1,0
+  6a:	0902                	c.slli64	s2
+  6c:	0004                	0x4
+  6e:	0301                	addi	t1,t1,0
+  70:	0901                	addi	s2,s2,0
+  72:	0004                	0x4
+  74:	0301                	addi	t1,t1,0
+  76:	0901                	addi	s2,s2,0
+  78:	0004                	0x4
+  7a:	0301                	addi	t1,t1,0
+  7c:	0901                	addi	s2,s2,0
+  7e:	0004                	0x4
+  80:	0301                	addi	t1,t1,0
+  82:	0901                	addi	s2,s2,0
+  84:	0004                	0x4
+  86:	0301                	addi	t1,t1,0
+  88:	0901                	addi	s2,s2,0
+  8a:	0004                	0x4
+  8c:	0301                	addi	t1,t1,0
+  8e:	0901                	addi	s2,s2,0
+  90:	0004                	0x4
+  92:	0301                	addi	t1,t1,0
+  94:	0901                	addi	s2,s2,0
+  96:	0004                	0x4
+  98:	0301                	addi	t1,t1,0
+  9a:	0901                	addi	s2,s2,0
+  9c:	0004                	0x4
+  9e:	0301                	addi	t1,t1,0
+  a0:	0901                	addi	s2,s2,0
+  a2:	0004                	0x4
+  a4:	0301                	addi	t1,t1,0
+  a6:	0901                	addi	s2,s2,0
+  a8:	0004                	0x4
+  aa:	0301                	addi	t1,t1,0
+  ac:	0901                	addi	s2,s2,0
+  ae:	0004                	0x4
+  b0:	0301                	addi	t1,t1,0
+  b2:	0901                	addi	s2,s2,0
+  b4:	0004                	0x4
+  b6:	0301                	addi	t1,t1,0
+  b8:	0901                	addi	s2,s2,0
+  ba:	0004                	0x4
+  bc:	0301                	addi	t1,t1,0
+  be:	0901                	addi	s2,s2,0
+  c0:	0004                	0x4
+  c2:	0301                	addi	t1,t1,0
+  c4:	0901                	addi	s2,s2,0
+  c6:	0004                	0x4
+  c8:	0301                	addi	t1,t1,0
+  ca:	0901                	addi	s2,s2,0
+  cc:	0004                	0x4
+  ce:	0301                	addi	t1,t1,0
+  d0:	0901                	addi	s2,s2,0
+  d2:	0004                	0x4
+  d4:	0301                	addi	t1,t1,0
+  d6:	0901                	addi	s2,s2,0
+  d8:	0004                	0x4
+  da:	0301                	addi	t1,t1,0
+  dc:	0901                	addi	s2,s2,0
+  de:	0004                	0x4
+  e0:	0301                	addi	t1,t1,0
+  e2:	0901                	addi	s2,s2,0
+  e4:	0004                	0x4
+  e6:	0901                	addi	s2,s2,0
+  e8:	0004                	0x4
+  ea:	0100                	addi	s0,sp,128
+  ec:	01              	Address 0x00000000000000ec is out of bounds.
 
 
 Disassembly of section .debug_info:
@@ -88,7 +237,7 @@ Disassembly of section .debug_info:
    e:	0000                	unimp
   10:	0000                	unimp
   12:	8000                	0x8000
-  14:	0008                	0x8
+  14:	007c                	addi	a5,sp,12
   16:	8000                	0x8000
   18:	0000                	unimp
   1a:	0000                	unimp
@@ -124,7 +273,7 @@ Disassembly of section .debug_aranges:
    e:	0000                	unimp
   10:	0000                	unimp
   12:	8000                	0x8000
-  14:	0008                	0x8
+  14:	007c                	addi	a5,sp,12
 	...
 
 Disassembly of section .debug_str:

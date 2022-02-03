@@ -213,6 +213,7 @@ static void init()
     for(uint32_t i = 1;i < 32;i++)
     {
         rat.set_map(i, i);
+        rat.commit_map(i);
         pipeline::phy_regfile_item_t t_item;
         t_item.value = 0;
         t_item.valid = true;
@@ -253,6 +254,7 @@ static void init()
 
 static bool pause_state = false;
 static bool step_state = false;
+static bool wait_commit = false;
 
 static void cmd_quit()
 {
@@ -263,11 +265,21 @@ static void cmd_continue()
 {
     pause_state = false;
     step_state = false;
+    wait_commit = false;
 }
+
 static void cmd_step()
 {
     pause_state = false;
     step_state = true;
+    wait_commit = false;
+}
+
+static void cmd_stepcommit()
+{
+    pause_state = false;
+    step_state = true;
+    wait_commit = true;
 }
 
 static void cmd_print()
@@ -411,6 +423,29 @@ static void cmd_csr()
     std::cout << std::endl;
 }
 
+static void cmd_arch()
+{
+    std::cout << "Archtecture Registers:" << std::endl;
+
+    for(auto i = 0;i < ARCH_REG_NUM;i++)
+    {
+        if(i == 0)
+        {
+            std::cout << "x0 = 0x" << fillzero(8) << outhex(0) << "(0)" << std::endl;
+        }
+        else
+        {
+            uint32_t phy_id;
+            rat.get_commit_phy_id(i, &phy_id);
+            auto v = phy_regfile.read(phy_id);
+            assert(v.valid);
+            std::cout << "x" << i << " = 0x" << fillzero(8) << outhex(v.value) << "(" << v.value << ") -> " << phy_id << std::endl;
+        }
+    }
+
+    std::cout << std::endl;
+}
+
 typedef void (*cmd_handler)();
 
 typedef struct cmd_desc_t
@@ -423,9 +458,11 @@ static cmd_desc_t cmd_list[] = {
                                {"q", cmd_quit},
                                {"c", cmd_continue},
                                {"s", cmd_step},
+                               {"sc", cmd_stepcommit},
                                {"p", cmd_print},
                                {"rat", cmd_rat},
                                {"csr", cmd_csr},
+                               {"arch", cmd_arch},
                                {"", NULL}
                                };
 
@@ -463,7 +500,7 @@ static void run()
 
     while(1)
     {
-        if(ctrl_c_detected || step_state)
+        if(ctrl_c_detected || (step_state && ((!wait_commit) || (wait_commit && t_commit_feedback_pack.enable && !t_commit_feedback_pack.has_exception))))
         {
             pause_state = true;
 

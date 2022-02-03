@@ -152,7 +152,7 @@ namespace component
             if_print->print(indent + "\t");
         }
 
-        std::cout << "\tOutput:" << std::endl;
+        std::cout << indent << "Output:" << std::endl;
 
         if(!this->get_front(&item))
         {

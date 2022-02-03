@@ -23,27 +23,37 @@ namespace pipeline
 			//handle output
 			if(!rob->is_empty())
 			{
-				this->rob_item = rob->get_front();
 				assert(rob->get_front_id(&this->rob_item_id));
 
-				if(rob_item.finish)
+				for(auto i = 0;i < COMMIT_WIDTH;i++)
 				{
-					rob->pop_sync();
+					this->rob_item = rob->get_item(this->rob_item_id);
 
-					if(rob_item.old_phy_reg_id_valid)
+					if(rob_item.finish)
 					{
-						rat->release_map_sync(rob_item.old_phy_reg_id);
+						rob->pop_sync();
+
+						if(rob_item.old_phy_reg_id_valid)
+						{
+							rat->release_map_sync(rob_item.old_phy_reg_id);
+							rat->commit_map(rob_item.new_phy_reg_id);
+						}
+
+						if(rob_item.has_exception)
+						{
+							feedback_pack.enable = true;
+							feedback_pack.flush = true;
+							cur_state = state_t::flush;
+						}
+						else
+						{
+							feedback_pack.enable = rob->get_next_id(rob_item_id, &feedback_pack.next_handle_rob_id);
+						}
 					}
 
-					if(rob_item.has_exception)
+					if(!rob->get_next_id(this->rob_item_id, &this->rob_item_id))
 					{
-						feedback_pack.enable = true;
-						feedback_pack.flush = true;
-						cur_state = state_t::flush;
-					}
-					else
-					{
-						feedback_pack.enable = rob->get_next_id(rob_item_id, &feedback_pack.next_handle_rob_id);
+						break;
 					}
 				}
 			}

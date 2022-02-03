@@ -53,6 +53,7 @@ namespace pipeline
                     send_pack.op_info[i].rd = rev_pack.op_info[i].rd;
                     send_pack.op_info[i].rd_enable = rev_pack.op_info[i].rd_enable;
                     send_pack.op_info[i].need_rename = rev_pack.op_info[i].need_rename;
+                    send_pack.op_info[i].rd_phy = rev_pack.op_info[i].rd_phy;
 
                     send_pack.op_info[i].csr = rev_pack.op_info[i].csr;
                     send_pack.op_info[i].op = rev_pack.op_info[i].op;

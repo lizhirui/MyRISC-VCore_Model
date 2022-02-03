@@ -56,7 +56,7 @@ namespace pipeline
                 }
                 else
                 {
-                    this->pc += 8;
+                    this->pc += (i1_enable ? 8 : 4);
                 }
 
                 fetch_decode_pack_t t_fetch_decode_pack;

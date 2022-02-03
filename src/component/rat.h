@@ -27,6 +27,7 @@ namespace component
             uint32_t *phy_map_table;
             uint64_t *phy_map_table_valid;
             uint64_t *phy_map_table_visible;
+            uint64_t *phy_map_table_commit;
             uint32_t bitmap_size;
             bool init_rat;
 
@@ -70,6 +71,26 @@ namespace component
                 return phy_map_table_visible[phy_id / bitsizeof(phy_map_table_visible[0])] & (1ULL << (phy_id % bitsizeof(phy_map_table_visible[0])));
             }
 
+            void set_commit(uint32_t phy_id, bool v)
+            {
+                assert(phy_id < phy_reg_num);
+                
+                if(v)
+                {
+                    phy_map_table_commit[phy_id / bitsizeof(phy_map_table_commit[0])] |= 1ULL << (phy_id % bitsizeof(phy_map_table_commit[0]));
+                }
+                else
+                {
+                    phy_map_table_commit[phy_id / bitsizeof(phy_map_table_commit[0])] &= ~(1ULL << (phy_id % bitsizeof(phy_map_table_commit[0])));
+                }
+            }
+
+            bool get_commit(uint32_t phy_id)
+            {
+                assert(phy_id < phy_reg_num);
+                return phy_map_table_commit[phy_id / bitsizeof(phy_map_table_commit[0])] & (1ULL << (phy_id % bitsizeof(phy_map_table_commit[0])));
+            }
+
         public:
             rat(uint32_t phy_reg_num, uint32_t arch_reg_num)
             {
@@ -79,6 +100,7 @@ namespace component
                 bitmap_size = (phy_reg_num + bitsizeof(phy_map_table_valid[0]) - 1) / (bitsizeof(phy_map_table_valid[0]));
                 phy_map_table_valid = new uint64_t[bitmap_size];
                 phy_map_table_visible = new uint64_t[bitmap_size];
+                phy_map_table_commit = new uint64_t[bitmap_size];
                 init_rat = false;
             }
 
@@ -94,6 +116,7 @@ namespace component
                 memset(phy_map_table, 0, sizeof(uint32_t) * phy_reg_num);
                 memset(phy_map_table_valid, 0, sizeof(phy_map_table_valid[0]) * bitmap_size);
                 memset(phy_map_table_visible, 0, sizeof(phy_map_table_visible[0]) * bitmap_size);
+                memset(phy_map_table_commit, 0, sizeof(phy_map_table_commit[0]) * bitmap_size);
                 
                 while(!sync_request_q.empty())
                 {
@@ -146,11 +169,37 @@ namespace component
                 return cnt == 1;
             }
 
+            void get_commit_phy_id(uint32_t arch_id, uint32_t *phy_id)
+            {
+                int cnt = 0;
+                assert((arch_id > 0) && (arch_id < arch_reg_num));
+
+                for(uint32_t i = 0;i < phy_reg_num;i++)
+                {
+                    if(get_valid(i) && get_commit(i) && (phy_map_table[i] == arch_id))
+                    {
+                        *phy_id = i;
+                        cnt++;
+                    }
+                }
+
+                assert(cnt == 1);
+            }
+
+            void commit_map(uint32_t phy_id)
+            {
+                assert(phy_id < phy_reg_num);
+                assert(get_valid(phy_id));
+                assert(!get_commit(phy_id));
+                set_commit(phy_id, true);
+            }
+
             uint32_t set_map(uint32_t arch_id, uint32_t phy_id)
             {
                 uint32_t old_phy_id;
                 assert(phy_id < phy_reg_num);
                 assert((arch_id > 0) && (arch_id < arch_reg_num));
+                assert(!get_valid(phy_id));
                 bool ret = get_phy_id(arch_id, &old_phy_id);
 
                 if(!init_rat)
@@ -162,6 +211,7 @@ namespace component
                 phy_map_table[phy_id] = arch_id;
                 set_valid(phy_id, true);
                 set_visible(phy_id, true);
+                set_commit(phy_id, false);
 
                 if(ret)
                 {
@@ -261,7 +311,7 @@ namespace component
 
             virtual void print(std::string indent)
             {
-                auto col = 6;
+                auto col = 5;
 
                 std::cout << indent << "Register Allocation Table:" << std::endl;
 
@@ -276,7 +326,7 @@ namespace component
                         std::cout << "\t\t";
                     }
 
-                    std::cout << "Phy_ID\tArch_ID\tVisible\tValid";
+                    std::cout << "Phy_ID\tArch_ID\tVisible\tCommit\tValid";
                 }
                 
                 std::cout << std::endl;
@@ -300,7 +350,7 @@ namespace component
                                 std::cout << "\t\t";
                             }
 
-                            std::cout << phy_id << "\t" << phy_map_table[phy_id] << "\t" << outbool(get_visible(phy_id)) << "\t" << outbool(get_valid(phy_id));
+                            std::cout << phy_id << "\t" << phy_map_table[phy_id] << "\t" << outbool(get_visible(phy_id)) << "\t" << outbool(get_commit(phy_id)) << "\t" << outbool(get_valid(phy_id));
                         }
                     }
 

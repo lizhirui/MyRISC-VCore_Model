@@ -181,20 +181,26 @@ namespace pipeline
                         do
                         {
                             auto cur_item = issue_q.get_item(cur_item_id);
+                            auto modified = false;
 
                             if(!cur_item.src1_loaded && cur_item.rs1_need_map && (cur_item.rs1_phy == wb_feedback_pack.channel[i].phy_id))
                             {
                                 cur_item.src1_loaded = true;
                                 cur_item.src1_value = wb_feedback_pack.channel[i].value;
+                                modified = true;
                             }
 
                             if(!cur_item.src2_loaded && cur_item.rs2_need_map && (cur_item.rs2_phy == wb_feedback_pack.channel[i].phy_id))
                             {
                                 cur_item.src2_loaded = true;
                                 cur_item.src2_value = wb_feedback_pack.channel[i].value;
+                                modified = true;
                             }
 
-                            issue_q.set_item_sync(cur_item_id, cur_item);
+                            if(modified)
+                            {
+                                issue_q.set_item_sync(cur_item_id, cur_item);
+                            }
                         }while(issue_q.get_next_id(cur_item_id, &cur_item_id));
                     }
                 }
