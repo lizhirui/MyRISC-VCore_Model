@@ -5,6 +5,7 @@
 #include "../../component/memory.h"
 #include "../issue_execute.h"
 #include "../execute_wb.h"
+#include "../commit.h"
 
 namespace pipeline
 {
@@ -19,7 +20,7 @@ namespace pipeline
 
             public:
                 lsu(component::fifo<issue_execute_pack_t> *issue_lsu_fifo, component::port<execute_wb_pack_t> *lsu_wb_port, component::memory *memory);
-                void run();
+                void run(commit_feedback_pack_t commit_feedback_pack);
         };
     }
 }

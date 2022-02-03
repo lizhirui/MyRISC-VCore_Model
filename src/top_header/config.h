@@ -15,3 +15,5 @@ const uint32_t CSR_UNIT_NUM = 1;
 const uint32_t DIV_UNIT_NUM = 1;
 const uint32_t LSU_UNIT_NUM = 1;
 const uint32_t MUL_UNIT_NUM = 2;
+
+const uint32_t EXECUTE_UNIT_NUM = ALU_UNIT_NUM + BRU_UNIT_NUM + CSR_UNIT_NUM + DIV_UNIT_NUM + LSU_UNIT_NUM + MUL_UNIT_NUM;

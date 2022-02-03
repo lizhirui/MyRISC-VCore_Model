@@ -4,6 +4,7 @@
 #include "../../component/port.h"
 #include "../issue_execute.h"
 #include "../execute_wb.h"
+#include "../commit.h"
 
 namespace pipeline
 {
@@ -24,7 +25,7 @@ namespace pipeline
 
             public:
                 bru(component::fifo<issue_execute_pack_t> *issue_bru_fifo, component::port<execute_wb_pack_t> *bru_wb_port);
-                bru_feedback_pack_t run();
+                bru_feedback_pack_t run(commit_feedback_pack_t commit_feedback_pack);
         };
     }
 }

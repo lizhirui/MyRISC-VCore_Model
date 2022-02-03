@@ -14,13 +14,13 @@ namespace pipeline
             this->alu_wb_port = alu_wb_port;
         }
 
-        void alu::run()
+        void alu::run(commit_feedback_pack_t commit_feedback_pack)
         {
             execute_wb_pack_t send_pack;
 
             memset(&send_pack, 0, sizeof(send_pack));
 
-            if(!issue_alu_fifo->is_empty())
+            if(!issue_alu_fifo->is_empty() && !(commit_feedback_pack.enable && commit_feedback_pack.flush))
             {
                 issue_execute_pack_t rev_pack;
                 assert(issue_alu_fifo->pop(&rev_pack));

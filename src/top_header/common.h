@@ -3,7 +3,13 @@
 //import header files
 #include <cstddef>
 #include <cstdint>
-#include <cassert>
+#ifdef NDEBUG
+    #undef NDEBUG
+    #include <cassert>
+    #define NDEBUG 1
+#else
+    #include <cassert>
+#endif
 #include <iostream>
 #include <fstream>
 #include <sstream>

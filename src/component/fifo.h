@@ -17,6 +17,7 @@ namespace component
         public:
             fifo(uint32_t size);
             ~fifo();
+            void flush();
             bool push(T element);
             bool pop(T *element);
             bool get_front(T *element);
@@ -42,6 +43,15 @@ namespace component
     fifo<T>::~fifo()
     {
         delete[] buffer;
+    }
+
+    template<typename T>
+    void fifo<T>::flush()
+    {
+        wptr = 0;
+        wstage = false;
+        rptr = 0;
+        rstage = false;
     }
 
     template<typename T>

@@ -11,7 +11,7 @@ namespace pipeline
             this->bru_wb_port = bru_wb_port;
         }
 
-        bru_feedback_pack_t bru::run()
+        bru_feedback_pack_t bru::run(commit_feedback_pack_t commit_feedback_pack)
         {
             execute_wb_pack_t send_pack;
             bru_feedback_pack_t feedback_pack;
@@ -19,7 +19,7 @@ namespace pipeline
             memset(&send_pack, 0, sizeof(send_pack));
             memset(&feedback_pack, 0, sizeof(feedback_pack));
 
-            if(!issue_bru_fifo->is_empty())
+            if(!issue_bru_fifo->is_empty() && !(commit_feedback_pack.enable && commit_feedback_pack.flush))
             {
                 issue_execute_pack_t rev_pack;
                 assert(issue_bru_fifo->pop(&rev_pack));

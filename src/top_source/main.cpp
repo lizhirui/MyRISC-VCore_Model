@@ -24,6 +24,9 @@
 #include "../pipeline/execute/lsu.h"
 #include "../pipeline/execute/mul.h"
 #include "../pipeline/execute_wb.h"
+#include "../pipeline/wb.h"
+#include "../pipeline/wb_commit.h"
+#include "../pipeline/commit.h"
 
 #ifdef WIN32
     #include <windows.h>
@@ -36,10 +39,11 @@ static uint64_t cpu_clock_cycle = 0;
 static component::fifo<pipeline::fetch_decode_pack_t> fetch_decode_fifo(16);
 static component::fifo<pipeline::decode_rename_pack_t> decode_rename_fifo(16);
 static pipeline::rename_readreg_pack_t default_rename_readreg_pack;
+static pipeline::readreg_issue_pack_t default_readreg_issue_pack;
 static pipeline::execute_wb_pack_t default_execute_wb_pack;
+static pipeline::wb_commit_pack_t default_wb_commit_pack;
 
 static component::port<pipeline::rename_readreg_pack_t> rename_readreg_port(default_rename_readreg_pack);
-static pipeline::readreg_issue_pack_t default_readreg_issue_pack;
 static component::port<pipeline::readreg_issue_pack_t> readreg_issue_port(default_readreg_issue_pack);
 static component::fifo<pipeline::issue_execute_pack_t> *issue_alu_fifo[ALU_UNIT_NUM];
 static component::fifo<pipeline::issue_execute_pack_t> *issue_bru_fifo[BRU_UNIT_NUM];
@@ -54,6 +58,8 @@ static component::port<pipeline::execute_wb_pack_t> *csr_wb_port[CSR_UNIT_NUM];
 static component::port<pipeline::execute_wb_pack_t> *div_wb_port[DIV_UNIT_NUM];
 static component::port<pipeline::execute_wb_pack_t> *lsu_wb_port[LSU_UNIT_NUM];
 static component::port<pipeline::execute_wb_pack_t> *mul_wb_port[MUL_UNIT_NUM];
+
+static component::port<pipeline::wb_commit_pack_t> wb_commit_port(default_wb_commit_pack);
 
 static component::memory memory(0x80000000, 64 * 0x1000);
 static component::rat rat(PHY_REG_NUM, ARCH_REG_NUM);
@@ -72,9 +78,13 @@ static pipeline::execute::csr *execute_csr_stage[CSR_UNIT_NUM];
 static pipeline::execute::div *execute_div_stage[DIV_UNIT_NUM];
 static pipeline::execute::lsu *execute_lsu_stage[LSU_UNIT_NUM];
 static pipeline::execute::mul *execute_mul_stage[MUL_UNIT_NUM];
+static pipeline::wb wb_stage(alu_wb_port, bru_wb_port, csr_wb_port, div_wb_port, lsu_wb_port, mul_wb_port, &wb_commit_port, &phy_regfile);
+static pipeline::commit commit_stage(&wb_commit_port, &rat, &rob, &csr_file);
 
 static pipeline::issue_feedback_pack_t t_issue_feedback_pack;
 static pipeline::execute::bru_feedback_pack_t t_bru_feedback_pack;
+static pipeline::wb_feedback_pack_t t_wb_feedback_pack;
+static pipeline::commit_feedback_pack_t t_commit_feedback_pack;
 
 static void init()
 {
@@ -102,10 +112,6 @@ static void init()
     }
 
     std::cout << "test.bin Read OK!Bytes(" << sizeof(buf) << "Byte-Block):" << n << std::endl;
-
-    memset(&default_rename_readreg_pack, 0, sizeof(default_rename_readreg_pack));
-    memset(&default_readreg_issue_pack, 0, sizeof(default_readreg_issue_pack));
-    memset(&default_execute_wb_pack, 0, sizeof(default_execute_wb_pack));
 
     for(auto i = 0;i < ALU_UNIT_NUM;i++)
     {
@@ -199,6 +205,8 @@ static void init()
 
     std::memset(&t_issue_feedback_pack, 0, sizeof(t_issue_feedback_pack));
     std::memset(&t_bru_feedback_pack, 0, sizeof(t_bru_feedback_pack));
+    std::memset(&t_wb_feedback_pack, 0, sizeof(t_wb_feedback_pack));
+    std::memset(&t_commit_feedback_pack, 0, sizeof(t_commit_feedback_pack));
 
     rat.init_start();
 
@@ -213,22 +221,22 @@ static void init()
 
     rat.init_finish();
 
-    csr_file.map(0xf11, true, std::make_shared<component::csr::mvendorid>());
-    csr_file.map(0xf12, true, std::make_shared<component::csr::marchid>());
-    csr_file.map(0xf13, true, std::make_shared<component::csr::mimpid>());
-    csr_file.map(0xf14, true, std::make_shared<component::csr::mhartid>());
-    csr_file.map(0xf15, true, std::make_shared<component::csr::mconfigptr>());
-    csr_file.map(0x300, false, std::make_shared<component::csr::mstatus>());
-    csr_file.map(0x301, false, std::make_shared<component::csr::misa>());
-    csr_file.map(0x304, false, std::make_shared<component::csr::mie>());
-    csr_file.map(0x305, false, std::make_shared<component::csr::mtvec>());
-    csr_file.map(0x306, false, std::make_shared<component::csr::mcounteren>());
-    csr_file.map(0x310, false, std::make_shared<component::csr::mstatush>());
-    csr_file.map(0x340, false, std::make_shared<component::csr::mscratch>());
-    csr_file.map(0x341, false, std::make_shared<component::csr::mepc>());
-    csr_file.map(0x342, false, std::make_shared<component::csr::mcause>());
-    csr_file.map(0x343, false, std::make_shared<component::csr::mtval>());
-    csr_file.map(0x344, false, std::make_shared<component::csr::mip>());
+    csr_file.map(CSR_MVENDORID, true, std::make_shared<component::csr::mvendorid>());
+    csr_file.map(CSR_MARCHID, true, std::make_shared<component::csr::marchid>());
+    csr_file.map(CSR_MIMPID, true, std::make_shared<component::csr::mimpid>());
+    csr_file.map(CSR_MHARTID, true, std::make_shared<component::csr::mhartid>());
+    csr_file.map(CSR_MCONFIGPTR, true, std::make_shared<component::csr::mconfigptr>());
+    csr_file.map(CSR_MSTATUS, false, std::make_shared<component::csr::mstatus>());
+    csr_file.map(CSR_MISA, false, std::make_shared<component::csr::misa>());
+    csr_file.map(CSR_MIE, false, std::make_shared<component::csr::mie>());
+    csr_file.map(CSR_MTVEC, false, std::make_shared<component::csr::mtvec>());
+    csr_file.map(CSR_MCOUNTEREN, false, std::make_shared<component::csr::mcounteren>());
+    csr_file.map(CSR_MSTATUSH, false, std::make_shared<component::csr::mstatush>());
+    csr_file.map(CSR_MSCRATCH, false, std::make_shared<component::csr::mscratch>());
+    csr_file.map(CSR_MEPC, false, std::make_shared<component::csr::mepc>());
+    csr_file.map(CSR_MCAUSE, false, std::make_shared<component::csr::mcause>());
+    csr_file.map(CSR_MTVAL, false, std::make_shared<component::csr::mtval>());
+    csr_file.map(CSR_MIP, false, std::make_shared<component::csr::mip>());
 
     for(auto i = 0;i < 16;i++)
     {
@@ -239,6 +247,8 @@ static void init()
     {
         csr_file.map(0x3B0 + i, false, std::make_shared<component::csr::pmpaddr>(i));
     }
+
+    wb_stage.init();
 }
 
 static bool pause_state = false;
@@ -384,6 +394,9 @@ static void cmd_print()
     }
    
     std::cout << std::endl;
+    std::cout << "WB->COMMIT:" << std::endl;
+    wb_commit_port.print("\t");
+    std::cout << std::endl;
 }
 
 static void cmd_rat()
@@ -482,41 +495,44 @@ static void run()
             ctrl_c_detected = false;
         }
 
+        t_commit_feedback_pack = commit_stage.run();
+        t_wb_feedback_pack = wb_stage.run(t_commit_feedback_pack);
+
         for(auto i = 0;i < ALU_UNIT_NUM;i++)
         {
-            execute_alu_stage[i]->run();
+            execute_alu_stage[i]->run(t_commit_feedback_pack);
         }
 
         for(auto i = 0;i < BRU_UNIT_NUM;i++)
         {
-            t_bru_feedback_pack = execute_bru_stage[i]->run();
+            t_bru_feedback_pack = execute_bru_stage[i]->run(t_commit_feedback_pack);
         }
 
         for(auto i = 0;i < CSR_UNIT_NUM;i++)
         {
-            execute_csr_stage[i]->run();
+            execute_csr_stage[i]->run(t_commit_feedback_pack);
         }
 
         for(auto i = 0;i < DIV_UNIT_NUM;i++)
         {
-            execute_div_stage[i]->run();
+            execute_div_stage[i]->run(t_commit_feedback_pack);
         }
 
         for(auto i = 0;i < LSU_UNIT_NUM;i++)
         {
-            execute_lsu_stage[i]->run();
+            execute_lsu_stage[i]->run(t_commit_feedback_pack);
         }
 
         for(auto i = 0;i < MUL_UNIT_NUM;i++)
         {
-            execute_mul_stage[i]->run();
+            execute_mul_stage[i]->run(t_commit_feedback_pack);
         }
 
-        t_issue_feedback_pack = issue_stage.run();
-        readreg_stage.run(t_issue_feedback_pack);
-        rename_stage.run(t_issue_feedback_pack);
-        decode_stage.run();
-        fetch_stage.run(t_bru_feedback_pack);
+        t_issue_feedback_pack = issue_stage.run(t_wb_feedback_pack, t_commit_feedback_pack);
+        readreg_stage.run(t_issue_feedback_pack, t_commit_feedback_pack);
+        rename_stage.run(t_issue_feedback_pack, t_commit_feedback_pack);
+        decode_stage.run(t_commit_feedback_pack);
+        fetch_stage.run(t_bru_feedback_pack, t_commit_feedback_pack);
         rat.sync();
         rob.sync();
         phy_regfile.sync();

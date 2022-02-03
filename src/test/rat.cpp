@@ -11,7 +11,7 @@ namespace test
             component::rat rat(512, 32);
             uint32_t phy_id = 0;
             uint32_t new_phy_id = 0;
-            uint32_t free_phy[512];
+            uint32_t free_phy[512] = {0};
             
             rat.init_start();
 

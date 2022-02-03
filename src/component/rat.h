@@ -9,7 +9,8 @@ namespace component
             enum class sync_request_type_t
             {
                 set_map,
-                release_map
+                release_map,
+                restore_map
             };
 
             typedef struct sync_request_t
@@ -179,6 +180,21 @@ namespace component
                  set_valid(phy_id, false);
             }
 
+            void restore_map(uint32_t new_phy_id, uint32_t old_phy_id)
+            {
+                assert(new_phy_id < phy_reg_num);
+                assert(old_phy_id < phy_reg_num);
+                assert(get_valid(new_phy_id));
+                assert(get_valid(old_phy_id));
+                assert(get_visible(new_phy_id));
+                assert(!get_visible(old_phy_id));
+                phy_map_table[new_phy_id] = 0;
+                set_valid(new_phy_id, false);
+                set_visible(new_phy_id, false);
+                set_valid(old_phy_id, true);
+                set_visible(old_phy_id, true);
+            }
+
             /*
             void mask_map(uint32_t phy_id)
             {
@@ -207,6 +223,16 @@ namespace component
                 sync_request_q.push(t_req);
             }
 
+            void restore_map_sync(uint32_t new_phy_id, uint32_t old_phy_id)
+            {
+                sync_request_t t_req;
+                
+                t_req.req = sync_request_type_t::restore_map;
+                t_req.arg1 = new_phy_id;
+                t_req.arg2 = old_phy_id;
+                sync_request_q.push(t_req);
+            }
+
             void sync()
             {
                 sync_request_t t_req;
@@ -224,6 +250,10 @@ namespace component
 
                         case sync_request_type_t::release_map:
                             release_map(t_req.arg1);
+                            break;
+                        
+                        case sync_request_type_t::restore_map:
+                            restore_map(t_req.arg1, t_req.arg2);
                             break;
                     }
                 }

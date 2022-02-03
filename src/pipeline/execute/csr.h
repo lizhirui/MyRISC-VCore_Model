@@ -5,6 +5,7 @@
 #include "../../component/csrfile.h"
 #include "../issue_execute.h"
 #include "../execute_wb.h"
+#include "../commit.h"
 
 namespace pipeline
 {
@@ -30,7 +31,7 @@ namespace pipeline
 
             public:
                 csr(component::fifo<issue_execute_pack_t> *issue_csr_fifo, component::port<execute_wb_pack_t> *csr_wb_port, component::csrfile *csr_file);
-                void run();
+                void run(commit_feedback_pack_t commit_feedback_pack);
         };
     }
 }

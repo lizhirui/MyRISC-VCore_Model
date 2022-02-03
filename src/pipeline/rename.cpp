@@ -15,7 +15,7 @@ namespace pipeline
         this->busy = false;
     }
 
-    void rename::run(issue_feedback_pack_t issue_pack)
+    void rename::run(issue_feedback_pack_t issue_pack, commit_feedback_pack_t commit_feedback_pack)
     {
         decode_rename_pack_t rev_pack;
         rename_readreg_pack_t null_send_pack;
@@ -24,139 +24,151 @@ namespace pipeline
         memset(&rev_pack, 0, sizeof(rev_pack));
         memset(&null_send_pack, 0, sizeof(null_send_pack));
 
-        if(!stall)
+        if(!(commit_feedback_pack.enable && commit_feedback_pack.flush))
         {
-            this->rename_readreg_port->set(null_send_pack);//bubble
-
-            if(!this->busy)
+            if(!stall)
             {
-                if(!decode_rename_fifo->is_empty())
-                {
-                    decode_rename_fifo->pop(&rev_pack);
-                    this->busy = true;
-                }
-            }
+                this->rename_readreg_port->set(null_send_pack);//bubble
 
-            if(this->busy)
-            {
-                rename_readreg_pack_t send_pack;
-                memset(&send_pack, 0, sizeof(send_pack));
-
-                //generate base send_pack
-                for(uint32_t i = 0;i < RENAME_WIDTH;i++)
+                if(!this->busy)
                 {
-                    send_pack.op_info[i].enable = rev_pack.op_info[i].enable;
-                    send_pack.op_info[i].value = rev_pack.op_info[i].value;
-                    send_pack.op_info[i].valid = rev_pack.op_info[i].valid;
-                    send_pack.op_info[i].pc = rev_pack.op_info[i].pc;
-                    send_pack.op_info[i].imm = rev_pack.op_info[i].imm;
-                    send_pack.op_info[i].has_exception = rev_pack.op_info[i].has_exception;
-                    send_pack.op_info[i].exception_id = rev_pack.op_info[i].exception_id;
-                    send_pack.op_info[i].exception_value = rev_pack.op_info[i].exception_value;
-                    send_pack.op_info[i].rs1 = rev_pack.op_info[i].rs1;
-                    send_pack.op_info[i].arg1_src = rev_pack.op_info[i].arg1_src;
-                    send_pack.op_info[i].rs1_need_map = rev_pack.op_info[i].rs1_need_map;
-                    send_pack.op_info[i].rs2 = rev_pack.op_info[i].rs2;
-                    send_pack.op_info[i].arg2_src = rev_pack.op_info[i].arg2_src;
-                    send_pack.op_info[i].rs2_need_map = rev_pack.op_info[i].rs2_need_map;
-                    send_pack.op_info[i].rd = rev_pack.op_info[i].rd;
-                    send_pack.op_info[i].rd_enable = rev_pack.op_info[i].rd_enable;
-                    send_pack.op_info[i].need_rename = rev_pack.op_info[i].need_rename;
-                    send_pack.op_info[i].csr = rev_pack.op_info[i].csr;
-                    send_pack.op_info[i].op = rev_pack.op_info[i].op;
-                    send_pack.op_info[i].op_unit = rev_pack.op_info[i].op_unit;
-                    memcpy(&send_pack.op_info[i].sub_op, &rev_pack.op_info[i].sub_op, sizeof(rev_pack.op_info[i].sub_op));
-                }
-
-                //count new physical registers requirement and rob requirement
-                uint32_t phy_reg_req_cnt = 0;
-                uint32_t rob_req_cnt = 0;
-            
-                for(uint32_t i = 0;i < RENAME_WIDTH;i++)
-                {
-                    if(rev_pack.op_info[i].enable && rev_pack.op_info[i].valid && rev_pack.op_info[i].need_rename)
+                    if(!decode_rename_fifo->is_empty())
                     {
-                        phy_reg_req_cnt++;
-                    }
-
-                    if(rev_pack.op_info[i].enable && rev_pack.op_info[i].valid)
-                    {
-                        rob_req_cnt++;
+                        decode_rename_fifo->pop(&rev_pack);
+                        this->busy = true;
                     }
                 }
 
-                //start to rename
-                uint32_t new_phy_reg_id[RENAME_WIDTH];
-
-                if(rat->get_free_phy_id(phy_reg_req_cnt, new_phy_reg_id) && rob->get_free_space() >= (rob_req_cnt))
+                if(this->busy)
                 {
-                    //generate rob items
+                    rename_readreg_pack_t send_pack;
+                    memset(&send_pack, 0, sizeof(send_pack));
+
+                    //generate base send_pack
                     for(uint32_t i = 0;i < RENAME_WIDTH;i++)
                     {
-                        if(rev_pack.op_info[i].enable && rev_pack.op_info[i].valid)
-                        {
-                            component::rob_item_t item;
-
-                            if(rev_pack.op_info[i].rs1_need_map)
-                            {
-                                item.old_phy_reg_id_valid = true;
-                                assert(rat->get_phy_id(rev_pack.op_info[i].rs1, &item.old_phy_reg_id));
-                            }
-                            else
-                            {
-                                item.old_phy_reg_id_valid = false;
-                                item.old_phy_reg_id = 0;
-                            }
-
-                            item.finish = false;
-                            assert(rob->push(item, &send_pack.op_info[i].rob_id));
-                        }
+                        send_pack.op_info[i].enable = rev_pack.op_info[i].enable;
+                        send_pack.op_info[i].value = rev_pack.op_info[i].value;
+                        send_pack.op_info[i].valid = rev_pack.op_info[i].valid;
+                        send_pack.op_info[i].pc = rev_pack.op_info[i].pc;
+                        send_pack.op_info[i].imm = rev_pack.op_info[i].imm;
+                        send_pack.op_info[i].has_exception = rev_pack.op_info[i].has_exception;
+                        send_pack.op_info[i].exception_id = rev_pack.op_info[i].exception_id;
+                        send_pack.op_info[i].exception_value = rev_pack.op_info[i].exception_value;
+                        send_pack.op_info[i].rs1 = rev_pack.op_info[i].rs1;
+                        send_pack.op_info[i].arg1_src = rev_pack.op_info[i].arg1_src;
+                        send_pack.op_info[i].rs1_need_map = rev_pack.op_info[i].rs1_need_map;
+                        send_pack.op_info[i].rs2 = rev_pack.op_info[i].rs2;
+                        send_pack.op_info[i].arg2_src = rev_pack.op_info[i].arg2_src;
+                        send_pack.op_info[i].rs2_need_map = rev_pack.op_info[i].rs2_need_map;
+                        send_pack.op_info[i].rd = rev_pack.op_info[i].rd;
+                        send_pack.op_info[i].rd_enable = rev_pack.op_info[i].rd_enable;
+                        send_pack.op_info[i].need_rename = rev_pack.op_info[i].need_rename;
+                        send_pack.op_info[i].csr = rev_pack.op_info[i].csr;
+                        send_pack.op_info[i].op = rev_pack.op_info[i].op;
+                        send_pack.op_info[i].op_unit = rev_pack.op_info[i].op_unit;
+                        memcpy(&send_pack.op_info[i].sub_op, &rev_pack.op_info[i].sub_op, sizeof(rev_pack.op_info[i].sub_op));
                     }
 
-                    for(uint32_t i = 0,j = 0;i < RENAME_WIDTH;i++)
+                    //count new physical registers requirement and rob requirement
+                    uint32_t phy_reg_req_cnt = 0;
+                    uint32_t rob_req_cnt = 0;
+            
+                    for(uint32_t i = 0;i < RENAME_WIDTH;i++)
                     {
                         if(rev_pack.op_info[i].enable && rev_pack.op_info[i].valid && rev_pack.op_info[i].need_rename)
                         {
-                            send_pack.op_info[i].rd_phy = new_phy_reg_id[j++];
-                            rat->set_map_sync(rev_pack.op_info[i].rd, send_pack.op_info[i].rd_phy);
+                            phy_reg_req_cnt++;
+                        }
+
+                        if(rev_pack.op_info[i].enable)
+                        {
+                            rob_req_cnt++;
                         }
                     }
 
-                    //start to map source registers
-                    for(uint32_t i = 0;i < RENAME_WIDTH;i++)
+                    //start to rename
+                    uint32_t new_phy_reg_id[RENAME_WIDTH];
+
+                    if(rat->get_free_phy_id(phy_reg_req_cnt, new_phy_reg_id) && rob->get_free_space() >= (rob_req_cnt))
                     {
-                        if(rev_pack.op_info[i].enable && rev_pack.op_info[i].valid && rev_pack.op_info[i].rs1_need_map)
+                        //generate rob items
+                        for(uint32_t i = 0;i < RENAME_WIDTH;i++)
                         {
-                            if(rev_pack.op_info[i].rs1_need_map)
+                            if(rev_pack.op_info[i].enable)
                             {
-                                assert(rat->get_phy_id(rev_pack.op_info[i].rs1, &send_pack.op_info[i].rs1_phy));
+                                component::rob_item_t item;
+
+                                if(rev_pack.op_info[i].valid)
+                                {
+                                    if(rev_pack.op_info[i].rs1_need_map)
+                                    {
+                                        item.old_phy_reg_id_valid = true;
+                                        assert(rat->get_phy_id(rev_pack.op_info[i].rs1, &item.old_phy_reg_id));
+                                    }
+                                    else
+                                    {
+                                        item.old_phy_reg_id_valid = false;
+                                        item.old_phy_reg_id = 0;
+                                    }
+                                }
+
+                                item.finish = false;
+                                assert(rob->push(item, &send_pack.op_info[i].rob_id));
+                            }
+                        }
+
+                        for(uint32_t i = 0,j = 0;i < RENAME_WIDTH;i++)
+                        {
+                            if(rev_pack.op_info[i].enable && rev_pack.op_info[i].valid && rev_pack.op_info[i].need_rename)
+                            {
+                                send_pack.op_info[i].rd_phy = new_phy_reg_id[j++];
+                                rat->set_map_sync(rev_pack.op_info[i].rd, send_pack.op_info[i].rd_phy);
+                            }
+                        }
+
+                        //start to map source registers
+                        for(uint32_t i = 0;i < RENAME_WIDTH;i++)
+                        {
+                            if(rev_pack.op_info[i].enable && rev_pack.op_info[i].valid && rev_pack.op_info[i].rs1_need_map)
+                            {
+                                if(rev_pack.op_info[i].rs1_need_map)
+                                {
+                                    assert(rat->get_phy_id(rev_pack.op_info[i].rs1, &send_pack.op_info[i].rs1_phy));
+                                }
+
+                                if(rev_pack.op_info[i].rs2_need_map)
+                                {
+                                    assert(rat->get_phy_id(rev_pack.op_info[i].rs2, &send_pack.op_info[i].rs2_phy));
+                                }
+                            }
+                        }
+
+                        //source registers feedback
+                        if(rev_pack.op_info[0].enable && rev_pack.op_info[0].valid && rev_pack.op_info[0].rd_enable && rev_pack.op_info[1].enable && rev_pack.op_info[1].valid)
+                        {
+                            if(rev_pack.op_info[1].rs1_need_map && (rev_pack.op_info[1].rs1 == rev_pack.op_info[0].rd))
+                            {
+                                send_pack.op_info[1].rs1_phy = send_pack.op_info[0].rd_phy;
                             }
 
-                            if(rev_pack.op_info[i].rs2_need_map)
+                            if(rev_pack.op_info[1].rs2_need_map && (rev_pack.op_info[1].rs2 == rev_pack.op_info[0].rd))
                             {
-                                assert(rat->get_phy_id(rev_pack.op_info[i].rs2, &send_pack.op_info[i].rs2_phy));
+                                send_pack.op_info[1].rs2_phy = send_pack.op_info[0].rd_phy;
                             }
                         }
+
+                        rename_readreg_port->set(send_pack);
+                        this->busy = false;
                     }
-
-                    //source registers feedback
-                    if(rev_pack.op_info[0].enable && rev_pack.op_info[0].valid && rev_pack.op_info[0].rd_enable && rev_pack.op_info[1].enable && rev_pack.op_info[1].valid)
-                    {
-                        if(rev_pack.op_info[1].rs1_need_map && (rev_pack.op_info[1].rs1 == rev_pack.op_info[0].rd))
-                        {
-                            send_pack.op_info[1].rs1_phy = send_pack.op_info[0].rd_phy;
-                        }
-
-                        if(rev_pack.op_info[1].rs2_need_map && (rev_pack.op_info[1].rs2 == rev_pack.op_info[0].rd))
-                        {
-                            send_pack.op_info[1].rs2_phy = send_pack.op_info[0].rd_phy;
-                        }
-                    }
-
-                    rename_readreg_port->set(send_pack);
-                    this->busy = false;
                 }
             }
+        }
+        else
+        {
+            rename_readreg_pack_t send_pack;
+            memset(&send_pack, 0, sizeof(send_pack));
+            rename_readreg_port->set(send_pack);
         }
     }
 }
