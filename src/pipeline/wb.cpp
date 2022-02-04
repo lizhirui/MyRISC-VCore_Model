@@ -77,7 +77,7 @@ namespace pipeline
                 send_pack.op_info[i].rs1_need_map = rev_pack.rs1_need_map;
                 send_pack.op_info[i].rs1_phy = rev_pack.rs1_phy;
                 send_pack.op_info[i].src1_value = rev_pack.src1_value;
-                send_pack.op_info[i].src1_loaded = send_pack.op_info[i].src1_loaded;
+                send_pack.op_info[i].src1_loaded = rev_pack.src1_loaded;
 
                 send_pack.op_info[i].rs2 = rev_pack.rs2;
                 send_pack.op_info[i].arg2_src = rev_pack.arg2_src;

@@ -15,6 +15,20 @@ namespace component
         bool has_exception;
         riscv_exception_t exception_id;
         uint32_t exception_value;
+
+        virtual void print(std::string indent)
+        {
+            std::string blank = "    ";
+            std::cout << indent << "new_phy_reg_id = " << new_phy_reg_id;
+            std::cout << blank << "old_phy_reg_id = " << old_phy_reg_id;
+            std::cout << blank << "old_phy_reg_id_valid = " << outbool(old_phy_reg_id_valid);
+            std::cout << blank << "finish = " << outbool(finish);
+            std::cout << blank << "pc = 0x" << fillzero(8) << outhex(pc);
+            std::cout << blank << "inst_value = 0x" << fillzero(8) << outhex(inst_value);
+            std::cout << blank << "has_exception = " << outbool(has_exception);
+            std::cout << blank << "exception_id = " << outenum(exception_id);
+            std::cout << blank << "exception_value = 0x" << fillzero(8) << outhex(exception_value) << std::endl;
+        }
     }rob_item_t;
 
     class rob : public fifo<rob_item_t>

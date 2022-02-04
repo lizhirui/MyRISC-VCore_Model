@@ -79,7 +79,7 @@ static pipeline::execute::div *execute_div_stage[DIV_UNIT_NUM];
 static pipeline::execute::lsu *execute_lsu_stage[LSU_UNIT_NUM];
 static pipeline::execute::mul *execute_mul_stage[MUL_UNIT_NUM];
 static pipeline::wb wb_stage(alu_wb_port, bru_wb_port, csr_wb_port, div_wb_port, lsu_wb_port, mul_wb_port, &wb_commit_port, &phy_regfile);
-static pipeline::commit commit_stage(&wb_commit_port, &rat, &rob, &csr_file);
+static pipeline::commit commit_stage(&wb_commit_port, &rat, &rob, &csr_file, &phy_regfile);
 
 static pipeline::issue_feedback_pack_t t_issue_feedback_pack;
 static pipeline::execute::bru_feedback_pack_t t_bru_feedback_pack;
@@ -417,6 +417,12 @@ static void cmd_rat()
     std::cout << std::endl;
 }
 
+static void cmd_rob()
+{
+    rob.print("");
+    std::cout << std::endl;
+}
+
 static void cmd_csr()
 {
     csr_file.print("");
@@ -461,6 +467,7 @@ static cmd_desc_t cmd_list[] = {
                                {"sc", cmd_stepcommit},
                                {"p", cmd_print},
                                {"rat", cmd_rat},
+                               {"rob", cmd_rob},
                                {"csr", cmd_csr},
                                {"arch", cmd_arch},
                                {"", NULL}
@@ -566,7 +573,7 @@ static void run()
         }
 
         t_issue_feedback_pack = issue_stage.run(t_wb_feedback_pack, t_commit_feedback_pack);
-        readreg_stage.run(t_issue_feedback_pack, t_commit_feedback_pack);
+        readreg_stage.run(t_issue_feedback_pack, t_wb_feedback_pack, t_commit_feedback_pack);
         rename_stage.run(t_issue_feedback_pack, t_commit_feedback_pack);
         decode_stage.run(t_commit_feedback_pack);
         fetch_stage.run(t_bru_feedback_pack, t_commit_feedback_pack);

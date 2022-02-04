@@ -17,11 +17,9 @@ namespace pipeline
 
     void rename::run(issue_feedback_pack_t issue_pack, commit_feedback_pack_t commit_feedback_pack)
     {
-        decode_rename_pack_t rev_pack;
         rename_readreg_pack_t null_send_pack;
         bool stall = issue_pack.stall;
-
-        memset(&rev_pack, 0, sizeof(rev_pack));
+        
         memset(&null_send_pack, 0, sizeof(null_send_pack));
 
         if(!(commit_feedback_pack.enable && commit_feedback_pack.flush))
@@ -92,8 +90,9 @@ namespace pipeline
 
                     if(rat->get_free_phy_id(phy_reg_req_cnt, new_phy_reg_id) && rob->get_free_space() >= (rob_req_cnt))
                     {
-                        //generate rob items
+                        //generate rob items&
                         component::rob_item_t rob_item[RENAME_WIDTH];
+                        memset(rob_item, 0 ,sizeof(rob_item));
 
                         for(uint32_t i = 0;i < RENAME_WIDTH;i++)
                         {

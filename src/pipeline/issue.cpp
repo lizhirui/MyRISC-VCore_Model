@@ -23,6 +23,8 @@ namespace pipeline
         
         if(!(commit_feedback_pack.enable && commit_feedback_pack.flush))
         {
+            uint32_t output_item_cnt = 0;
+
             //handle output
             if(!issue_q.is_empty())
             {
@@ -48,10 +50,37 @@ namespace pipeline
                 {
                     if(items[i].enable)
                     {
+                        bool src1_feedback = false;
+                        uint32_t src1_feedback_value = 0;
+                        bool src2_feedback = false;
+                        uint32_t src2_feedback_value = 0;
+
                         //wait src load
                         if(!(items[i].src1_loaded && items[i].src2_loaded))
                         {
-                            break;
+                            //attempt to get feedback from wb
+                            for(auto j = 0;j < EXECUTE_UNIT_NUM;j++)
+                            {
+                                if(wb_feedback_pack.channel[j].enable)
+                                {
+                                    if(!items[i].src1_loaded && items[i].rs1_need_map && (items[i].rs1_phy == wb_feedback_pack.channel[j].phy_id))
+                                    {
+                                        src1_feedback = true;
+                                        src1_feedback_value = wb_feedback_pack.channel[j].value;
+                                    }
+
+                                    if(!items[i].src2_loaded && items[i].rs2_need_map && (items[i].rs2_phy == wb_feedback_pack.channel[j].phy_id))
+                                    {
+                                        src2_feedback = true;
+                                        src2_feedback_value = wb_feedback_pack.channel[j].value;
+                                    }
+                                }
+                            }
+
+                            if(!((src1_feedback || items[i].src1_loaded) && (src2_feedback || items[i].src2_loaded)))
+                            {
+                                break;
+                            }
                         }
 
                         issue_execute_pack_t send_pack;
@@ -71,15 +100,15 @@ namespace pipeline
                         send_pack.arg1_src = items[i].arg1_src;
                         send_pack.rs1_need_map = items[i].rs1_need_map;
                         send_pack.rs1_phy = items[i].rs1_phy;
-                        send_pack.src1_value = items[i].src1_value;
-                        send_pack.src1_loaded = items[i].src1_loaded;
+                        send_pack.src1_value = src1_feedback ? src1_feedback_value : items[i].src1_value;
+                        send_pack.src1_loaded = src1_feedback || items[i].src1_loaded;
                     
                         send_pack.rs2 = items[i].rs2;
                         send_pack.arg2_src = items[i].arg2_src;
                         send_pack.rs2_need_map = items[i].rs2_need_map;
                         send_pack.rs2_phy = items[i].rs2_phy;
-                        send_pack.src2_value = items[i].src2_value;
-                        send_pack.src2_loaded = items[i].src2_loaded;
+                        send_pack.src2_value = src2_feedback ? src2_feedback_value : items[i].src2_value;
+                        send_pack.src2_loaded = src2_feedback || items[i].src2_loaded;
                     
                         send_pack.rd = items[i].rd;
                         send_pack.rd_enable = items[i].rd_enable;
@@ -160,6 +189,7 @@ namespace pipeline
                             *unit_index = (selected_index + 1) % unit_cnt;
                             assert(unit_fifo[selected_index]->push(send_pack));
                             this->issue_q.pop_sync();//handle ok, pop this item
+                            output_item_cnt++;
                         }
                         else
                         {
@@ -178,30 +208,44 @@ namespace pipeline
 
                     if(issue_q.get_front_id(&cur_item_id))
                     {
-                        do
+                        bool no_need_feedback_items = false;
+
+                        while((output_item_cnt--) > 0)
                         {
-                            auto cur_item = issue_q.get_item(cur_item_id);
-                            auto modified = false;
-
-                            if(!cur_item.src1_loaded && cur_item.rs1_need_map && (cur_item.rs1_phy == wb_feedback_pack.channel[i].phy_id))
+                            if(!issue_q.get_next_id(cur_item_id, &cur_item_id))
                             {
-                                cur_item.src1_loaded = true;
-                                cur_item.src1_value = wb_feedback_pack.channel[i].value;
-                                modified = true;
+                                no_need_feedback_items = true;
+                                break;
                             }
+                        }
 
-                            if(!cur_item.src2_loaded && cur_item.rs2_need_map && (cur_item.rs2_phy == wb_feedback_pack.channel[i].phy_id))
+                        if(!no_need_feedback_items)
+                        {
+                            do
                             {
-                                cur_item.src2_loaded = true;
-                                cur_item.src2_value = wb_feedback_pack.channel[i].value;
-                                modified = true;
-                            }
+                                auto cur_item = issue_q.get_item(cur_item_id);
+                                auto modified = false;
 
-                            if(modified)
-                            {
-                                issue_q.set_item_sync(cur_item_id, cur_item);
-                            }
-                        }while(issue_q.get_next_id(cur_item_id, &cur_item_id));
+                                if(!cur_item.src1_loaded && cur_item.rs1_need_map && (cur_item.rs1_phy == wb_feedback_pack.channel[i].phy_id))
+                                {
+                                    cur_item.src1_loaded = true;
+                                    cur_item.src1_value = wb_feedback_pack.channel[i].value;
+                                    modified = true;
+                                }
+
+                                if(!cur_item.src2_loaded && cur_item.rs2_need_map && (cur_item.rs2_phy == wb_feedback_pack.channel[i].phy_id))
+                                {
+                                    cur_item.src2_loaded = true;
+                                    cur_item.src2_value = wb_feedback_pack.channel[i].value;
+                                    modified = true;
+                                }
+
+                                if(modified)
+                                {
+                                    issue_q.set_item_sync(cur_item_id, cur_item);
+                                }
+                            }while(issue_q.get_next_id(cur_item_id, &cur_item_id));
+                        }
                     }
                 }
             }
@@ -262,6 +306,24 @@ namespace pipeline
                 t_item.op = cur_op.op;
                 t_item.op_unit = cur_op.op_unit;
                 memcpy(&t_item.sub_op, &cur_op.sub_op, sizeof(t_item.sub_op));
+
+                for(auto i = 0;i < EXECUTE_UNIT_NUM;i++)
+                {
+                    if(wb_feedback_pack.channel[i].enable)
+                    {
+                        if(!t_item.src1_loaded && t_item.rs1_need_map && (t_item.rs1_phy == wb_feedback_pack.channel[i].phy_id))
+                        {
+                            t_item.src1_loaded = true;
+                            t_item.src1_value = wb_feedback_pack.channel[i].value;
+                        }
+
+                        if(!t_item.src2_loaded && t_item.rs2_need_map && (t_item.rs2_phy == wb_feedback_pack.channel[i].phy_id))
+                        {
+                            t_item.src2_loaded = true;
+                            t_item.src2_value = wb_feedback_pack.channel[i].value;
+                        }
+                    }
+                }
             
                 issue_q.push(t_item);
             }

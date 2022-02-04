@@ -4,6 +4,7 @@
 #include "../component/rat.h"
 #include "../component/rob.h"
 #include "../component/csrfile.h"
+#include "../component/regfile.h"
 #include "wb_commit.h"
 
 namespace pipeline
@@ -30,6 +31,7 @@ namespace pipeline
             component::rat *rat;
             component::rob *rob;
             component::csrfile *csr_file;
+            component::regfile<phy_regfile_item_t> *phy_regfile;
 
             state_t cur_state;
 
@@ -37,7 +39,7 @@ namespace pipeline
             uint32_t rob_item_id;
 
         public:
-            commit(component::port<wb_commit_pack_t> *wb_commit_port, component::rat *rat, component::rob *rob, component::csrfile *csr_file);
+            commit(component::port<wb_commit_pack_t> *wb_commit_port, component::rat *rat, component::rob *rob, component::csrfile *csr_file, component::regfile<phy_regfile_item_t> *phy_regfile);
             commit_feedback_pack_t run();
     };
 }

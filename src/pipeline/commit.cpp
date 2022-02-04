@@ -4,19 +4,22 @@
 
 namespace pipeline
 {
-	commit::commit(component::port<wb_commit_pack_t> *wb_commit_port, component::rat *rat, component::rob *rob, component::csrfile *csr_file)
+	commit::commit(component::port<wb_commit_pack_t> *wb_commit_port, component::rat *rat, component::rob *rob, component::csrfile *csr_file, component::regfile<phy_regfile_item_t> *phy_regfile)
 	{
 		this->wb_commit_port = wb_commit_port;
 		this->rat = rat;
 		this->rob = rob;
 		this->csr_file = csr_file;
+		this->phy_regfile = phy_regfile;
 		this->cur_state = state_t::normal;
 	}
 
     commit_feedback_pack_t commit::run()
 	{
 		commit_feedback_pack_t feedback_pack;
+		phy_regfile_item_t default_phy_reg_item;
 		memset(&feedback_pack, 0, sizeof(feedback_pack));
+		memset(&default_phy_reg_item, 0, sizeof(default_phy_reg_item));
 
 		if(this->cur_state == state_t::normal)
 		{
@@ -36,6 +39,7 @@ namespace pipeline
 						if(rob_item.old_phy_reg_id_valid)
 						{
 							rat->release_map_sync(rob_item.old_phy_reg_id);
+							phy_regfile->write_sync(rob_item.old_phy_reg_id, default_phy_reg_item);
 							rat->commit_map(rob_item.new_phy_reg_id);
 						}
 
@@ -44,6 +48,7 @@ namespace pipeline
 							feedback_pack.enable = true;
 							feedback_pack.flush = true;
 							cur_state = state_t::flush;
+							break;
 						}
 						else
 						{
@@ -103,6 +108,7 @@ namespace pipeline
 			if(t_rob_item.old_phy_reg_id_valid)
 			{
 				rat->restore_map_sync(t_rob_item.new_phy_reg_id, t_rob_item.old_phy_reg_id);
+				phy_regfile->write_sync(t_rob_item.new_phy_reg_id, default_phy_reg_item);
 			}
 		}
 

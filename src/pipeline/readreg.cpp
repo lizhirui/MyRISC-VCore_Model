@@ -13,7 +13,7 @@ namespace pipeline
         this->phy_regfile = phy_regfile;
     }
 
-    void readreg::run(issue_feedback_pack_t issue_pack, commit_feedback_pack_t commit_feedback_pack)
+    void readreg::run(issue_feedback_pack_t issue_pack, wb_feedback_pack_t wb_feedback_pack, commit_feedback_pack_t commit_feedback_pack)
     {
         rename_readreg_pack_t rev_pack;
         bool stall = issue_pack.stall;       
@@ -74,6 +74,21 @@ namespace pipeline
                                 send_pack.op_info[i].src1_value = reg_item.value;
                                 send_pack.op_info[i].src1_loaded = true;
                             }
+                            else
+                            {
+                                for(auto j = 0;j < EXECUTE_UNIT_NUM;j++)
+                                {
+                                    if(wb_feedback_pack.channel[j].enable)
+                                    {
+                                        if(rev_pack.op_info[i].rs1_phy == wb_feedback_pack.channel[j].phy_id)
+                                        {
+                                            send_pack.op_info[i].src1_value = wb_feedback_pack.channel[j].value;
+                                            send_pack.op_info[i].src1_loaded = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
                         }
                         else if(rev_pack.op_info[i].arg1_src == arg_src_t::imm)
                         {
@@ -94,6 +109,21 @@ namespace pipeline
                             {
                                 send_pack.op_info[i].src2_value = reg_item.value;
                                 send_pack.op_info[i].src2_loaded = true;
+                            }
+                            else
+                            {
+                                for(auto j = 0;j < EXECUTE_UNIT_NUM;j++)
+                                {
+                                    if(wb_feedback_pack.channel[j].enable)
+                                    {
+                                        if(rev_pack.op_info[i].rs2_phy == wb_feedback_pack.channel[j].phy_id)
+                                        {
+                                            send_pack.op_info[i].src2_value = wb_feedback_pack.channel[j].value;
+                                            send_pack.op_info[i].src2_loaded = true;
+                                            break;
+                                        }
+                                    }
+                                }
                             }
                         }
                         else if(rev_pack.op_info[i].arg2_src == arg_src_t::imm)
