@@ -12,6 +12,8 @@ namespace pipeline
         this->issue_div_fifo = issue_div_fifo;
         this->issue_lsu_fifo = issue_lsu_fifo;
         this->issue_mul_fifo = issue_mul_fifo;
+        this->is_inst_waiting = false;
+        this->inst_waiting_rob_id = 0;
     }
     
     issue_feedback_pack_t issue::run(wb_feedback_pack_t wb_feedback_pack, commit_feedback_pack_t commit_feedback_pack)
@@ -26,11 +28,14 @@ namespace pipeline
             uint32_t output_item_cnt = 0;
 
             //handle output
-            if(!issue_q.is_empty())
+            if(!issue_q.is_empty() && !(is_inst_waiting && (commit_feedback_pack.next_handle_rob_id == inst_waiting_rob_id)))
             {
                 issue_queue_item_t items[ISSUE_WIDTH];
                 memset(&items, 0, sizeof(items));
                 uint32_t id = 0;
+
+                //instruction waiting finish
+                is_inst_waiting = false;
             
                 //get up to 2 items from issue_queue
                 assert(this->issue_q.get_front_id(&id));
@@ -50,6 +55,20 @@ namespace pipeline
                 {
                     if(items[i].enable)
                     {
+                        //csr instruction must be executed after all instructions that is before it has been commited
+                        if(items[i].op_unit == op_unit_t::csr)
+                        {
+                            assert(commit_feedback_pack.enable);
+
+                            if(commit_feedback_pack.next_handle_rob_id != items[i].rob_id)
+                            {
+                                break;
+                            }
+
+                            this->is_inst_waiting = true;
+                            this->inst_waiting_rob_id = items[i].rob_id;
+                        }
+
                         bool src1_feedback = false;
                         uint32_t src1_feedback_value = 0;
                         bool src2_feedback = false;
@@ -164,7 +183,7 @@ namespace pipeline
                                 break;
                         }
                     
-                        //RR dispatch with full check
+                        //Round-Robin dispatch with full check
                         auto selected_index = *unit_index;
                         bool found = false;
                     
@@ -192,6 +211,12 @@ namespace pipeline
                             output_item_cnt++;
                         }
                         else
+                        {
+                            break;
+                        }
+
+                        //stop issue of current cycle because of instruction waiting
+                        if(is_inst_waiting)
                         {
                             break;
                         }

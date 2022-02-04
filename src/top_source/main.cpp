@@ -507,7 +507,7 @@ static void run()
 
     while(1)
     {
-        if(ctrl_c_detected || (step_state && ((!wait_commit) || (wait_commit && rat.get_committed()))))
+        if(ctrl_c_detected || (step_state && ((!wait_commit) || (wait_commit && rob.get_committed()))))
         {
             pause_state = true;
 
@@ -539,6 +539,7 @@ static void run()
             ctrl_c_detected = false;
         }
 
+        rob.set_committed(false);
         t_commit_feedback_pack = commit_stage.run();
         t_wb_feedback_pack = wb_stage.run(t_commit_feedback_pack);
 

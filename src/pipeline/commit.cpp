@@ -27,6 +27,8 @@ namespace pipeline
 			if(!rob->is_empty())
 			{
 				assert(rob->get_front_id(&this->rob_item_id));
+				feedback_pack.enable = true;
+				feedback_pack.next_handle_rob_id = this->rob_item_id;
 
 				for(auto i = 0;i < COMMIT_WIDTH;i++)
 				{
@@ -35,6 +37,7 @@ namespace pipeline
 					if(rob_item.finish)
 					{
 						rob->pop_sync();
+						rob->set_committed(true);
 
 						if(rob_item.old_phy_reg_id_valid)
 						{

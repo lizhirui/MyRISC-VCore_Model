@@ -32,8 +32,6 @@ namespace component
             uint32_t bitmap_size;
             bool init_rat;
 
-            bool committed = false;
-
             void set_valid(uint32_t phy_id, bool v)
             {
                 assert(phy_id < phy_reg_num);
@@ -134,11 +132,6 @@ namespace component
                 init_rat = false;
             }
 
-            bool get_committed()
-            {
-                return committed;
-            }
-
             uint32_t get_free_phy_id(uint32_t num, uint32_t *ret)
             {
                 uint32_t ret_cnt = 0;
@@ -200,7 +193,6 @@ namespace component
                 assert(get_valid(phy_id));
                 assert(!get_commit(phy_id));
                 set_commit(phy_id, true);
-                committed = true;
             }
 
             void commit_map_sync(uint32_t phy_id)
@@ -304,8 +296,6 @@ namespace component
             void sync()
             {
                 sync_request_t t_req;
-
-                committed = false;
 
                 while(!sync_request_q.empty())
                 {

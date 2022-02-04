@@ -147,6 +147,9 @@ namespace pipeline
             
             component::issue_queue<issue_queue_item_t> issue_q;
             bool busy = false;
+            bool is_inst_waiting = false;
+            uint32_t inst_waiting_rob_id = 0;
+
             uint32_t last_index = 0;
             uint32_t alu_index = 0;
             uint32_t bru_index = 0;

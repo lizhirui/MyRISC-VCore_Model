@@ -49,6 +49,8 @@ namespace component
 
             std::queue<sync_request_t> sync_request_q;
 
+            bool committed = false;
+
             bool check_new_id_valid(uint32_t id)
             {
                 if(this->is_full())
@@ -85,6 +87,16 @@ namespace component
             rob(uint32_t size) : fifo<rob_item_t>(size)
             {
                 
+            }
+
+            bool get_committed()
+            {
+                return committed;
+            }
+
+            void set_committed(bool value)
+            {
+                committed = value;
             }
 
             bool push(rob_item_t element, uint32_t *item_id)
