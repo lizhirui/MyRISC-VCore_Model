@@ -60,9 +60,9 @@ namespace pipeline
                                 break;
 
                             case 0x17://auipc
-                                op_info.op = op_t::lui;
+                                op_info.op = op_t::auipc;
                                 op_info.op_unit = op_unit_t::alu;
-                                op_info.sub_op.alu_op = alu_op_t::lui;
+                                op_info.sub_op.alu_op = alu_op_t::auipc;
                                 op_info.arg1_src = arg_src_t::disable;
                                 op_info.arg2_src = arg_src_t::disable;
                                 op_info.imm = imm_u;

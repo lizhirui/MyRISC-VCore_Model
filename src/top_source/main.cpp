@@ -507,7 +507,7 @@ static void run()
 
     while(1)
     {
-        if(ctrl_c_detected || (step_state && ((!wait_commit) || (wait_commit && t_commit_feedback_pack.enable && !t_commit_feedback_pack.has_exception))))
+        if(ctrl_c_detected || (step_state && ((!wait_commit) || (wait_commit && rat.get_committed()))))
         {
             pause_state = true;
 

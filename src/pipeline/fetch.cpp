@@ -80,6 +80,7 @@ namespace pipeline
         else
         {
             this->fetch_decode_fifo->flush();
+            this->jump_wait = false;
 
             if(commit_feedback_pack.has_exception)
             {

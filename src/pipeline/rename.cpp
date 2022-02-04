@@ -143,6 +143,17 @@ namespace pipeline
                             }
                         }
 
+                        //fill rob item 
+                        for(auto i = 0;i < RENAME_WIDTH;i++)
+                        {
+                            rob_item[i].new_phy_reg_id = send_pack.op_info[i].rd_phy;
+                            rob_item[i].pc = rev_pack.op_info[i].pc;
+                            rob_item[i].inst_value = rev_pack.op_info[i].value;
+                            rob_item[i].has_exception = rev_pack.op_info[i].has_exception;
+                            rob_item[i].exception_id = rev_pack.op_info[i].exception_id;
+                            rob_item[i].exception_value = rev_pack.op_info[i].exception_value;
+                        }
+
                         //write to rob
                         for(uint32_t i = 0;i < RENAME_WIDTH;i++)
                         {

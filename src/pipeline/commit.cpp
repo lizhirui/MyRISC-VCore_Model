@@ -40,7 +40,7 @@ namespace pipeline
 						{
 							rat->release_map_sync(rob_item.old_phy_reg_id);
 							phy_regfile->write_sync(rob_item.old_phy_reg_id, default_phy_reg_item);
-							rat->commit_map(rob_item.new_phy_reg_id);
+							rat->commit_map_sync(rob_item.new_phy_reg_id);
 						}
 
 						if(rob_item.has_exception)
@@ -71,10 +71,10 @@ namespace pipeline
 				if(rev_pack.op_info[i].enable)
 				{
 					auto rob_item = rob->get_item(rev_pack.op_info[i].rob_id);
-					rob_item.new_phy_reg_id = rev_pack.op_info[i].rd_phy;
+					//rob_item.new_phy_reg_id = rev_pack.op_info[i].rd_phy;
 					rob_item.finish = true;
-					rob_item.pc = rev_pack.op_info[i].pc;
-					rob_item.inst_value = rev_pack.op_info[i].value;
+					/*rob_item.pc = rev_pack.op_info[i].pc;
+					rob_item.inst_value = rev_pack.op_info[i].value;*/
 					rob_item.has_exception = rev_pack.op_info[i].has_exception;
 					rob_item.exception_id = rev_pack.op_info[i].exception_id;
 					rob_item.exception_value = rev_pack.op_info[i].exception_value;

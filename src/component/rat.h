@@ -10,6 +10,7 @@ namespace component
             {
                 set_map,
                 release_map,
+                commit_map,
                 restore_map
             };
 
@@ -30,6 +31,8 @@ namespace component
             uint64_t *phy_map_table_commit;
             uint32_t bitmap_size;
             bool init_rat;
+
+            bool committed = false;
 
             void set_valid(uint32_t phy_id, bool v)
             {
@@ -131,6 +134,11 @@ namespace component
                 init_rat = false;
             }
 
+            bool get_committed()
+            {
+                return committed;
+            }
+
             uint32_t get_free_phy_id(uint32_t num, uint32_t *ret)
             {
                 uint32_t ret_cnt = 0;
@@ -192,6 +200,16 @@ namespace component
                 assert(get_valid(phy_id));
                 assert(!get_commit(phy_id));
                 set_commit(phy_id, true);
+                committed = true;
+            }
+
+            void commit_map_sync(uint32_t phy_id)
+            {
+                sync_request_t t_req;
+
+                t_req.req = sync_request_type_t::commit_map;
+                t_req.arg1 = phy_id;
+                sync_request_q.push(t_req);
             }
 
             uint32_t set_map(uint32_t arch_id, uint32_t phy_id)
@@ -287,6 +305,8 @@ namespace component
             {
                 sync_request_t t_req;
 
+                committed = false;
+
                 while(!sync_request_q.empty())
                 {
                     t_req = sync_request_q.front();
@@ -300,6 +320,10 @@ namespace component
 
                         case sync_request_type_t::release_map:
                             release_map(t_req.arg1);
+                            break;
+
+                        case sync_request_type_t::commit_map:
+                            commit_map(t_req.arg1);
                             break;
                         
                         case sync_request_type_t::restore_map:

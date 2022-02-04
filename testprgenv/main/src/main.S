@@ -1,7 +1,7 @@
     .section .text.entry
     .global _start
 _start:
-    li x1, 0
+    /*li x1, 0
     li x2, 0
     li x3, 0
     li x4, 0
@@ -43,4 +43,14 @@ loop:
     addi x8, x8, 1
     addi x9, x9, 1
     addi x10, x10, 1
-    j loop
+    j loop*/
+
+    la x1, _exception
+    csrw mtvec, x1
+    ecall
+    li x3, 1
+
+    .align 4
+_exception:
+    li x2, 1
+    j _exception
