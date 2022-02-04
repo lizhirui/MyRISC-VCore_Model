@@ -5,10 +5,11 @@ namespace pipeline
 {
     namespace execute
     {
-        bru::bru(component::fifo<issue_execute_pack_t> *issue_bru_fifo, component::port<execute_wb_pack_t> *bru_wb_port)
+        bru::bru(component::fifo<issue_execute_pack_t> *issue_bru_fifo, component::port<execute_wb_pack_t> *bru_wb_port, component::csrfile *csr_file)
         {
             this->issue_bru_fifo = issue_bru_fifo;
             this->bru_wb_port = bru_wb_port;
+            this->csr_file = csr_file;
         }
 
         bru_feedback_pack_t bru::run(commit_feedback_pack_t commit_feedback_pack)
@@ -96,6 +97,11 @@ namespace pipeline
                             send_pack.rd_value = rev_pack.pc + 4;
                             feedback_pack.jump = true;
                             feedback_pack.next_pc = (rev_pack.imm + rev_pack.src1_value) & (~0x01);
+                            break;
+
+                        case bru_op_t::mret:
+                            feedback_pack.jump = true;
+                            feedback_pack.next_pc = csr_file->read_sys(CSR_MEPC);
                             break;
                     }
                 }

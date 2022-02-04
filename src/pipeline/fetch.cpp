@@ -25,12 +25,12 @@ namespace pipeline
             bool i0_has_exception = !memory->check_align(i0_pc, 4) || !memory->check_boundary(i0_pc, 4);
             uint32_t i0 = i0_has_exception ? 0 : this->memory->read32(i0_pc);
             bool i0_enable = !jump_wait;
-            bool i0_jump = ((i0 & 0x7f) == 0x6f) || ((i0 & 0x7f) == 0x67) || ((i0 & 0x7f) == 0x63);
+            bool i0_jump = ((i0 & 0x7f) == 0x6f) || ((i0 & 0x7f) == 0x67) || ((i0 & 0x7f) == 0x63) || (i0 == 0x30200073);
             uint32_t i1_pc = cur_pc ^ 0x04;
             bool i1_has_exception = !memory->check_align(i1_pc, 4) || !memory->check_boundary(i1_pc, 4);
             uint32_t i1 = i1_has_exception ? 0 : this->memory->read32(i1_pc);
             bool i1_enable = is_align(cur_pc, 8) && !jump_wait && !i0_jump;
-            bool i1_jump = ((i1 & 0x7f) == 0x6f) || ((i1 & 0x7f) == 0x67) || ((i1 & 0x7f) == 0x63);
+            bool i1_jump = ((i1 & 0x7f) == 0x6f) || ((i1 & 0x7f) == 0x67) || ((i1 & 0x7f) == 0x63) || (i0 == 0x30200073);
 
             if(jump_wait)
             {

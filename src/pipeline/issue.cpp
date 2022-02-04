@@ -68,6 +68,15 @@ namespace pipeline
                             this->is_inst_waiting = true;
                             this->inst_waiting_rob_id = items[i].rob_id;
                         }
+                        else if(items[i].op == op_t::mret)
+                        {
+                            assert(commit_feedback_pack.enable);
+
+                            if(commit_feedback_pack.next_handle_rob_id != items[i].rob_id)
+                            {
+                                break;
+                            }
+                        }
 
                         bool src1_feedback = false;
                         uint32_t src1_feedback_value = 0;

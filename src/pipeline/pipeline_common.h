@@ -76,7 +76,8 @@ namespace pipeline
         mul,
         mulh,
         mulhsu,
-        mulhu
+        mulhu,
+        mret
     };
 
     enum class alu_op_t
@@ -108,7 +109,8 @@ namespace pipeline
         bltu,
         bne,
         jal,
-        jalr
+        jalr,
+        mret
     };
 
     enum class div_op_t

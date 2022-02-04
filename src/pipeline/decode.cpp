@@ -512,28 +512,56 @@ namespace pipeline
                                 }
                                 break;
 
-                            case 0x73://ecall ebreak csrrw csrrs csrrc csrrwi csrrsi csrrci
+                            case 0x73://ecall ebreak csrrw csrrs csrrc csrrwi csrrsi csrrci mret
                                 switch(funct3)
                                 {
-                                    case 0x0://ecall ebreak
-                                        if((rd == 0x00) && (rs1 == 0x00))//ecall ebreak
+                                    case 0x0://ecall ebreak mret
+                                        if((rd == 0x00) && (rs1 == 0x00))//ecall ebreak mret
                                         {
-                                            switch(imm_i)
+                                            switch(funct7)
                                             {
-                                                case 0x00://ecall
-                                                    op_info.op = op_t::ecall;
-                                                    op_info.op_unit = op_unit_t::alu;
-                                                    op_info.sub_op.alu_op = alu_op_t::ecall;
-                                                    op_info.arg1_src = arg_src_t::disable;
-                                                    op_info.arg2_src = arg_src_t::disable;
+                                                case 0x00://ecall ebreak
+                                                    switch(rs2)
+                                                    {
+                                                        case 0x00://ecall
+                                                            op_info.op = op_t::ecall;
+                                                            op_info.op_unit = op_unit_t::alu;
+                                                            op_info.sub_op.alu_op = alu_op_t::ecall;
+                                                            op_info.arg1_src = arg_src_t::disable;
+                                                            op_info.arg2_src = arg_src_t::disable;
+                                                            break;
+
+                                                        case 0x01://ebreak
+                                                            op_info.op = op_t::ebreak;
+                                                            op_info.op_unit = op_unit_t::alu;
+                                                            op_info.sub_op.alu_op = alu_op_t::ebreak;
+                                                            op_info.arg1_src = arg_src_t::disable;
+                                                            op_info.arg2_src = arg_src_t::disable;
+                                                            break;
+
+                                                        default://invalid
+                                                            op_info.valid = false;
+                                                            break;
+                                                    }
+
                                                     break;
 
-                                                case 0x01://ebreak
-                                                    op_info.op = op_t::ebreak;
-                                                    op_info.op_unit = op_unit_t::alu;
-                                                    op_info.sub_op.alu_op = alu_op_t::ebreak;
-                                                    op_info.arg1_src = arg_src_t::disable;
-                                                    op_info.arg2_src = arg_src_t::disable;
+                                                case 0x18://mret
+                                                    switch(rs2)
+                                                    {
+                                                        case 0x02://mret
+                                                            op_info.op = op_t::mret;
+                                                            op_info.op_unit = op_unit_t::bru;
+                                                            op_info.sub_op.bru_op = bru_op_t::mret;
+                                                            op_info.arg1_src = arg_src_t::disable;
+                                                            op_info.arg2_src = arg_src_t::disable;
+                                                            break;
+
+                                                        default://invalid
+                                                            op_info.valid = false;
+                                                            break;
+                                                    }
+
                                                     break;
 
                                                 default://invalid

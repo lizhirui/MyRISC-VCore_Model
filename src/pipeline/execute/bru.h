@@ -2,6 +2,8 @@
 #include "common.h"
 #include "../../component/fifo.h"
 #include "../../component/port.h"
+#include "../../component/csrfile.h"
+#include "../../component/csr_all.h"
 #include "../issue_execute.h"
 #include "../execute_wb.h"
 #include "../commit.h"
@@ -22,9 +24,10 @@ namespace pipeline
             private:
                 component::fifo<issue_execute_pack_t> *issue_bru_fifo;
                 component::port<execute_wb_pack_t> *bru_wb_port;
+                component::csrfile *csr_file;
 
             public:
-                bru(component::fifo<issue_execute_pack_t> *issue_bru_fifo, component::port<execute_wb_pack_t> *bru_wb_port);
+                bru(component::fifo<issue_execute_pack_t> *issue_bru_fifo, component::port<execute_wb_pack_t> *bru_wb_port, component::csrfile *csr_file);
                 bru_feedback_pack_t run(commit_feedback_pack_t commit_feedback_pack);
         };
     }

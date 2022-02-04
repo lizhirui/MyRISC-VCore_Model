@@ -180,7 +180,7 @@ static void init()
 
     for(auto i = 0;i < BRU_UNIT_NUM;i++)
     {
-        execute_bru_stage[i] = new pipeline::execute::bru(issue_bru_fifo[i], bru_wb_port[i]);
+        execute_bru_stage[i] = new pipeline::execute::bru(issue_bru_fifo[i], bru_wb_port[i], &csr_file);
     }
 
     for(auto i = 0;i < CSR_UNIT_NUM;i++)

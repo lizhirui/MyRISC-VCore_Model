@@ -45,12 +45,20 @@ loop:
     addi x10, x10, 1
     j loop*/
 
+    li x2, 0
+    li x3, 0
     la x1, _exception
     csrw mtvec, x1
+
+loop:
     ecall
-    li x3, 1
+    addi x3, x3, 1
+    j loop
 
     .align 4
 _exception:
-    li x2, 1
-    j _exception
+    addi x2, x2, 1
+    csrr x4, mepc
+    addi x4, x4, 4
+    csrw mepc, x4
+    mret
