@@ -3,13 +3,13 @@
 //import header files
 #include <cstddef>
 #include <cstdint>
-#ifdef NDEBUG
+/*#ifdef NDEBUG
     #undef NDEBUG
     #include <cassert>
     #define NDEBUG 1
 #else
     #include <cassert>
-#endif
+#endif*/
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -26,6 +26,14 @@
 #include <vector>
 #include <cctype>
 #include "magic_enum.h"
+
+#undef assert
+#define assert(cond)\
+    if(!(cond)) \
+    { \
+        printf("In file %s, Line %d, %s\n", __FILE__, __LINE__, #cond);\
+        abort();\
+    }
 
 //machine types
 using size_t = std::size_t;

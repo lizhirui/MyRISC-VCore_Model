@@ -27,12 +27,14 @@
 #include "../pipeline/wb.h"
 #include "../pipeline/wb_commit.h"
 #include "../pipeline/commit.h"
+#include "asio.hpp"
+#include <thread>
 
 #ifdef WIN32
     #include <windows.h>
 #endif
 
-static volatile bool ctrl_c_detected = false;
+static std::atomic<bool> ctrl_c_detected = false;
 
 static uint64_t cpu_clock_cycle = 0;
 
@@ -255,6 +257,7 @@ static void init()
 static bool pause_state = false;
 static bool step_state = false;
 static bool wait_commit = false;
+static bool gui_mode = false;
 
 static void cmd_quit()
 {
@@ -452,6 +455,51 @@ static void cmd_arch()
     std::cout << std::endl;
 }
 
+static uint32_t get_current_pc()
+{
+    if(!rob.is_empty())
+    {
+        return rob.get_front().pc;
+    }
+
+    pipeline::decode_rename_pack_t drpack;
+
+    if(decode_rename_fifo.get_front(&drpack) && (drpack.op_info[0].enable || drpack.op_info[1].enable))
+    {
+        return drpack.op_info[0].enable ? drpack.op_info[0].pc : drpack.op_info[1].pc;
+    }
+
+    pipeline::fetch_decode_pack_t fdpack;
+
+    if(fetch_decode_fifo.get_front(&fdpack) && (fdpack.op_info[0].enable || fdpack.op_info[1].enable))
+    {
+        return fdpack.op_info[0].enable ? fdpack.op_info[0].pc : fdpack.op_info[1].pc;
+    }
+
+    return fetch_stage.get_pc();
+}
+
+static asio::io_context tcp_server_thread_ioc;
+void tcp_server_thread_entry(asio::ip::tcp::acceptor &&listener);
+
+static void cmd_gui()
+{
+    try
+    {
+        asio::ip::tcp::acceptor listener(tcp_server_thread_ioc, {asio::ip::address::from_string("127.0.0.1"), 10240});
+        listener.set_option(asio::ip::tcp::no_delay(true));
+        listener.listen();
+        std::cout << "Server Bind on 127.0.0.1:10240" << std::endl;
+        std::thread server_thread(tcp_server_thread_entry, std::move(listener));
+        server_thread.detach();
+        gui_mode = true;
+    }
+    catch(const std::exception &e)
+    {
+        std::cout << "Server Bind Port Failed:" << e.what() << std::endl;
+    }
+}
+
 typedef void (*cmd_handler)();
 
 typedef struct cmd_desc_t
@@ -470,6 +518,7 @@ static cmd_desc_t cmd_list[] = {
                                {"rob", cmd_rob},
                                {"csr", cmd_csr},
                                {"arch", cmd_arch},
+                               {"gui", cmd_gui},
                                {"", NULL}
                                };
 
@@ -497,6 +546,13 @@ static bool cmd_handle(std::string cmd)
     return false;
 }
 
+static asio::io_context recv_ioc;
+static asio::io_context send_ioc;
+std::atomic<bool> recv_thread_stop = false;
+std::atomic<bool> recv_thread_stopped = false;
+std::atomic<bool> server_thread_stopped = false;
+std::atomic<bool> program_stop = false;
+
 static void run()
 {
     init();
@@ -511,29 +567,58 @@ static void run()
         {
             pause_state = true;
 
+            if(gui_mode)
+            {
+                std::cout << "Wait GUI Command" << std::endl;
+            }
+
             while(pause_state)
             {
-                std::cout << "Cycle" << cpu_clock_cycle << ":Command>";
-                std::string cmd;
-                std::getline(std::cin, cmd);
-
-                if(std::cin.fail() || std::cin.eof())
+                if(!gui_mode)
                 {
-                    std::cin.clear();
-                    std::cout << std::endl;
-                }
+                    std::cout << "Cycle" << cpu_clock_cycle << ",0x" << fillzero(8) << outhex(get_current_pc()) << ":Command>";
+                    std::string cmd;
+                    std::getline(std::cin, cmd);
 
-                if(cmd == "")
-                {
-                    cmd = last_cmd;
-                }
+                    if(std::cin.fail() || std::cin.eof())
+                    {
+                        std::cin.clear();
+                        std::cout << std::endl;
+                    }
+
+                    if(cmd == "")
+                    {
+                        cmd = last_cmd;
+                    }
                 
-                last_cmd = cmd;
+                    last_cmd = cmd;
 
-                if(!cmd_handle(cmd))
-                {
-                    std::cout << "Invalid Command!" << std::endl;
+                    if(!cmd_handle(cmd))
+                    {
+                        std::cout << "Invalid Command!" << std::endl;
+                    }
                 }
+                else
+                {
+                    try
+                    {
+                        recv_ioc.run_one();
+                    }
+                    catch(const std::exception &ex)
+                    {
+                        std::cout << ex.what() << std::endl;
+                    }
+
+                    if(program_stop)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            if(program_stop)
+            {
+                break;
             }
 
             ctrl_c_detected = false;
@@ -599,6 +684,353 @@ static void run()
     }
 #endif
 
+static std::string socket_cmd_quit(std::vector<std::string> args)
+{
+    if(args.size() != 0)
+    {
+        return "argerror";
+    }
+
+    recv_thread_stop = true;
+    program_stop = true;
+    return "ok";
+}
+
+static std::string socket_cmd_continue(std::vector<std::string> args)
+{
+    if(args.size() != 0)
+    {
+        return "argerror";
+    }
+
+    pause_state = false;
+    step_state = false;
+    wait_commit = false;
+    return "ok";
+}
+
+static std::string socket_cmd_pause(std::vector<std::string> args)
+{
+    if(args.size() != 0)
+    {
+        return "argerror";
+    }
+
+    return "ok";
+}
+
+static std::string socket_cmd_step(std::vector<std::string> args)
+{
+    if(args.size() != 0)
+    {
+        return "argerror";
+    }
+
+    pause_state = false;
+    step_state = true;
+    wait_commit = false;
+    return "ok";
+}
+
+static std::string socket_cmd_stepcommit(std::vector<std::string> args)
+{
+    if(args.size() != 0)
+    {
+        return "argerror";
+    }
+
+    pause_state = false;
+    step_state = true;
+    wait_commit = true;
+    return "ok";
+}
+
+static std::string socket_cmd_read_memory(std::vector<std::string> args)
+{
+    if(args.size() != 2)
+    {
+        return "argerror";
+    }
+
+    uint32_t address = 0;
+    uint32_t size = 0;
+    std::stringstream address_str(args[0]);
+    std::stringstream size_str(args[1]);
+    address_str.unsetf(std::ios::dec);
+    address_str.setf(std::ios::hex);
+    address_str >> address;
+    size_str >> size;
+
+    if(size > 0x1000)
+    {
+        return "sizetoobig";
+    }
+
+    std::stringstream result;
+
+    result << std::hex << address;
+
+    for(auto addr = address;addr < (address + size);addr++)
+    {
+        if(!memory.check_boundary(addr, 1))
+        {
+            break;
+        }
+
+        result << "," << std::hex << (uint32_t)memory.read8(addr);
+    }
+
+    return result.str();
+}
+
+static std::string socket_cmd_read_archreg(std::vector<std::string> args)
+{
+    if(args.size() != 0)
+    {
+        return "argerror";
+    }
+
+    std::stringstream result;
+
+    for(auto i = 0;i < ARCH_REG_NUM;i++)
+    {
+        if(i == 0)
+        {
+            result << std::hex << 0;
+        }
+        else
+        {
+            uint32_t phy_id;
+            rat.get_commit_phy_id(i, &phy_id);
+            auto v = phy_regfile.read(phy_id);
+            assert(v.valid);
+            result << "," << std::hex << v.value;
+        }
+    }
+
+    return result.str();
+}
+
+static std::string socket_cmd_read_csr(std::vector<std::string> args)
+{
+    if(args.size() != 0)
+    {
+        return "argerror";
+    }
+
+    return csr_file.get_info_packet();
+}
+
+static std::string socket_cmd_get_pc(std::vector<std::string> args)
+{
+    if(args.size() != 0)
+    {
+        return "argerror";
+    }
+
+    std::stringstream result;
+    result << outhex(get_current_pc());
+    return result.str();
+}
+
+static std::string socket_cmd_get_cycle(std::vector<std::string> args)
+{
+    if(args.size() != 0)
+    {
+        return "argerror";
+    }
+
+    std::stringstream result;
+    result << cpu_clock_cycle;
+    return result.str();
+}
+
+typedef std::string (*socket_cmd_handler)(std::vector<std::string> args);
+
+typedef struct socket_cmd_desc_t
+{
+    std::string cmd_name;
+    socket_cmd_handler handler;
+}socket_cmd_desc_t;
+
+static socket_cmd_desc_t socket_cmd_list[] = {
+                                      {"quit", socket_cmd_quit},
+                                      {"continue", socket_cmd_continue},
+                                      {"pause", socket_cmd_pause},
+                                      {"step", socket_cmd_step},
+                                      {"stepcommit", socket_cmd_stepcommit},
+                                      {"read_memory", socket_cmd_read_memory},
+                                      {"read_archreg", socket_cmd_read_archreg},
+                                      {"read_csr", socket_cmd_read_csr},
+                                      {"get_pc", socket_cmd_get_pc},
+                                      {"get_cycle", socket_cmd_get_cycle},
+                                      {"", NULL}
+                                      };
+
+void send_cmd_result(asio::ip::tcp::socket &soc, std::string result)
+{
+    char *buffer = new char[result.length() + 4];
+    *(uint32_t *)buffer = (uint32_t)result.length();
+    memcpy(buffer + 4, result.data(), result.length());
+    soc.send(asio::buffer(buffer, result.length() + 4));
+    delete[] buffer;
+}
+
+void socket_cmd_handle(asio::ip::tcp::socket &soc, std::string rev_str)
+{
+    std::stringstream stream(rev_str);
+    std::vector<std::string> cmd_arg_list;
+    
+    while(!stream.eof())
+    {
+        std::string t;
+        stream >> t;
+        cmd_arg_list.push_back(t);
+    }
+
+    if(cmd_arg_list.size() >= 2)
+    {
+        auto prefix = cmd_arg_list[0];
+        auto cmd = cmd_arg_list[1];
+        cmd_arg_list.erase(cmd_arg_list.begin());
+        cmd_arg_list.erase(cmd_arg_list.begin());
+        std::string ret = "notfound";
+
+        for(auto i = 0;;i++)
+        {
+            if(socket_cmd_list[i].handler == NULL)
+            {
+                break;
+            }
+
+            if(socket_cmd_list[i].cmd_name == cmd)
+            {
+                ret = socket_cmd_list[i].handler(cmd_arg_list);
+                break;
+            }
+        }
+
+        asio::post(send_ioc, [&soc, prefix, cmd, ret]{send_cmd_result(soc, prefix + " " + cmd + " " + ret);});
+    }
+}
+
+void tcp_server_thread_receive_entry(asio::ip::tcp::socket &soc)
+{
+    uint32_t length = 0;
+    size_t rev_length = 0;
+    char *packet_payload = nullptr;
+    char packet_length[4];
+    std::string rev_str = "";
+
+    while(!recv_thread_stop)
+    {
+        try
+        {
+            if(packet_payload == nullptr)
+            {
+                rev_length += soc.receive(asio::buffer(packet_length + rev_length, sizeof(packet_length) - rev_length));
+                auto finish = rev_length == sizeof(packet_length);
+
+                if(finish)
+                {
+                    length = *(uint32_t *)packet_length;
+                    rev_str.resize(length);
+                    packet_payload = rev_str.data();
+                    rev_length = 0;
+                }
+            }
+            else
+            {
+                rev_length += soc.receive(asio::buffer(packet_payload + rev_length, length - rev_length));
+                auto finish = rev_length == length;
+
+                if(finish)
+                {
+                    packet_payload = nullptr;
+                    rev_length = 0;
+
+                    std::stringstream stream(rev_str);
+                    std::vector<std::string> cmd_arg_list;
+    
+                    while(!stream.eof())
+                    {
+                        std::string t;
+                        stream >> t;
+                        cmd_arg_list.push_back(t);
+                    }
+
+                    if((cmd_arg_list.size() >= 2) && (cmd_arg_list[1] == std::string("pause")))
+                    {
+                        ctrl_c_detected = true;
+                    }
+                    
+                    asio::post(recv_ioc, [&soc, rev_str]{socket_cmd_handle(soc, rev_str);});
+                }
+            }
+        }
+        catch(const std::exception &ex)
+        {
+            std::cout << ex.what() << std::endl;
+            break;
+        }
+    }
+
+    recv_thread_stopped = true;
+}
+
+void tcp_server_thread_entry(asio::ip::tcp::acceptor &&listener)
+{
+    try
+    {
+        while(!program_stop)
+        {
+            std::cout << "Wait GUI Connection" << std::endl;
+            auto soc = listener.accept();
+            soc.set_option(asio::ip::tcp::no_delay(true));
+            std::cout << "GUI Connected" << std::endl;
+            recv_thread_stop = false;
+            recv_thread_stopped = false;
+            std::thread rev_thread(tcp_server_thread_receive_entry, std::ref(soc));
+
+            try
+            {
+                while(1)
+                {
+                    send_ioc.run_one_for(std::chrono::milliseconds(1000));
+
+                    if(recv_thread_stopped)
+                    {
+                        rev_thread.join();
+                        break;
+                    }
+                }
+            }
+            catch(const std::exception &ex)
+            {
+                std::cout << ex.what() << std::endl;
+                recv_thread_stop = true;
+                rev_thread.join();
+            }
+            
+            soc.shutdown(asio::socket_base::shutdown_both);
+            soc.close();
+            std::cout << "GUI Disconnected" << std::endl;
+        }
+        
+        listener.close();
+        server_thread_stopped = true;
+        /*#ifdef WIN32
+            ExitProcess(0);
+        #else
+            kill(getpid(), SIGINT);
+        #endif*/
+    }
+    catch(const std::exception &ex)
+    {
+        std::cout << ex.what() << std::endl;
+    }
+}
+
 int main()
 {
     test::test();
@@ -609,7 +1041,7 @@ int main()
             std::cout << "SetControlCtrlHandler Failed!" << std::endl;
         }
     #endif
-
     run();
+    while(!server_thread_stopped);
     return 0;
 }

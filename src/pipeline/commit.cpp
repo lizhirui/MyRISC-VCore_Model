@@ -37,7 +37,6 @@ namespace pipeline
 					if(rob_item.finish)
 					{
 						rob->pop_sync();
-						rob->set_committed(true);
 
 						if(rob_item.old_phy_reg_id_valid)
 						{
@@ -56,6 +55,7 @@ namespace pipeline
 						else
 						{
 							feedback_pack.enable = rob->get_next_id(rob_item_id, &feedback_pack.next_handle_rob_id);
+							rob->set_committed(true);
 						}
 					}
 
@@ -97,6 +97,7 @@ namespace pipeline
 				feedback_pack.exception_pc = csr_file->read_sys(CSR_MTVEC);
 				feedback_pack.flush = true;
 				cur_state = state_t::normal;
+				rob->set_committed(true);
 			}
 			else
 			{

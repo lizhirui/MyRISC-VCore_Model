@@ -89,6 +89,11 @@ namespace pipeline
         }
     }
 
+    uint32_t fetch::get_pc()
+    {
+        return this->pc;
+    }
+
     void fetch::print(std::string indent)
     {
         std::cout << indent << "pc = 0x" << fillzero(8) << outhex(this->pc);

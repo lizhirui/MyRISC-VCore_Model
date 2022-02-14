@@ -199,5 +199,33 @@ namespace component
 					std::cout << iter->second;
 				}
 			}
+
+			std::string get_info_packet()
+			{
+				std::stringstream result;
+
+				std::vector<std::pair<std::string, std::string>> out_list;
+
+				for(auto iter = csr_map_table.begin();iter != csr_map_table.end();iter++)
+				{
+					std::ostringstream stream;
+					stream << outhex(iter->second.csr->read());
+					out_list.push_back(std::pair<std::string, std::string>(iter->second.csr->get_name(), stream.str()));
+				}
+
+				std::sort(out_list.begin(), out_list.end(), csr_out_list_cmp);
+
+				for(auto iter = out_list.begin();iter != out_list.end();iter++)
+				{
+					result << iter->first << ":" << iter->second;
+
+					if(iter != out_list.end())
+					{
+						result << ",";
+					}
+				}
+
+				return result.str();
+			}
 	};
 }
