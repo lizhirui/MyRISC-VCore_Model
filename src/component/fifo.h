@@ -26,6 +26,7 @@ namespace component
             bool is_empty();
             bool is_full();
             virtual void print(std::string indent);
+            virtual json get_json();
     };
 
     template<typename T>
@@ -163,5 +164,40 @@ namespace component
             if_print = dynamic_cast<if_print_t *>(&item);
             if_print->print(indent + "\t");
         }
+    }
+
+    template<typename T>
+    json fifo<T>::get_json()
+    {
+        json ret = json::array();
+        if_print_t *if_print;
+
+        if(!is_empty())
+        {
+            auto cur = rptr;
+            auto cur_stage = rstage;
+
+            while(1)
+            {
+                if_print = dynamic_cast<if_print_t *>(&buffer[cur]);
+                json item;
+                ret.push_back(if_print->get_json());
+                
+                cur++;
+
+                if(cur >= size)
+                {
+                    cur = 0;
+                    cur_stage = !cur_stage;
+                }
+
+                if((cur == wptr) && (cur_stage == wstage))
+                {
+                    break;
+                }
+            }
+        }
+
+        return ret;
     }
 }

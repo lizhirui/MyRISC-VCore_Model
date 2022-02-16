@@ -205,10 +205,11 @@ static void init()
         execute_mul_stage[i] = new pipeline::execute::mul(issue_mul_fifo[i], mul_wb_port[i]);
     }
 
-    std::memset(&t_issue_feedback_pack, 0, sizeof(t_issue_feedback_pack));
+    //this will cause system crash due to struct header information cleared when get_json is called 
+    /*std::memset(&t_issue_feedback_pack, 0, sizeof(t_issue_feedback_pack));
     std::memset(&t_bru_feedback_pack, 0, sizeof(t_bru_feedback_pack));
     std::memset(&t_wb_feedback_pack, 0, sizeof(t_wb_feedback_pack));
-    std::memset(&t_commit_feedback_pack, 0, sizeof(t_commit_feedback_pack));
+    std::memset(&t_commit_feedback_pack, 0, sizeof(t_commit_feedback_pack));*/
 
     rat.init_start();
 
@@ -845,6 +846,123 @@ static std::string socket_cmd_get_cycle(std::vector<std::string> args)
     return result.str();
 }
 
+static std::string socket_cmd_get_pipeline_status(std::vector<std::string> args)
+{
+    if(args.size() != 0)
+    {
+        return "argerror";
+    }
+
+    json ret;
+    ret["fetch"] = fetch_stage.get_json();
+    ret["fetch_decode"] = fetch_decode_fifo.get_json();
+    ret["decode_rename"] = decode_rename_fifo.get_json();
+    ret["rename_readreg"] = rename_readreg_port.get_json();
+    ret["readreg_issue"] = readreg_issue_port.get_json();
+    ret["issue"] = issue_stage.get_json();
+
+    json tie;
+    json tie_alu, tie_bru, tie_csr, tie_div, tie_lsu, tie_mul;
+    tie_alu = json::array();
+    tie_bru = json::array();
+    tie_csr = json::array();
+    tie_div = json::array();
+    tie_lsu = json::array();
+    tie_mul = json::array();
+
+    for(auto i = 0;i < ALU_UNIT_NUM;i++)
+    {
+        tie_alu.push_back(issue_alu_fifo[i]->get_json());
+    }
+
+    for(auto i = 0;i < BRU_UNIT_NUM;i++)
+    {
+        tie_bru.push_back(issue_bru_fifo[i]->get_json());
+    }
+
+    for(auto i = 0;i < CSR_UNIT_NUM;i++)
+    {
+        tie_csr.push_back(issue_csr_fifo[i]->get_json());
+    }
+
+    for(auto i = 0;i < DIV_UNIT_NUM;i++)
+    {
+        tie_div.push_back(issue_div_fifo[i]->get_json());
+    }
+
+    for(auto i = 0;i < LSU_UNIT_NUM;i++)
+    {
+        tie_lsu.push_back(issue_lsu_fifo[i]->get_json());
+    }
+
+    for(auto i = 0;i < MUL_UNIT_NUM;i++)
+    {
+        tie_mul.push_back(issue_mul_fifo[i]->get_json());
+    }
+
+    tie["alu"] = tie_alu;
+    tie["bru"] = tie_bru;
+    tie["csr"] = tie_csr;
+    tie["div"] = tie_div;
+    tie["lsu"] = tie_lsu;
+    tie["mul"] = tie_mul;
+    ret["issue_execute"] = tie;
+
+    json tew;
+    json tew_alu, tew_bru, tew_csr, tew_div, tew_lsu, tew_mul;
+    tew_alu = json::array();
+    tew_bru = json::array();
+    tew_csr = json::array();
+    tew_div = json::array();
+    tew_lsu = json::array();
+    tew_mul = json::array();
+
+    for(auto i = 0;i < ALU_UNIT_NUM;i++)
+    {
+        tew_alu.push_back(alu_wb_port[i]->get_json());
+    }
+
+    for(auto i = 0;i < BRU_UNIT_NUM;i++)
+    {
+        tew_bru.push_back(bru_wb_port[i]->get_json());
+    }
+
+    for(auto i = 0;i < CSR_UNIT_NUM;i++)
+    {
+        tew_csr.push_back(csr_wb_port[i]->get_json());
+    }
+
+    for(auto i = 0;i < DIV_UNIT_NUM;i++)
+    {
+        tew_div.push_back(div_wb_port[i]->get_json());
+    }
+
+    for(auto i = 0;i < LSU_UNIT_NUM;i++)
+    {
+        tew_lsu.push_back(lsu_wb_port[i]->get_json());
+    }
+
+    for(auto i = 0;i < MUL_UNIT_NUM;i++)
+    {
+        tew_mul.push_back(mul_wb_port[i]->get_json());
+    }
+
+    tew["alu"] = tew_alu;
+    tew["bru"] = tew_bru;
+    tew["csr"] = tew_csr;
+    tew["div"] = tew_div;
+    tew["lsu"] = tew_lsu;
+    tew["mul"] = tew_mul;
+    ret["execute_wb"] = tew;
+    ret["wb_commit"] = wb_commit_port.get_json();
+
+    ret["issue_feedback_pack"] = t_issue_feedback_pack.get_json();
+    ret["bru_feedback_pack"] = t_bru_feedback_pack.get_json();
+    ret["wb_feedback_pack"] = t_wb_feedback_pack.get_json();
+    ret["commit_feedback_pack"] = t_commit_feedback_pack.get_json();
+    return ret.dump();
+}
+
 typedef std::string (*socket_cmd_handler)(std::vector<std::string> args);
 
 typedef struct socket_cmd_desc_t
@@ -864,6 +982,7 @@ static socket_cmd_desc_t socket_cmd_list[] = {
                                       {"read_csr", socket_cmd_read_csr},
                                       {"get_pc", socket_cmd_get_pc},
                                       {"get_cycle", socket_cmd_get_cycle},
+                                      {"get_pipeline_status", socket_cmd_get_pipeline_status},
                                       {"", NULL}
                                       };
 

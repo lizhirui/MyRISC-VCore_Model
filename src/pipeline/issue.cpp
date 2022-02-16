@@ -411,4 +411,9 @@ namespace pipeline
     {
         issue_q.print(indent);
     }
+
+    json issue::get_json()
+    {
+        return issue_q.get_json();
+    }
 }

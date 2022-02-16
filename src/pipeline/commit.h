@@ -9,13 +9,24 @@
 
 namespace pipeline
 {
-    typedef struct commit_feedback_pack_t
+    typedef struct commit_feedback_pack_t : if_print_t
     {
         bool enable;
         uint32_t next_handle_rob_id;
         bool has_exception;
         uint32_t exception_pc;
         bool flush;
+
+        virtual json get_json()
+        {
+            json t;
+            t["enable"] = enable;
+            t["next_handle_rob_id"] = next_handle_rob_id;
+            t["has_exception"] = has_exception;
+            t["exception_pc"] = exception_pc;
+            t["flush"] = flush;
+            return t;
+        }
     }commit_feedback_pack_t;
 
     enum class state_t

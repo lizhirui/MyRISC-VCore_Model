@@ -27,6 +27,10 @@
 #include <cctype>
 #include "magic_enum.h"
 
+#include <json.hpp>
+
+using json = nlohmann::json;
+
 #undef assert
 #define assert(cond)\
     if(!(cond)) \
@@ -95,6 +99,11 @@ typedef struct if_print_t
     virtual void print(std::string indent)
     {
         std::cout << "<Not Implemented Method>" << std::endl;
+    }
+
+    virtual json get_json()
+    {
+        return {};
     }
 }if_print_t;
 

@@ -21,5 +21,6 @@ namespace pipeline
             void run(pipeline::execute::bru_feedback_pack_t bru_feedback_pack, commit_feedback_pack_t commit_feedback_pack);
             uint32_t get_pc();
             virtual void print(std::string indent);
+            virtual json get_json();
     };
 }

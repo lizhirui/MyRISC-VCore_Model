@@ -99,4 +99,12 @@ namespace pipeline
         std::cout << indent << "pc = 0x" << fillzero(8) << outhex(this->pc);
         std::cout << "    jump_wait = " << outbool(this->jump_wait) << std::endl;
     }
+
+    json fetch::get_json()
+    {
+        json j;
+        j["pc"] = this->pc;
+        j["jump_wait"] = this->jump_wait;
+        return j;
+    }
 }

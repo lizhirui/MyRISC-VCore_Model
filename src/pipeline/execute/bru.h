@@ -12,11 +12,20 @@ namespace pipeline
 {
     namespace execute
     {
-        typedef struct bru_feedback_pack_t
+        typedef struct bru_feedback_pack_t : if_print_t
         {
             bool enable;
             bool jump;
             uint32_t next_pc;
+
+            virtual json get_json()
+            {
+                json t;
+                t["enable"] = enable;
+                t["jump"] = jump;
+                t["next_pc"] = next_pc;
+                return t;
+            }
         }bru_feedback_pack_t;
 
         class bru

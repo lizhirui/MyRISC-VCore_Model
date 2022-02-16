@@ -16,6 +16,8 @@ if(_cpp_17_flag_supported)
 	add_compile_options("/std:c++17")
 endif()
 
+set(CMAKE_CXX_STACK_SIZE "10485760")
+
 # 将源代码添加到此项目的可执行文件。
 file(GLOB_RECURSE src_files CONFIGURE_DEPENDS "./src/*.cpp" "./src/*.h")
 add_executable(sim ${src_files})

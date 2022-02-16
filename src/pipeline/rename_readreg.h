@@ -123,5 +123,74 @@ namespace pipeline
                 std::cout << std::endl;
             }
         }
+
+        virtual json get_json()
+        {
+            json ret = json::array();
+
+            for(auto i = 0;i < RENAME_WIDTH;i++)
+            {
+                json t;
+                t["enable"] = op_info[i].enable;
+                t["value"] = op_info[i].value;
+                t["valid"] = op_info[i].valid;
+                t["rob_id"] = op_info[i].rob_id;
+                t["pc"] = op_info[i].pc;
+                t["imm"] = op_info[i].imm;
+                t["has_exception"] = op_info[i].has_exception;
+                t["exception_id"] = outenum(op_info[i].exception_id);
+                t["exception_value"] = op_info[i].exception_value;
+                t["rs1"] = op_info[i].rs1;
+                t["arg1_src"] = op_info[i].arg1_src;
+                t["rs1_need_map"] = op_info[i].rs1_need_map;
+                t["rs1_phy"] = op_info[i].rs1_phy;
+                t["rs2"] = op_info[i].rs2;
+                t["arg2_src"] = outenum(op_info[i].arg2_src);
+                t["rs2_need_map"] = op_info[i].rs2_need_map;
+                t["rs2_phy"] = op_info[i].rs2_phy;
+                t["rd"] = op_info[i].rd;
+                t["rd_enable"] = op_info[i].rd_enable;
+                t["need_rename"] = op_info[i].need_rename;
+                t["rd_phy"] = op_info[i].rd_phy;
+                t["csr"] = op_info[i].csr;
+                t["op"] = outenum(op_info[i].op);
+                t["op_unit"] = outenum(op_info[i].op_unit);
+
+                switch(op_info[i].op_unit)
+                {
+                    case op_unit_t::alu:
+                        t["sub_op"] = outenum(op_info[i].sub_op.alu_op);
+                        break;
+                    
+                    case op_unit_t::bru:
+                        t["sub_op"] = outenum(op_info[i].sub_op.bru_op);
+                        break;
+
+                    case op_unit_t::csr:
+                        t["sub_op"] = outenum(op_info[i].sub_op.csr_op);
+                        break;
+
+                    case op_unit_t::div:
+                        t["sub_op"] = outenum(op_info[i].sub_op.div_op);
+                        break;
+
+                    case op_unit_t::lsu:
+                        t["sub_op"] = outenum(op_info[i].sub_op.lsu_op);
+                        break;
+
+                    case op_unit_t::mul:
+                        t["sub_op"] = outenum(op_info[i].sub_op.mul_op);
+                        break;
+
+                    default:
+                        t["sub_op"] = "<Unsupported>";
+                        break;
+                }
+
+                ret.push_back(t);
+            }
+            
+            return ret;
+        }
     }rename_readreg_pack_t;
 }
