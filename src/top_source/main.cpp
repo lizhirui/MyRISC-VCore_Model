@@ -88,8 +88,209 @@ static pipeline::execute::bru_feedback_pack_t t_bru_feedback_pack;
 static pipeline::wb_feedback_pack_t t_wb_feedback_pack;
 static pipeline::commit_feedback_pack_t t_commit_feedback_pack;
 
+static asio::io_context recv_ioc;
+static asio::io_context send_ioc;
+std::atomic<bool> recv_thread_stop = false;
+std::atomic<bool> recv_thread_stopped = false;
+std::atomic<bool> server_thread_stopped = false;
+std::atomic<bool> program_stop = false;
+
+static asio::io_context tcp_charfifo_thread_ioc;
+static boost::lockfree::spsc_queue<char, boost::lockfree::capacity<1024>> charfifo_send_fifo;
+std::atomic<bool> charfifo_thread_stopped = false;
+std::atomic<bool> charfifo_recv_thread_stop = false;
+std::atomic<bool> charfifo_recv_thread_stopped = false;
+
+void tcp_charfifo_recv_thread_receive_entry(asio::ip::tcp::socket &soc)
+{
+    char buf = 0;
+
+    while(!charfifo_recv_thread_stop)
+    {
+        try
+        {
+            soc.receive(asio::buffer(&buf, sizeof(buf)));
+        }
+        catch(const std::exception &ex)
+        {
+            std::cout << ex.what() << std::endl;
+            break;
+        }
+    }
+
+    charfifo_recv_thread_stopped = true;
+}
+
+void tcp_charfifo_thread_entry(asio::ip::tcp::acceptor &&listener)
+{
+    try
+    {
+        while(!program_stop)
+        {
+            std::cout << "Wait Telnet Connection" << std::endl;
+            auto soc = listener.accept();
+            soc.set_option(asio::ip::tcp::no_delay(true));
+            std::cout << "Telnet Connected" << std::endl;
+            charfifo_recv_thread_stop = false;
+            charfifo_recv_thread_stopped = false;
+            std::thread rev_thread(tcp_charfifo_recv_thread_receive_entry, std::ref(soc));
+
+            try
+            {
+                while(1)
+                {
+                    if(!charfifo_send_fifo.empty())
+                    {
+                        auto ch = charfifo_send_fifo.front();
+                        soc.send(asio::buffer(&ch, 1));
+                        while(!charfifo_send_fifo.pop());
+                    }
+
+                    if(charfifo_recv_thread_stopped)
+                    {
+                        break;
+                    }
+
+                    if(charfifo_send_fifo.empty())
+                    {
+                        std::this_thread::sleep_for(std::chrono::milliseconds(30));
+                    }
+                }
+            }
+            catch(const std::exception &ex)
+            {
+                std::cout << ex.what() << std::endl;
+            }
+            
+            charfifo_recv_thread_stop = true;
+            rev_thread.join();
+            soc.shutdown(asio::socket_base::shutdown_both);
+            soc.close();
+            std::cout << "Telnet Disconnected" << std::endl;
+        }
+        
+        listener.close();
+        charfifo_thread_stopped = true;
+    }
+    catch(const std::exception &ex)
+    {
+        std::cout << ex.what() << std::endl;
+    }
+}
+
+static void telnet_init()
+{
+    asio::ip::tcp::acceptor listener(tcp_charfifo_thread_ioc, {asio::ip::address::from_string("127.0.0.1"), 10241});
+    listener.set_option(asio::ip::tcp::no_delay(true));
+    listener.listen();
+    std::cout << "Telnet Bind on 127.0.0.1:10241" << std::endl;
+    charfifo_thread_stopped = false;
+    std::thread server_thread(tcp_charfifo_thread_entry, std::move(listener));
+    server_thread.detach();
+}
+
+static void reset()
+{
+    fetch_decode_fifo.reset();
+    decode_rename_fifo.reset();
+    rename_readreg_port.reset();
+    readreg_issue_port.reset();
+
+    for(auto i = 0;i < ALU_UNIT_NUM;i++)
+    {
+        issue_alu_fifo[i]->reset();
+    }
+
+    for(auto i = 0;i < BRU_UNIT_NUM;i++)
+    {
+        issue_bru_fifo[i]->reset();
+    }
+
+    for(auto i = 0;i < CSR_UNIT_NUM;i++)
+    {
+        issue_csr_fifo[i]->reset();
+    }
+
+    for(auto i = 0;i < DIV_UNIT_NUM;i++)
+    {
+        issue_div_fifo[i]->reset();
+    }
+
+    for(auto i = 0;i < LSU_UNIT_NUM;i++)
+    {
+        issue_lsu_fifo[i]->reset();
+    }
+
+    for(auto i = 0;i < MUL_UNIT_NUM;i++)
+    {
+        issue_mul_fifo[i]->reset();
+    }
+
+    for(auto i = 0;i < ALU_UNIT_NUM;i++)
+    {
+        alu_wb_port[i]->reset();
+    }
+
+    for(auto i = 0;i < BRU_UNIT_NUM;i++)
+    {
+        bru_wb_port[i]->reset();
+    }
+
+    for(auto i = 0;i < CSR_UNIT_NUM;i++)
+    {
+        csr_wb_port[i]->reset();
+    }
+
+    for(auto i = 0;i < DIV_UNIT_NUM;i++)
+    {
+        div_wb_port[i]->reset();
+    }
+
+    for(auto i = 0;i < LSU_UNIT_NUM;i++)
+    {
+        lsu_wb_port[i]->reset();
+    }
+
+    for(auto i = 0;i < MUL_UNIT_NUM;i++)
+    {
+        mul_wb_port[i]->reset();
+    }
+
+    wb_commit_port.reset();
+    memory.reset();
+    phy_regfile.reset();
+    rat.init_start();
+
+    for(uint32_t i = 1;i < 32;i++)
+    {
+        rat.set_map(i, i);
+        rat.commit_map(i);
+        pipeline::phy_regfile_item_t t_item;
+        t_item.value = 0;
+        t_item.valid = true;
+        phy_regfile.write(i, t_item);
+    }
+
+    rat.init_finish();
+    rob.reset();
+    csr_file.reset();
+    fetch_stage.reset();
+    rename_stage.reset();
+    issue_stage.reset();
+
+    for(auto i = 0;i < CSR_UNIT_NUM;i++)
+    {
+        execute_csr_stage[i]->reset();
+    }
+
+    commit_stage.reset();
+    cpu_clock_cycle = 0;
+}
+
 static void init()
 {
+    telnet_init();
+
     std::ifstream binfile("../../../testprgenv/main/test.bin", std::ios::binary);
 
     if(!binfile || !binfile.is_open())
@@ -241,6 +442,8 @@ static void init()
     csr_file.map(CSR_MCAUSE, false, std::make_shared<component::csr::mcause>());
     csr_file.map(CSR_MTVAL, false, std::make_shared<component::csr::mtval>());
     csr_file.map(CSR_MIP, false, std::make_shared<component::csr::mip>());
+    csr_file.map(CSR_CHARFIFO, false, std::make_shared<component::csr::charfifo>(&charfifo_send_fifo));
+    csr_file.map(CSR_FINISH, false, std::make_shared<component::csr::finish>());
 
     for(auto i = 0;i < 16;i++)
     {
@@ -491,6 +694,7 @@ static void cmd_gui()
         listener.set_option(asio::ip::tcp::no_delay(true));
         listener.listen();
         std::cout << "Server Bind on 127.0.0.1:10240" << std::endl;
+        server_thread_stopped = false;
         std::thread server_thread(tcp_server_thread_entry, std::move(listener));
         server_thread.detach();
         gui_mode = true;
@@ -547,16 +751,11 @@ static bool cmd_handle(std::string cmd)
     return false;
 }
 
-static asio::io_context recv_ioc;
-static asio::io_context send_ioc;
-std::atomic<bool> recv_thread_stop = false;
-std::atomic<bool> recv_thread_stopped = false;
-std::atomic<bool> server_thread_stopped = false;
-std::atomic<bool> program_stop = false;
-
 static void run()
 {
     init();
+    reset();
+    cmd_gui();
 
     std::string last_cmd = "";
 
@@ -668,6 +867,7 @@ static void run()
         rob.sync();
         phy_regfile.sync();
         csr_file.sync();
+        memory.sync();
         cpu_clock_cycle++;
     }
 }
@@ -694,6 +894,17 @@ static std::string socket_cmd_quit(std::vector<std::string> args)
 
     recv_thread_stop = true;
     program_stop = true;
+    return "ok";
+}
+
+static std::string socket_cmd_reset(std::vector<std::string> args)
+{
+    if(args.size() != 0)
+    {
+        return "argerror";
+    }
+
+    reset();
     return "ok";
 }
 
@@ -960,6 +1171,7 @@ static std::string socket_cmd_get_pipeline_status(std::vector<std::string> args)
     ret["bru_feedback_pack"] = t_bru_feedback_pack.get_json();
     ret["wb_feedback_pack"] = t_wb_feedback_pack.get_json();
     ret["commit_feedback_pack"] = t_commit_feedback_pack.get_json();
+    ret["rob"] = rob.get_json();
     return ret.dump();
 }
 
@@ -973,6 +1185,7 @@ typedef struct socket_cmd_desc_t
 
 static socket_cmd_desc_t socket_cmd_list[] = {
                                       {"quit", socket_cmd_quit},
+                                      {"reset", socket_cmd_reset},
                                       {"continue", socket_cmd_continue},
                                       {"pause", socket_cmd_pause},
                                       {"step", socket_cmd_step},
@@ -1119,7 +1332,6 @@ void tcp_server_thread_entry(asio::ip::tcp::acceptor &&listener)
 
                     if(recv_thread_stopped)
                     {
-                        rev_thread.join();
                         break;
                     }
                 }
@@ -1127,10 +1339,10 @@ void tcp_server_thread_entry(asio::ip::tcp::acceptor &&listener)
             catch(const std::exception &ex)
             {
                 std::cout << ex.what() << std::endl;
-                recv_thread_stop = true;
-                rev_thread.join();
             }
             
+            recv_thread_stop = true;
+            rev_thread.join();
             soc.shutdown(asio::socket_base::shutdown_both);
             soc.close();
             std::cout << "GUI Disconnected" << std::endl;
@@ -1138,11 +1350,6 @@ void tcp_server_thread_entry(asio::ip::tcp::acceptor &&listener)
         
         listener.close();
         server_thread_stopped = true;
-        /*#ifdef WIN32
-            ExitProcess(0);
-        #else
-            kill(getpid(), SIGINT);
-        #endif*/
     }
     catch(const std::exception &ex)
     {
@@ -1160,7 +1367,9 @@ int main()
             std::cout << "SetControlCtrlHandler Failed!" << std::endl;
         }
     #endif
+
     run();
     while(!server_thread_stopped);
+    while(!charfifo_thread_stopped);
     return 0;
 }

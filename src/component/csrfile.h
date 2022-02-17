@@ -4,7 +4,7 @@
 
 namespace component
 {
-	class csrfile : if_print_t
+	class csrfile : public if_print_t, public if_reset_t
 	{
 		private:
 			typedef struct csr_item_t
@@ -47,6 +47,11 @@ namespace component
 						{
 							a_index = i;
 						}
+
+						if(i == 0)
+						{
+							break;
+						}
 					}
 
 					for(auto i = b.first.length() - 1;i >= 0;i--)
@@ -58,6 +63,11 @@ namespace component
 						else
 						{
 							b_index = i;
+						}
+
+						if(i == 0)
+						{
+							break;
 						}
 					}
 
@@ -80,6 +90,16 @@ namespace component
 			}
 
 		public:
+			virtual void reset()
+			{
+				for(auto iter = csr_map_table.begin();iter != csr_map_table.end();iter++)
+				{
+					iter->second.csr->reset();
+				}
+
+				clear_queue(sync_request_q);
+			}
+
 			void map(uint32_t addr, bool readonly, std::shared_ptr<csr_base> csr)
 			{
 				assert(csr_map_table.find(addr) == csr_map_table.end());

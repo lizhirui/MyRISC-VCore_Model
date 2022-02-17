@@ -11,7 +11,7 @@ namespace pipeline
 {
     namespace execute
     {
-        class csr
+        class csr : if_reset_t
         {
             private:
                 component::fifo<issue_execute_pack_t> *issue_csr_fifo;
@@ -31,6 +31,7 @@ namespace pipeline
 
             public:
                 csr(component::fifo<issue_execute_pack_t> *issue_csr_fifo, component::port<execute_wb_pack_t> *csr_wb_port, component::csrfile *csr_file);
+                virtual void reset();
                 void run(commit_feedback_pack_t commit_feedback_pack);
         };
     }

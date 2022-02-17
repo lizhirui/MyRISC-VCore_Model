@@ -29,6 +29,22 @@ namespace component
             std::cout << blank << "exception_id = " << outenum(exception_id);
             std::cout << blank << "exception_value = 0x" << fillzero(8) << outhex(exception_value) << std::endl;
         }
+
+        virtual json get_json()
+        {
+            json ret;
+
+            ret["new_phy_reg_id"] = new_phy_reg_id;
+            ret["old_phy_reg_id"] = old_phy_reg_id;
+            ret["old_phy_reg_id_valid"] = old_phy_reg_id_valid;
+            ret["finish"] = finish;
+            ret["pc"] = pc;
+            ret["inst_value"] = inst_value;
+            ret["has_exception"] = has_exception;
+            ret["exception_id"] = outenum(exception_id);
+            ret["exception_value"] = exception_value;
+            return ret;
+        }
     }rob_item_t;
 
     class rob : public fifo<rob_item_t>
@@ -87,6 +103,13 @@ namespace component
             rob(uint32_t size) : fifo<rob_item_t>(size)
             {
                 
+            }
+
+            virtual void reset()
+            {
+                fifo<rob_item_t>::reset();
+                clear_queue(sync_request_q);
+                committed = false;
             }
 
             bool get_committed()
@@ -214,6 +237,41 @@ namespace component
                             break;
                     }
                 }
+            }
+
+            virtual json get_json()
+            {
+                json ret = json::array();
+                if_print_t *if_print;
+
+                if(!is_empty())
+                {
+                    auto cur = rptr;
+                    auto cur_stage = rstage;
+
+                    while(1)
+                    {
+                        if_print = dynamic_cast<if_print_t *>(&buffer[cur]);
+                        json item = if_print->get_json();
+                        item["rob_id"] = cur;
+                        ret.push_back(item);
+                
+                        cur++;
+
+                        if(cur >= size)
+                        {
+                            cur = 0;
+                            cur_stage = !cur_stage;
+                        }
+
+                        if((cur == wptr) && (cur_stage == wstage))
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                return ret;
             }
     };
 }

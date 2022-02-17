@@ -4,7 +4,7 @@
 namespace component
 {
     template<typename T>
-    class fifo : public if_print_t
+    class fifo : public if_print_t, public if_reset_t
     {
         protected:
             T *buffer;
@@ -17,6 +17,7 @@ namespace component
         public:
             fifo(uint32_t size);
             ~fifo();
+            virtual void reset();
             void flush();
             bool push(T element);
             bool pop(T *element);
@@ -44,6 +45,15 @@ namespace component
     fifo<T>::~fifo()
     {
         delete[] buffer;
+    }
+
+    template<typename T>
+    void fifo<T>::reset()
+    {
+        wptr = 0;
+        wstage = false;
+        rptr = 0;
+        rstage = false;
     }
 
     template<typename T>
@@ -180,7 +190,6 @@ namespace component
             while(1)
             {
                 if_print = dynamic_cast<if_print_t *>(&buffer[cur]);
-                json item;
                 ret.push_back(if_print->get_json());
                 
                 cur++;

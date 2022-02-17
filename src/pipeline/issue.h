@@ -23,7 +23,7 @@ namespace pipeline
         }
     }issue_feedback_pack_t;
     
-    class issue : public if_print_t
+    class issue : public if_print_t, public if_reset_t
     {
         private:
             typedef struct issue_queue_item_t : public if_print_t
@@ -233,6 +233,7 @@ namespace pipeline
                
         public:
             issue(component::port<readreg_issue_pack_t> *readreg_issue_port, component::fifo<issue_execute_pack_t> **issue_alu_fifo, component::fifo<issue_execute_pack_t> **issue_bru_fifo, component::fifo<issue_execute_pack_t> **issue_csr_fifo, component::fifo<issue_execute_pack_t> **issue_div_fifo, component::fifo<issue_execute_pack_t> **issue_lsu_fifo, component::fifo<issue_execute_pack_t> **issue_mul_fifo);
+            virtual void reset();
             issue_feedback_pack_t run(wb_feedback_pack_t wb_feedback_pack, commit_feedback_pack_t commit_feedback_pack);
             virtual void print(std::string indent);
             virtual json get_json();

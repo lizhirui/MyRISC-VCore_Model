@@ -11,8 +11,14 @@ namespace pipeline
     {
         this->memory = memory;
         this->fetch_decode_fifo = fetch_decode_fifo;
+        this->init_pc = init_pc;
         this->pc = init_pc;
+        this->jump_wait = false;
+    }
 
+    void fetch::reset()
+    {
+        this->pc = init_pc;
         this->jump_wait = false;
     }
 

@@ -28,6 +28,7 @@
 #include "magic_enum.h"
 
 #include <json.hpp>
+#include <boost/lockfree/spsc_queue.hpp>
 
 using json = nlohmann::json;
 
@@ -126,3 +127,15 @@ template<typename T> class if_print_fake : public if_print_t
            return this->value == x; 
         }
 };
+
+typedef struct if_reset_t
+{
+    virtual void reset() = 0;
+}if_reset_t;
+
+template <typename T> 
+void clear_queue(std::queue<T> &c) 
+{ 
+    std::queue<T> empty; 
+    std::swap(empty, c);
+} 

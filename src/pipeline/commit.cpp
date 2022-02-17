@@ -14,6 +14,11 @@ namespace pipeline
 		this->cur_state = state_t::normal;
 	}
 
+	void commit::reset()
+	{
+		this->cur_state = state_t::normal;
+	}
+
     commit_feedback_pack_t commit::run()
 	{
 		commit_feedback_pack_t feedback_pack;

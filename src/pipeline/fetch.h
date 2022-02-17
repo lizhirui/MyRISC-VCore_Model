@@ -8,16 +8,18 @@
 
 namespace pipeline
 {
-    class fetch : public if_print_t
+    class fetch : public if_print_t, public if_reset_t
     {
         private:
             component::memory *memory;
             component::fifo<fetch_decode_pack_t> *fetch_decode_fifo;
+            uint32_t init_pc;
             uint32_t pc;
             bool jump_wait;
 
         public:
             fetch(component::memory *memory, component::fifo<fetch_decode_pack_t> *fetch_decode_fifo, uint32_t init_pc);
+            virtual void reset();
             void run(pipeline::execute::bru_feedback_pack_t bru_feedback_pack, commit_feedback_pack_t commit_feedback_pack);
             uint32_t get_pc();
             virtual void print(std::string indent);

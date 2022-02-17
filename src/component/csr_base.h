@@ -3,7 +3,7 @@
 
 namespace component
 {
-	class csr_base
+	class csr_base : public if_reset_t
 	{
 		protected:
 			const std::string name;
@@ -26,14 +26,14 @@ namespace component
 				this->value = init_value;
 			}
 
+			virtual void reset()
+			{
+				this->value = init_value;
+			}
+
 			std::string get_name()
 			{
 				return this->name;
-			}
-
-			void reset()
-			{
-				this->value = init_value;
 			}
 
 			virtual uint32_t filter(uint32_t value)

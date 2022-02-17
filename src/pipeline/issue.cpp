@@ -15,6 +15,21 @@ namespace pipeline
         this->is_inst_waiting = false;
         this->inst_waiting_rob_id = 0;
     }
+
+    void issue::reset()
+    {
+        this->issue_q.reset();
+        this->busy = false;
+        this->is_inst_waiting = false;
+        this->inst_waiting_rob_id = 0;
+        this->last_index = 0;
+        this->alu_index = 0;
+        this->bru_index = 0;
+        this->csr_index = 0;
+        this->div_index = 0;
+        this->lsu_index = 0;
+        this->mul_index = 0;
+    }
     
     issue_feedback_pack_t issue::run(wb_feedback_pack_t wb_feedback_pack, commit_feedback_pack_t commit_feedback_pack)
     {

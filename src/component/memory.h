@@ -3,7 +3,7 @@
 
 namespace component
 {
-    class memory
+    class memory : public if_reset_t
     {
         private:
             uint8_t *mem;
@@ -79,6 +79,11 @@ namespace component
             ~memory()
             {
                 delete[] mem;
+            }
+
+            virtual void reset()
+            {
+                clear_queue(sync_request_q);
             }
 
             bool check_align(uint32_t addr, uint32_t access_size)

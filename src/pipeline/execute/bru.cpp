@@ -90,6 +90,7 @@ namespace pipeline
                             break;
 
                         case bru_op_t::jal:
+                            send_pack.rd_value = rev_pack.pc + 4;
                             feedback_pack.jump = true;
                             break;
 

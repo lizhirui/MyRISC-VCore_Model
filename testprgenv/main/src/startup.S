@@ -1,0 +1,93 @@
+    .section .text.entry
+    .global _start
+_start:
+    /*li x1, 0
+    li x2, 0
+    li x3, 0
+    li x4, 0
+    li x5, 0
+    li x6, 0
+    li x7, 0
+    li x8, 0
+    li x9, 0
+    li x10, 0
+    addi x1, x1, 1
+    addi x2, x2, 1
+    addi x3, x3, 1
+    addi x4, x4, 1
+    addi x5, x5, 1
+    addi x6, x6, 1
+    addi x7, x7, 1
+    addi x8, x8, 1
+    addi x1, x1, 1
+    addi x2, x2, 1
+
+loop:
+    addi x1, x1, 1
+    addi x2, x2, 1
+    addi x3, x3, 1
+    addi x4, x4, 1
+    addi x5, x5, 1
+    addi x6, x6, 1
+    addi x7, x7, 1
+    addi x8, x8, 1
+    addi x9, x9, 1
+    addi x10, x10, 1
+    addi x1, x1, 1
+    addi x2, x2, 1
+    addi x3, x3, 1
+    addi x4, x4, 1
+    addi x5, x5, 1
+    addi x6, x6, 1
+    addi x7, x7, 1
+    addi x8, x8, 1
+    addi x9, x9, 1
+    addi x10, x10, 1
+    j loop*/
+
+    la sp, __stack_interrupt_cpu0
+    j main
+
+    li x1, 'h'
+    csrw 0x800, x1
+    csrw 0x800, x1
+    csrw 0x800, x1
+    csrw 0x800, x1
+    csrw 0x800, x1
+    csrw 0x800, x1
+    csrw 0x800, x1
+    csrw 0x800, x1
+    csrw 0x800, x1
+    csrw 0x800, x1
+    csrw 0x800, x1
+    csrw 0x800, x1
+    csrw 0x800, x1
+    csrw 0x800, x1
+    csrw 0x800, x1
+    csrw 0x800, x1
+    csrw 0x800, x1
+    csrw 0x800, x1
+    csrw 0x800, x1
+
+    li x2, 0
+    li x3, 0
+    la x1, _exception
+    csrw mtvec, x1
+
+loop:
+    ecall
+    addi x3, x3, 1
+    j loop
+
+    .align 4
+_exception:
+    addi x2, x2, 1
+    csrr x4, mepc
+    addi x4, x4, 4
+    csrw mepc, x4
+    mret
+
+    .global send_char
+send_char:
+    csrw 0x800, a0
+    ret

@@ -15,6 +15,11 @@ namespace pipeline
         this->busy = false;
     }
 
+    void rename::reset()
+    {
+        this->busy = false;
+    }
+
     void rename::run(issue_feedback_pack_t issue_pack, commit_feedback_pack_t commit_feedback_pack)
     {
         rename_readreg_pack_t null_send_pack;

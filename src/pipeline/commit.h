@@ -9,7 +9,7 @@
 
 namespace pipeline
 {
-    typedef struct commit_feedback_pack_t : if_print_t
+    typedef struct commit_feedback_pack_t : public if_print_t
     {
         bool enable;
         uint32_t next_handle_rob_id;
@@ -35,7 +35,7 @@ namespace pipeline
         flush
     };
 
-    class commit
+    class commit : public if_reset_t
     {
         private:
             component::port<wb_commit_pack_t> *wb_commit_port;
@@ -51,6 +51,7 @@ namespace pipeline
 
         public:
             commit(component::port<wb_commit_pack_t> *wb_commit_port, component::rat *rat, component::rob *rob, component::csrfile *csr_file, component::regfile<phy_regfile_item_t> *phy_regfile);
+            virtual void reset();
             commit_feedback_pack_t run();
     };
 }

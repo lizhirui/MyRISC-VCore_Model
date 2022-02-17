@@ -16,6 +16,14 @@ namespace pipeline
             memset(&this->rev_pack, 0, sizeof(this->rev_pack));
         }
 
+        void csr::reset()
+        {
+            this->cur_state = state_t::idle;
+            this->csr_value = 0;
+            this->csr_succ = true;
+            memset(&this->rev_pack, 0, sizeof(this->rev_pack));
+        }
+
         void csr::run(commit_feedback_pack_t commit_feedback_pack)
         {
             execute_wb_pack_t send_pack;

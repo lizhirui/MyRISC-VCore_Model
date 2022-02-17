@@ -4,7 +4,7 @@
 namespace component
 {
     template<typename T>
-    class regfile
+    class regfile : public if_reset_t
     {
         private:
             enum class sync_request_type_t
@@ -35,6 +35,12 @@ namespace component
             ~regfile()
             {
                 delete[] reg_data;
+            }
+
+            virtual void reset()
+            {
+                memset(reg_data, 0, sizeof(reg_data[0]) * size);
+                clear_queue(sync_request_q);
             }
 
             void write(uint32_t addr, T value)

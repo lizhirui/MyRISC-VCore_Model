@@ -44,6 +44,12 @@ namespace component
             {
                             
             }
+
+            virtual void reset()
+            {
+                fifo<T>::reset();
+                clear_queue(sync_q);
+            }
             
             uint32_t get_size()
             {

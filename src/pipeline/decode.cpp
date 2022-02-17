@@ -77,6 +77,8 @@ namespace pipeline
                                 op_info.arg1_src = arg_src_t::disable;
                                 op_info.arg2_src = arg_src_t::disable;
                                 op_info.imm = sign_extend(imm_j, 21);
+                                op_info.rd = rd;
+                                op_info.rd_enable = true;
                                 break;
 
                             case 0x67://jalr
@@ -87,6 +89,8 @@ namespace pipeline
                                 op_info.rs1 = rs1;
                                 op_info.arg2_src = arg_src_t::disable;
                                 op_info.imm = sign_extend(imm_i, 12);
+                                op_info.rd = rd;
+                                op_info.rd_enable = true;
                                 break;
 
                             case 0x63://beq bne blt bge bltu bgeu

@@ -19,6 +19,8 @@
 #include "./csr/mvendorid.h"
 #include "./csr/pmpaddr.h"
 #include "./csr/pmpcfg.h"
+#include "./csr/charfifo.h"
+#include "./csr/finish.h"
 
 #define CSR_MVENDORID 0xf11
 #define CSR_MARCHID 0xf12
@@ -36,3 +38,5 @@
 #define CSR_MCAUSE 0x342
 #define CSR_MTVAL 0x343
 #define CSR_MIP 0x344
+#define CSR_CHARFIFO 0x800
+#define CSR_FINISH 0x804

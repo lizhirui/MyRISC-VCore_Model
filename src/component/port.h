@@ -4,13 +4,20 @@
 namespace component
 {
     template<typename T>
-    class port : public if_print_t
+    class port : public if_print_t, public if_reset_t
     {
         private:
             T value;
+            T init_value;
 
         public:
             port(T init_value)
+            {
+                value = init_value;
+                this->init_value = init_value;
+            }
+
+            virtual void reset()
             {
                 value = init_value;
             }

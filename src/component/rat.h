@@ -3,7 +3,7 @@
 
 namespace component
 {
-    class rat : if_print_t
+    class rat : public if_print_t
     {
         private:
             enum class sync_request_type_t
@@ -118,12 +118,7 @@ namespace component
                 memset(phy_map_table_valid, 0, sizeof(phy_map_table_valid[0]) * bitmap_size);
                 memset(phy_map_table_visible, 0, sizeof(phy_map_table_visible[0]) * bitmap_size);
                 memset(phy_map_table_commit, 0, sizeof(phy_map_table_commit[0]) * bitmap_size);
-                
-                while(!sync_request_q.empty())
-                {
-                    sync_request_q.pop();
-                }
-
+                clear_queue(sync_request_q);
                 init_rat = true;
             }
 
