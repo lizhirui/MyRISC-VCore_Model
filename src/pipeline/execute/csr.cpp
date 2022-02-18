@@ -124,36 +124,40 @@ namespace pipeline
                     {
                         send_pack.has_exception = true;
                         send_pack.exception_id = riscv_exception_t::illegal_instruction;
-                        send_pack.exception_value = rev_pack.value;
+                        //send_pack.exception_value = rev_pack.value;
+                        send_pack.exception_value = 0;
                     }
                     else
                     {
                         send_pack.rd_value = csr_value;
 
-                        switch(rev_pack.sub_op.csr_op)
+                        if(!((send_pack.arg1_src == arg_src_t::reg) && (!send_pack.rs1_need_map)))
                         {
-                            case csr_op_t::csrrc:
-                                csr_value = csr_value & ~(rev_pack.src1_value);
-                                break;
+                            switch(rev_pack.sub_op.csr_op)
+                            {
+                                case csr_op_t::csrrc:
+                                    csr_value = csr_value & ~(rev_pack.src1_value);
+                                    break;
 
-                            case csr_op_t::csrrs:
-                                csr_value = csr_value | rev_pack.src1_value;
-                                break;
+                                case csr_op_t::csrrs:
+                                    csr_value = csr_value | rev_pack.src1_value;
+                                    break;
 
-                            case csr_op_t::csrrw:
-                                csr_value = rev_pack.src1_value;
-                                break;
-                        }
+                                case csr_op_t::csrrw:
+                                    csr_value = rev_pack.src1_value;
+                                    break;
+                            }
 
-                        if(!csr_file->write_check(rev_pack.csr, csr_value))
-                        {
-                            send_pack.has_exception = true;
-                            send_pack.exception_id = riscv_exception_t::illegal_instruction;
-                            send_pack.exception_value = rev_pack.value;
-                        }
-                        else
-                        {
-                            csr_file->write_sync(rev_pack.csr, csr_value);
+                            if(!csr_file->write_check(rev_pack.csr, csr_value))
+                            {
+                                send_pack.has_exception = true;
+                                send_pack.exception_id = riscv_exception_t::illegal_instruction;
+                                send_pack.exception_value = rev_pack.value;
+                            }
+                            else
+                            {
+                                csr_file->write_sync(rev_pack.csr, csr_value);
+                            }
                         }
                     }
 

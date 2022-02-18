@@ -61,19 +61,19 @@ namespace pipeline
                     switch(rev_pack.sub_op.mul_op)
                     {
                         case mul_op_t::mul:
-                            send_pack.rd_value = (uint32_t)(((uint64_t)(((int64_t)rev_pack.src1_value) * ((int64_t)rev_pack.src2_value))) & 0xffffffffull);
+                            send_pack.rd_value = (uint32_t)(((uint64_t)(((int64_t)(int32_t)rev_pack.src1_value) * ((int64_t)(int32_t)rev_pack.src2_value))) & 0xffffffffull);
                             break;
 
                         case mul_op_t::mulh:
-                            send_pack.rd_value = (uint32_t)((((uint64_t)(((int64_t)rev_pack.src1_value) * ((int64_t)rev_pack.src2_value))) >> 32) & 0xffffffffull);
+                            send_pack.rd_value = (uint32_t)((((uint64_t)(((int64_t)(int32_t)rev_pack.src1_value) * ((int64_t)(int32_t)rev_pack.src2_value))) >> 32) & 0xffffffffull);
                             break;
 
                         case mul_op_t::mulhsu:
-                            send_pack.rd_value = (uint32_t)((((uint64_t)(((int64_t)rev_pack.src1_value) * ((uint64_t)rev_pack.src2_value))) >> 32) & 0xffffffffull);
+                            send_pack.rd_value = (uint32_t)((((uint64_t)(((int64_t)(int32_t)rev_pack.src1_value) * ((uint64_t)rev_pack.src2_value))) >> 32) & 0xffffffffull);
                             break;
 
                         case mul_op_t::mulhu:
-                            send_pack.rd_value = (uint32_t)((((uint64_t)(((uint64_t)rev_pack.src1_value) * ((int64_t)rev_pack.src2_value))) >> 32) & 0xffffffffull);
+                            send_pack.rd_value = (uint32_t)((((uint64_t)(((uint64_t)rev_pack.src1_value) * ((uint64_t)rev_pack.src2_value))) >> 32) & 0xffffffffull);
                             break;
                     }
                 }

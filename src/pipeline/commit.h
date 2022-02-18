@@ -48,6 +48,7 @@ namespace pipeline
 
             component::rob_item_t rob_item;
             uint32_t rob_item_id;
+            uint32_t restore_rob_item_id;
 
         public:
             commit(component::port<wb_commit_pack_t> *wb_commit_port, component::rat *rat, component::rob *rob, component::csrfile *csr_file, component::regfile<phy_regfile_item_t> *phy_regfile);

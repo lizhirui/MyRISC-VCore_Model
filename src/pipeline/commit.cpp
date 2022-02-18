@@ -17,6 +17,8 @@ namespace pipeline
 	void commit::reset()
 	{
 		this->cur_state = state_t::normal;
+		this->rob_item_id = 0;
+		this->restore_rob_item_id = 0;
 	}
 
     commit_feedback_pack_t commit::run()
@@ -41,17 +43,9 @@ namespace pipeline
 
 					if(rob_item.finish)
 					{
-						rob->pop_sync();
-
-						if(rob_item.old_phy_reg_id_valid)
-						{
-							rat->release_map_sync(rob_item.old_phy_reg_id);
-							phy_regfile->write_sync(rob_item.old_phy_reg_id, default_phy_reg_item);
-							rat->commit_map_sync(rob_item.new_phy_reg_id);
-						}
-
 						if(rob_item.has_exception)
 						{
+							assert(rob->get_tail_id(&this->restore_rob_item_id));
 							feedback_pack.enable = true;
 							feedback_pack.flush = true;
 							cur_state = state_t::flush;
@@ -59,8 +53,18 @@ namespace pipeline
 						}
 						else
 						{
+							rob->pop_sync();
+
+							if(rob_item.old_phy_reg_id_valid)
+							{
+								rat->release_map_sync(rob_item.old_phy_reg_id);
+								phy_regfile->write_sync(rob_item.old_phy_reg_id, default_phy_reg_item);
+								rat->commit_map_sync(rob_item.new_phy_reg_id);
+							}
+
 							feedback_pack.enable = rob->get_next_id(rob_item_id, &feedback_pack.next_handle_rob_id);
 							rob->set_committed(true);
+							rob->add_commit_num(1);
 						}
 					}
 
@@ -91,9 +95,24 @@ namespace pipeline
 			}
 		}
 		else//flush
-		{
-			if(rob->is_empty() || (rob->get_size() == 1))
+		{		
+			//flush rob and restore rat
+			auto t_rob_item = rob->get_item(this->restore_rob_item_id);
+			
+			if(t_rob_item.old_phy_reg_id_valid)
 			{
+				rat->restore_map_sync(t_rob_item.new_phy_reg_id, t_rob_item.old_phy_reg_id);
+				phy_regfile->write_sync(t_rob_item.new_phy_reg_id, default_phy_reg_item);
+			}
+
+			if(rob->get_prev_id(this->restore_rob_item_id, &this->restore_rob_item_id) && (this->restore_rob_item_id != this->rob_item_id))
+			{
+				feedback_pack.enable = true;
+				feedback_pack.flush = true;
+			}
+			else
+			{
+				rob->flush();
 				feedback_pack.enable = true;
 				feedback_pack.has_exception = true;
 				csr_file->write_sys_sync(CSR_MEPC, rob_item.pc);
@@ -103,21 +122,7 @@ namespace pipeline
 				feedback_pack.flush = true;
 				cur_state = state_t::normal;
 				rob->set_committed(true);
-			}
-			else
-			{
-				feedback_pack.enable = true;
-				feedback_pack.flush = true;
-			}
-			
-			//flush rob and restore rat
-			auto t_rob_item = rob->get_front();
-			rob->pop_sync();
-
-			if(t_rob_item.old_phy_reg_id_valid)
-			{
-				rat->restore_map_sync(t_rob_item.new_phy_reg_id, t_rob_item.old_phy_reg_id);
-				phy_regfile->write_sync(t_rob_item.new_phy_reg_id, default_phy_reg_item);
+				rob->add_commit_num(1);
 			}
 		}
 

@@ -65,7 +65,8 @@ namespace pipeline
                     {
                         send_pack.has_exception = true;
                         send_pack.exception_id = riscv_exception_t::illegal_instruction;
-                        send_pack.exception_value = rev_pack.value;
+                        //send_pack.exception_value = rev_pack.value;
+                        send_pack.exception_value = 0;
                     }
 
                     if(rev_pack.enable && rev_pack.valid)
@@ -123,7 +124,7 @@ namespace pipeline
                                 break;
 
                             case alu_op_t::sltu:
-                                send_pack.rd_value = (rev_pack.src1_value < (rev_pack.src2_value & 0xfff)) ? 1 : 0;
+                                send_pack.rd_value = (rev_pack.src1_value < rev_pack.src2_value) ? 1 : 0;
                                 break;
 
                             case alu_op_t::sra:

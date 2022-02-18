@@ -36,7 +36,7 @@ namespace pipeline
             bool i1_has_exception = !memory->check_align(i1_pc, 4) || !memory->check_boundary(i1_pc, 4);
             uint32_t i1 = i1_has_exception ? 0 : this->memory->read32(i1_pc);
             bool i1_enable = is_align(cur_pc, 8) && !jump_wait && !i0_jump;
-            bool i1_jump = ((i1 & 0x7f) == 0x6f) || ((i1 & 0x7f) == 0x67) || ((i1 & 0x7f) == 0x63) || (i0 == 0x30200073);
+            bool i1_jump = ((i1 & 0x7f) == 0x6f) || ((i1 & 0x7f) == 0x67) || ((i1 & 0x7f) == 0x63) || (i1 == 0x30200073);
 
             if(jump_wait)
             {
@@ -48,22 +48,16 @@ namespace pipeline
                     {
                         this->pc = bru_feedback_pack.next_pc;
                     }
-                    else
-                    {
-                        this->pc = (this->pc & (~0x04)) + 8;
-                    }
                 }
             }
             else if(!this->fetch_decode_fifo->is_full())
             {
-                if(i0_jump || i1_jump)
+                if((i0_enable && i0_jump) || (i1_enable && i1_jump))
                 {
                     this->jump_wait = true;
                 }
-                else
-                {
-                    this->pc += (i1_enable ? 8 : 4);
-                }
+                
+                this->pc += (i1_enable ? 8 : 4);
 
                 fetch_decode_pack_t t_fetch_decode_pack;
 

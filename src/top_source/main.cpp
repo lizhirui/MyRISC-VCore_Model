@@ -180,10 +180,10 @@ void tcp_charfifo_thread_entry(asio::ip::tcp::acceptor &&listener)
 
 static void telnet_init()
 {
-    asio::ip::tcp::acceptor listener(tcp_charfifo_thread_ioc, {asio::ip::address::from_string("127.0.0.1"), 10241});
+    asio::ip::tcp::acceptor listener(tcp_charfifo_thread_ioc, {asio::ip::address::from_string("0.0.0.0"), 10241});
     listener.set_option(asio::ip::tcp::no_delay(true));
     listener.listen();
-    std::cout << "Telnet Bind on 127.0.0.1:10241" << std::endl;
+    std::cout << "Telnet Bind on 0.0.0.0:10241" << std::endl;
     charfifo_thread_stopped = false;
     std::thread server_thread(tcp_charfifo_thread_entry, std::move(listener));
     server_thread.detach();
@@ -291,7 +291,8 @@ static void init()
 {
     telnet_init();
 
-    std::ifstream binfile("../../../testprgenv/main/test.bin", std::ios::binary);
+    //std::ifstream binfile("../../../testprgenv/main/test.bin", std::ios::binary);
+    std::ifstream binfile("../../../testfile.bin", std::ios::binary);
 
     if(!binfile || !binfile.is_open())
     {
@@ -308,7 +309,7 @@ static void init()
 
         for(auto i = 0;i < sizeof(buf);i++)
         {
-            memory.write8(0x80000000 + i, buf[i]);
+            memory.write8(0x80000000 + ((uint32_t)n) + i, buf[i]);
         }
 
         n += sizeof(buf);
@@ -690,10 +691,10 @@ static void cmd_gui()
 {
     try
     {
-        asio::ip::tcp::acceptor listener(tcp_server_thread_ioc, {asio::ip::address::from_string("127.0.0.1"), 10240});
+        asio::ip::tcp::acceptor listener(tcp_server_thread_ioc, {asio::ip::address::from_string("0.0.0.0"), 10240});
         listener.set_option(asio::ip::tcp::no_delay(true));
         listener.listen();
-        std::cout << "Server Bind on 127.0.0.1:10240" << std::endl;
+        std::cout << "Server Bind on 0.0.0.0:10240" << std::endl;
         server_thread_stopped = false;
         std::thread server_thread(tcp_server_thread_entry, std::move(listener));
         server_thread.detach();
@@ -769,7 +770,7 @@ static void run()
 
             if(gui_mode)
             {
-                std::cout << "Wait GUI Command" << std::endl;
+                //std::cout << "Wait GUI Command" << std::endl;
             }
 
             while(pause_state)
@@ -973,10 +974,10 @@ static std::string socket_cmd_read_memory(std::vector<std::string> args)
     address_str >> address;
     size_str >> size;
 
-    if(size > 0x1000)
+    /*if(size > 0x1000)
     {
         return "sizetoobig";
-    }
+    }*/
 
     std::stringstream result;
 
@@ -993,6 +994,38 @@ static std::string socket_cmd_read_memory(std::vector<std::string> args)
     }
 
     return result.str();
+}
+
+static std::string socket_cmd_write_memory(std::vector<std::string> args)
+{
+    if(args.size() != 2)
+    {
+        return "argerror";
+    }
+
+    uint32_t address = 0;
+    std::stringstream address_str(args[0]);
+    std::string data_str = args[1];
+    address_str.unsetf(std::ios::dec);
+    address_str.setf(std::ios::hex);
+    address_str >> address;
+
+    for(auto offset = 0;offset < (data_str.length() >> 1);offset++)
+    {
+        if(!memory.check_boundary(address + offset, 1))
+        {
+            return "fail";
+        }
+
+        std::stringstream hex_str(data_str.substr(offset << 1, 2));
+        hex_str.unsetf(std::ios::dec);
+        hex_str.setf(std::ios::hex);
+        uint32_t value = 0;
+        hex_str >> value;
+        memory.write8(address + offset, (uint8_t)value);
+    }
+
+    return "ok";
 }
 
 static std::string socket_cmd_read_archreg(std::vector<std::string> args)
@@ -1175,6 +1208,31 @@ static std::string socket_cmd_get_pipeline_status(std::vector<std::string> args)
     return ret.dump();
 }
 
+static std::string socket_cmd_get_commit_num(std::vector<std::string> args)
+{
+    if(args.size() != 0)
+    {
+        return "argerror";
+    }
+
+    std::stringstream result;
+    result << rob.get_commit_num();
+    rob.clear_commit_num();
+    return result.str();
+}
+
+static std::string socket_cmd_get_finish(std::vector<std::string> args)
+{
+    if(args.size() != 0)
+    {
+        return "argerror";
+    }
+
+    std::stringstream result;
+    result << (int)csr_file.read_sys(CSR_FINISH);
+    return result.str();
+}
+
 typedef std::string (*socket_cmd_handler)(std::vector<std::string> args);
 
 typedef struct socket_cmd_desc_t
@@ -1191,11 +1249,14 @@ static socket_cmd_desc_t socket_cmd_list[] = {
                                       {"step", socket_cmd_step},
                                       {"stepcommit", socket_cmd_stepcommit},
                                       {"read_memory", socket_cmd_read_memory},
+                                      {"write_memory", socket_cmd_write_memory},
                                       {"read_archreg", socket_cmd_read_archreg},
                                       {"read_csr", socket_cmd_read_csr},
                                       {"get_pc", socket_cmd_get_pc},
                                       {"get_cycle", socket_cmd_get_cycle},
                                       {"get_pipeline_status", socket_cmd_get_pipeline_status},
+                                      {"get_commit_num", socket_cmd_get_commit_num},
+                                      {"get_finish", socket_cmd_get_finish},
                                       {"", NULL}
                                       };
 

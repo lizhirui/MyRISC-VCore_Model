@@ -171,7 +171,7 @@ namespace pipeline
                         //start to map source registers
                         for(uint32_t i = 0;i < RENAME_WIDTH;i++)
                         {
-                            if(rev_pack.op_info[i].enable && rev_pack.op_info[i].valid && rev_pack.op_info[i].rs1_need_map)
+                            if(rev_pack.op_info[i].enable && rev_pack.op_info[i].valid)
                             {
                                 if(rev_pack.op_info[i].rs1_need_map)
                                 {

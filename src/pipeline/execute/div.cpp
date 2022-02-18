@@ -55,25 +55,26 @@ namespace pipeline
                 send_pack.op = rev_pack.op;
                 send_pack.op_unit = rev_pack.op_unit;
                 memcpy(&send_pack.sub_op, &rev_pack.sub_op, sizeof(rev_pack.sub_op));
+                auto overflow = (rev_pack.src1_value == 0x80000000) && (rev_pack.src2_value == 0xFFFFFFFF);
 
                 if(rev_pack.enable && rev_pack.valid)
                 {
                     switch(rev_pack.sub_op.div_op)
                     {
                         case div_op_t::div:
-                            send_pack.rd_value = ((uint32_t)((int32_t)rev_pack.src1_value) / ((int32_t)rev_pack.src2_value));
+                            send_pack.rd_value = (rev_pack.src2_value == 0) ? 0xFFFFFFFF : overflow ? 0x80000000 : ((uint32_t)(((int32_t)rev_pack.src1_value) / ((int32_t)rev_pack.src2_value)));
                             break;
 
                         case div_op_t::divu:
-                            send_pack.rd_value = ((uint32_t)((uint32_t)rev_pack.src1_value) / ((uint32_t)rev_pack.src2_value));
+                            send_pack.rd_value = (rev_pack.src2_value == 0) ? 0xFFFFFFFF : ((uint32_t)(((uint32_t)rev_pack.src1_value) / ((uint32_t)rev_pack.src2_value)));
                             break;
 
                         case div_op_t::rem:
-                            send_pack.rd_value = ((uint32_t)((int32_t)rev_pack.src1_value) % ((int32_t)rev_pack.src2_value));
+                            send_pack.rd_value = (rev_pack.src2_value == 0) ? rev_pack.src1_value : overflow ? 0 : ((uint32_t)(((int32_t)rev_pack.src1_value) % ((int32_t)rev_pack.src2_value)));
                             break;
 
                         case div_op_t::remu:
-                            send_pack.rd_value = ((uint32_t)((int32_t)rev_pack.src1_value) % ((int32_t)rev_pack.src2_value));
+                            send_pack.rd_value = (rev_pack.src2_value == 0) ? rev_pack.src1_value : (((uint32_t)((int32_t)rev_pack.src1_value) % ((int32_t)rev_pack.src2_value)));
                             break;
                     }
                 }

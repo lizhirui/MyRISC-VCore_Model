@@ -259,7 +259,7 @@ namespace pipeline
                     {
                         bool no_need_feedback_items = false;
 
-                        while((output_item_cnt--) > 0)
+                        for(uint32_t i = 0;i < output_item_cnt;i++)
                         {
                             if(!issue_q.get_next_id(cur_item_id, &cur_item_id))
                             {
@@ -417,6 +417,8 @@ namespace pipeline
             {
                 issue_mul_fifo[i]->flush();
             }
+
+            issue_q.flush();
         }
 
         return feedback_pack;

@@ -66,6 +66,7 @@ namespace component
             std::queue<sync_request_t> sync_request_q;
 
             bool committed = false;
+            uint32_t commit_num = 0;
 
             bool check_new_id_valid(uint32_t id)
             {
@@ -110,6 +111,7 @@ namespace component
                 fifo<rob_item_t>::reset();
                 clear_queue(sync_request_q);
                 committed = false;
+                commit_num = 0;
             }
 
             bool get_committed()
@@ -120,6 +122,21 @@ namespace component
             void set_committed(bool value)
             {
                 committed = value;
+            }
+
+            void add_commit_num(uint32_t add_num)
+            {
+                commit_num += add_num;
+            }
+
+            uint32_t get_commit_num()
+            {
+                return commit_num;
+            }
+
+            void clear_commit_num()
+            {
+                commit_num = 0;
             }
 
             bool push(rob_item_t element, uint32_t *item_id)
@@ -194,6 +211,24 @@ namespace component
                 
                 *front_id = this->rptr;
                 return true;
+            }
+
+            bool get_tail_id(uint32_t *tail_id)
+            {
+                if(this->is_empty())
+                {
+                    return false;
+                }
+
+                *tail_id = (wptr + this->size - 1) % this->size;
+                return true;
+            }
+
+            bool get_prev_id(uint32_t id, uint32_t *prev_id)
+            {
+                assert(check_id_valid(id));
+                *prev_id = (id + this->size - 1) % this->size;
+                return check_id_valid(*prev_id);
             }
 
             bool get_next_id(uint32_t id, uint32_t *next_id)
