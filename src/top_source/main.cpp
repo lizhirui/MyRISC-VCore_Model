@@ -37,6 +37,7 @@
 static std::atomic<bool> ctrl_c_detected = false;
 
 static uint64_t cpu_clock_cycle = 0;
+static uint64_t committed_instruction_num = 0;
 
 static component::fifo<pipeline::fetch_decode_pack_t> fetch_decode_fifo(16);
 static component::fifo<pipeline::decode_rename_pack_t> decode_rename_fifo(16);
@@ -63,7 +64,7 @@ static component::port<pipeline::execute_wb_pack_t> *mul_wb_port[MUL_UNIT_NUM];
 
 static component::port<pipeline::wb_commit_pack_t> wb_commit_port(default_wb_commit_pack);
 
-static component::memory memory(0x80000000, 64 * 0x1000);
+static component::memory memory(0x80000000, 1048576);
 static component::rat rat(PHY_REG_NUM, ARCH_REG_NUM);
 static component::rob rob(16);
 static component::regfile<pipeline::phy_regfile_item_t> phy_regfile(PHY_REG_NUM);
@@ -285,6 +286,7 @@ static void reset()
 
     commit_stage.reset();
     cpu_clock_cycle = 0;
+    committed_instruction_num = 0;
 }
 
 static void init()
@@ -292,7 +294,7 @@ static void init()
     telnet_init();
 
     //std::ifstream binfile("../../../testprgenv/main/test.bin", std::ios::binary);
-    std::ifstream binfile("../../../testfile.bin", std::ios::binary);
+    std::ifstream binfile("../../../coremark.bin", std::ios::binary);
 
     if(!binfile || !binfile.is_open())
     {
@@ -445,6 +447,10 @@ static void init()
     csr_file.map(CSR_MIP, false, std::make_shared<component::csr::mip>());
     csr_file.map(CSR_CHARFIFO, false, std::make_shared<component::csr::charfifo>(&charfifo_send_fifo));
     csr_file.map(CSR_FINISH, false, std::make_shared<component::csr::finish>());
+    csr_file.map(CSR_MCYCLE, false, std::make_shared<component::csr::mcycle>());
+    csr_file.map(CSR_MINSTRET, false, std::make_shared<component::csr::minstret>());
+    csr_file.map(CSR_MCYCLEH, false, std::make_shared<component::csr::mcycleh>());
+    csr_file.map(CSR_MINSTRETH, false, std::make_shared<component::csr::minstreth>());
 
     for(auto i = 0;i < 16;i++)
     {
@@ -768,6 +774,13 @@ static void run()
         {
             pause_state = true;
 
+            if(rob.get_committed())
+            {
+                committed_instruction_num++;
+                csr_file.write_sys(CSR_MINSTRET, (uint32_t)(committed_instruction_num & 0xffffffffu));
+                csr_file.write_sys(CSR_MINSTRETH, (uint32_t)(committed_instruction_num >> 32));
+            }
+
             if(gui_mode)
             {
                 //std::cout << "Wait GUI Command" << std::endl;
@@ -870,6 +883,8 @@ static void run()
         csr_file.sync();
         memory.sync();
         cpu_clock_cycle++;
+        csr_file.write_sys(CSR_MCYCLE, (uint32_t)(cpu_clock_cycle & 0xffffffffu));
+        csr_file.write_sys(CSR_MCYCLEH, (uint32_t)(cpu_clock_cycle >> 32));
     }
 }
 
@@ -929,6 +944,8 @@ static std::string socket_cmd_pause(std::vector<std::string> args)
         return "argerror";
     }
 
+    step_state = true;
+    wait_commit = false;
     return "ok";
 }
 

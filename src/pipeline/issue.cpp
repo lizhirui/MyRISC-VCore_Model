@@ -249,32 +249,32 @@ namespace pipeline
             }    
 
             //handle queue(feedback pack activates blocking items)
-            for(auto i = 0;i < EXECUTE_UNIT_NUM;i++)
+            uint32_t cur_item_id = 0;
+
+            if(issue_q.get_front_id(&cur_item_id))
             {
-                if(wb_feedback_pack.channel[i].enable)
+                bool no_need_feedback_items = false;
+
+                for(uint32_t i = 0;i < output_item_cnt;i++)
                 {
-                    uint32_t cur_item_id = 0;
-
-                    if(issue_q.get_front_id(&cur_item_id))
+                    if(!issue_q.get_next_id(cur_item_id, &cur_item_id))
                     {
-                        bool no_need_feedback_items = false;
+                        no_need_feedback_items = true;
+                        break;
+                    }
+                }
 
-                        for(uint32_t i = 0;i < output_item_cnt;i++)
+                if(!no_need_feedback_items)
+                {
+                    do
+                    {
+                        auto cur_item = issue_q.get_item(cur_item_id);
+                        auto modified = false;
+
+                        for(auto i = 0;i < EXECUTE_UNIT_NUM;i++)
                         {
-                            if(!issue_q.get_next_id(cur_item_id, &cur_item_id))
+                            if(wb_feedback_pack.channel[i].enable)
                             {
-                                no_need_feedback_items = true;
-                                break;
-                            }
-                        }
-
-                        if(!no_need_feedback_items)
-                        {
-                            do
-                            {
-                                auto cur_item = issue_q.get_item(cur_item_id);
-                                auto modified = false;
-
                                 if(!cur_item.src1_loaded && cur_item.rs1_need_map && (cur_item.rs1_phy == wb_feedback_pack.channel[i].phy_id))
                                 {
                                     cur_item.src1_loaded = true;
@@ -288,14 +288,14 @@ namespace pipeline
                                     cur_item.src2_value = wb_feedback_pack.channel[i].value;
                                     modified = true;
                                 }
-
-                                if(modified)
-                                {
-                                    issue_q.set_item_sync(cur_item_id, cur_item);
-                                }
-                            }while(issue_q.get_next_id(cur_item_id, &cur_item_id));
+                            }
                         }
-                    }
+
+                        if(modified)
+                        { 
+                            issue_q.set_item_sync(cur_item_id, cur_item);
+                        }
+                    }while(issue_q.get_next_id(cur_item_id, &cur_item_id));
                 }
             }
         

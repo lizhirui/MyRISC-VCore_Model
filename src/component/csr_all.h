@@ -4,11 +4,13 @@
 #include "./csr/mconfigptr.h"
 #include "./csr/mcounteren.h"
 #include "./csr/mcycle.h"
+#include "./csr/mcycleh.h"
 #include "./csr/mepc.h"
 #include "./csr/mhartid.h"
 #include "./csr/mie.h"
 #include "./csr/mimpid.h"
 #include "./csr/minstret.h"
+#include "./csr/minstreth.h"
 #include "./csr/mip.h"
 #include "./csr/misa.h"
 #include "./csr/mscratch.h"
@@ -40,3 +42,7 @@
 #define CSR_MIP 0x344
 #define CSR_CHARFIFO 0x800
 #define CSR_FINISH 0x804
+#define CSR_MCYCLE 0xB00
+#define CSR_MINSTRET 0xB02
+#define CSR_MCYCLEH 0xB80
+#define CSR_MINSTRETH 0xB82
