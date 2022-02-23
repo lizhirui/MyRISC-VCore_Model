@@ -774,13 +774,6 @@ static void run()
         {
             pause_state = true;
 
-            if(rob.get_committed())
-            {
-                committed_instruction_num++;
-                csr_file.write_sys(CSR_MINSTRET, (uint32_t)(committed_instruction_num & 0xffffffffu));
-                csr_file.write_sys(CSR_MINSTRETH, (uint32_t)(committed_instruction_num >> 32));
-            }
-
             if(gui_mode)
             {
                 //std::cout << "Wait GUI Command" << std::endl;
@@ -885,6 +878,9 @@ static void run()
         cpu_clock_cycle++;
         csr_file.write_sys(CSR_MCYCLE, (uint32_t)(cpu_clock_cycle & 0xffffffffu));
         csr_file.write_sys(CSR_MCYCLEH, (uint32_t)(cpu_clock_cycle >> 32));
+        committed_instruction_num = rob.get_global_commit_num();
+        csr_file.write_sys(CSR_MINSTRET, (uint32_t)(committed_instruction_num & 0xffffffffu));
+        csr_file.write_sys(CSR_MINSTRETH, (uint32_t)(committed_instruction_num >> 32));
     }
 }
 

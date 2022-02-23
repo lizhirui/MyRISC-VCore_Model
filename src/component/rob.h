@@ -67,6 +67,7 @@ namespace component
 
             bool committed = false;
             uint32_t commit_num = 0;
+            uint32_t global_commit_num = 0;
 
             bool check_new_id_valid(uint32_t id)
             {
@@ -112,6 +113,7 @@ namespace component
                 clear_queue(sync_request_q);
                 committed = false;
                 commit_num = 0;
+                global_commit_num = 0;
             }
 
             bool get_committed()
@@ -127,6 +129,12 @@ namespace component
             void add_commit_num(uint32_t add_num)
             {
                 commit_num += add_num;
+                global_commit_num += add_num;
+            }
+
+            uint32_t get_global_commit_num()
+            {
+                return global_commit_num;
             }
 
             uint32_t get_commit_num()
