@@ -36,6 +36,7 @@ namespace pipeline
 				assert(rob->get_front_id(&this->rob_item_id));
 				feedback_pack.enable = true;
 				feedback_pack.next_handle_rob_id = this->rob_item_id;
+				feedback_pack.next_handle_rob_id_valid = true;
 
 				for(auto i = 0;i < COMMIT_WIDTH;i++)
 				{
@@ -43,6 +44,10 @@ namespace pipeline
 
 					if(rob_item.finish)
 					{
+						feedback_pack.next_handle_rob_id_valid = rob->get_next_id(this->rob_item_id, &feedback_pack.next_handle_rob_id);
+						feedback_pack.committed_rob_id_valid[i] = true;
+						feedback_pack.committed_rob_id[i] = this->rob_item_id;
+
 						if(rob_item.has_exception)
 						{
 							assert(rob->get_tail_id(&this->restore_rob_item_id));

@@ -21,7 +21,7 @@ namespace component
                 T arg2;
             }sync_request_t;
             
-            std::queue<sync_request_t> sync_q;
+            std::queue<sync_request_t> sync_request_q;
             
             bool check_id_valid(uint32_t id)
             {
@@ -48,7 +48,7 @@ namespace component
             virtual void reset()
             {
                 fifo<T>::reset();
-                clear_queue(sync_q);
+                clear_queue(sync_request_q);
             }
             
             uint32_t get_size()
@@ -75,7 +75,7 @@ namespace component
                 item.req = sync_request_type_t::set_item;
                 item.arg1 = id;
                 item.arg2 = value;
-                sync_q.push(item);
+                sync_request_q.push(item);
             }
             
             bool get_front_id(uint32_t *front_id)
@@ -118,15 +118,15 @@ namespace component
                 sync_request_t item;
                     
                 item.req = sync_request_type_t::pop;
-                sync_q.push(item);
+                sync_request_q.push(item);
             }
             
             void sync()
             {
-                while(!sync_q.empty())
+                while(!sync_request_q.empty())
                 {
-                    auto item = sync_q.front();
-                    sync_q.pop();
+                    auto item = sync_request_q.front();
+                    sync_request_q.pop();
                     
                     switch(item.req)
                     {

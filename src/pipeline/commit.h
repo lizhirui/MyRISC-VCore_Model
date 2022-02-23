@@ -12,16 +12,24 @@ namespace pipeline
     typedef struct commit_feedback_pack_t : public if_print_t
     {
         bool enable;
+        bool next_handle_rob_id_valid;
         uint32_t next_handle_rob_id;
         bool has_exception;
         uint32_t exception_pc;
         bool flush;
+        uint32_t committed_rob_id[COMMIT_WIDTH];
+        bool committed_rob_id_valid[COMMIT_WIDTH];
 
         virtual json get_json()
         {
             json t;
             t["enable"] = enable;
+            t["next_handle_rob_id_valid"] = next_handle_rob_id_valid;
             t["next_handle_rob_id"] = next_handle_rob_id;
+            t["committed_rob_id_valid_0"] = committed_rob_id_valid[0];
+            t["committed_rob_id_0"] = committed_rob_id[0];
+            t["committed_rob_id_valid_1"] = committed_rob_id_valid[1];
+            t["committed_rob_id_1"] = committed_rob_id[1];
             t["has_exception"] = has_exception;
             t["exception_pc"] = exception_pc;
             t["flush"] = flush;

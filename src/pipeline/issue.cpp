@@ -43,7 +43,7 @@ namespace pipeline
             uint32_t output_item_cnt = 0;
 
             //handle output
-            if(!issue_q.is_empty() && !(is_inst_waiting && (commit_feedback_pack.next_handle_rob_id == inst_waiting_rob_id)))
+            if(!issue_q.is_empty() && ((!is_inst_waiting) || (commit_feedback_pack.next_handle_rob_id_valid && (commit_feedback_pack.next_handle_rob_id == inst_waiting_rob_id))))
             {
                 issue_queue_item_t items[ISSUE_WIDTH];
                 memset(&items, 0, sizeof(items));
