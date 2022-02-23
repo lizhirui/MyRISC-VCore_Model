@@ -5,11 +5,18 @@ namespace pipeline
 {
     namespace execute
     {
-        lsu::lsu(component::fifo<issue_execute_pack_t> *issue_lsu_fifo, component::port<execute_wb_pack_t> *lsu_wb_port, component::memory *memory)
+        lsu::lsu(component::fifo<issue_execute_pack_t> *issue_lsu_fifo, component::port<execute_wb_pack_t> *lsu_wb_port, component::memory *memory, component::store_buffer *store_buffer)
         {
             this->issue_lsu_fifo = issue_lsu_fifo;
             this->lsu_wb_port = lsu_wb_port;
             this->memory = memory;
+            this->store_buffer = store_buffer;
+            this->busy = false;
+        }
+
+        void lsu::reset()
+        {
+            this->busy = false;
         }
 
         void lsu::run(commit_feedback_pack_t commit_feedback_pack)
@@ -18,10 +25,19 @@ namespace pipeline
 
             memset(&send_pack, 0, sizeof(send_pack));
 
-            if(!issue_lsu_fifo->is_empty() && !(commit_feedback_pack.enable && commit_feedback_pack.flush))
+            if((!issue_lsu_fifo->is_empty() && !(commit_feedback_pack.enable && commit_feedback_pack.flush)) || this->busy)
             {
                 issue_execute_pack_t rev_pack;
-                assert(issue_lsu_fifo->pop(&rev_pack));
+
+                if(this->busy)
+                {
+                    rev_pack = this->hold_rev_pack;
+                    this->busy = false;
+                }
+                else
+                {
+                    assert(issue_lsu_fifo->pop(&rev_pack));
+                }
                 
                 send_pack.enable = rev_pack.enable;
                 send_pack.value = rev_pack.value;
@@ -99,38 +115,91 @@ namespace pipeline
 
                     if(!send_pack.has_exception)
                     {
+                        component::store_buffer_item_t item;
+
                         switch(rev_pack.sub_op.lsu_op)
                         {
                             case lsu_op_t::lb:
-                                send_pack.rd_value = sign_extend(memory->read8(addr), 8);
+                                send_pack.rd_value = sign_extend(store_buffer->get_feedback_value(addr, 1, memory->read8(addr)), 8);
                                 break;
 
                             case lsu_op_t::lbu:
-                                send_pack.rd_value = memory->read8(addr);
+                                send_pack.rd_value = store_buffer->get_feedback_value(addr, 1, memory->read8(addr));
                                 break;
 
                             case lsu_op_t::lh:
-                                send_pack.rd_value = sign_extend(memory->read16(addr), 16);
+                                send_pack.rd_value = sign_extend(store_buffer->get_feedback_value(addr, 2, memory->read16(addr)), 16);
                                 break;
 
                             case lsu_op_t::lhu:
-                                send_pack.rd_value = memory->read16(addr);
+                                send_pack.rd_value = store_buffer->get_feedback_value(addr, 2, memory->read16(addr));
                                 break;
 
                             case lsu_op_t::lw:
-                                send_pack.rd_value = memory->read32(addr);
+                                send_pack.rd_value = store_buffer->get_feedback_value(addr, 4, memory->read32(addr));
                                 break;
 
                             case lsu_op_t::sb:
-                                memory->write8_sync(addr, (uint8_t)(rev_pack.src2_value & 0xff));
+                                if(store_buffer->is_full())
+                                {
+                                    this->busy = true;
+                                    this->hold_rev_pack = rev_pack;
+                                    send_pack.enable = false;
+                                }
+                                else
+                                {
+                                    item.enable = true;
+                                    item.addr = addr;
+                                    item.size = 1;
+                                    item.data = rev_pack.src2_value & 0xff;
+                                    item.committed = false;
+                                    item.pc = rev_pack.pc;
+                                    item.rob_id = rev_pack.rob_id;
+                                    store_buffer->push_sync(item);
+                                }
+
                                 break;
 
                             case lsu_op_t::sh:
-                                memory->write16_sync(addr, (uint16_t)(rev_pack.src2_value & 0xffff));
+                                if(store_buffer->is_full())
+                                {
+                                    this->busy = true;
+                                    this->hold_rev_pack = rev_pack;
+                                    send_pack.enable = false;
+                                }
+                                else
+                                {
+                                    item.enable = true;
+                                    item.addr = addr;
+                                    item.size = 2;
+                                    item.data = rev_pack.src2_value & 0xffff;
+                                    item.committed = false;
+                                    item.pc = rev_pack.pc;
+                                    item.rob_id = rev_pack.rob_id;
+                                    store_buffer->push_sync(item);
+                                }
+
                                 break;
 
                             case lsu_op_t::sw:
-                                memory->write32_sync(addr, rev_pack.src2_value);
+                                if(store_buffer->is_full())
+                                {
+                                    this->busy = true;
+                                    this->hold_rev_pack = rev_pack;
+                                    send_pack.enable = false;
+                                }
+                                else
+                                {
+                                    item.enable = true;
+                                    item.addr = addr;
+                                    item.size = 4;
+                                    item.data = rev_pack.src2_value;
+                                    item.committed = false;
+                                    item.pc = rev_pack.pc;
+                                    item.rob_id = rev_pack.rob_id;
+                                    store_buffer->push_sync(item);
+                                }
+
                                 break;
                         }
                     }

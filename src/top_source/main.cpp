@@ -7,6 +7,7 @@
 #include "../component/regfile.h"
 #include "../component/csrfile.h"
 #include "../component/csr_all.h"
+#include "../component/store_buffer.h"
 #include "../pipeline/fetch.h"
 #include "../pipeline/fetch_decode.h"
 #include "../pipeline/decode.h"
@@ -69,6 +70,7 @@ static component::rat rat(PHY_REG_NUM, ARCH_REG_NUM);
 static component::rob rob(16);
 static component::regfile<pipeline::phy_regfile_item_t> phy_regfile(PHY_REG_NUM);
 static component::csrfile csr_file;
+static component::store_buffer store_buffer(16, &memory);
 
 static pipeline::fetch fetch_stage(&memory, &fetch_decode_fifo, 0x80000000);
 static pipeline::decode decode_stage(&fetch_decode_fifo, &decode_rename_fifo);
@@ -220,6 +222,7 @@ static void reset()
     for(auto i = 0;i < LSU_UNIT_NUM;i++)
     {
         issue_lsu_fifo[i]->reset();
+        execute_lsu_stage[i]->reset();
     }
 
     for(auto i = 0;i < MUL_UNIT_NUM;i++)
@@ -275,6 +278,7 @@ static void reset()
     rat.init_finish();
     rob.reset();
     csr_file.reset();
+    store_buffer.reset();
     fetch_stage.reset();
     rename_stage.reset();
     issue_stage.reset();
@@ -401,7 +405,7 @@ static void init()
 
     for(auto i = 0;i < LSU_UNIT_NUM;i++)
     {
-        execute_lsu_stage[i] = new pipeline::execute::lsu(issue_lsu_fifo[i], lsu_wb_port[i], &memory);
+        execute_lsu_stage[i] = new pipeline::execute::lsu(issue_lsu_fifo[i], lsu_wb_port[i], &memory, &store_buffer);
     }
 
     for(auto i = 0;i < MUL_UNIT_NUM;i++)
@@ -874,7 +878,9 @@ static void run()
         rob.sync();
         phy_regfile.sync();
         csr_file.sync();
+        store_buffer.run(t_commit_feedback_pack);
         memory.sync();
+        store_buffer.sync();
         cpu_clock_cycle++;
         csr_file.write_sys(CSR_MCYCLE, (uint32_t)(cpu_clock_cycle & 0xffffffffu));
         csr_file.write_sys(CSR_MCYCLEH, (uint32_t)(cpu_clock_cycle >> 32));

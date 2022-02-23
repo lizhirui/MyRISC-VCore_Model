@@ -6,7 +6,7 @@
 
 namespace component
 {
-    typedef struct store_buffer_item_t
+    typedef struct store_buffer_item_t : public if_print_t
     {
         bool enable;
         bool committed;
@@ -37,12 +37,8 @@ namespace component
             typedef struct sync_request_t
             {
                 sync_request_type_t req;
-                
-                union
-                {
-                    store_buffer_item_t store_buffer_item;
-                    store_buffer_state_pack_t store_buffer_state_pack;
-                }arg1;
+                store_buffer_item_t arg1_store_buffer_item;
+                store_buffer_state_pack_t arg1_store_buffer_state_pack;
             }sync_request_t;
             
             std::queue<sync_request_t> sync_request_q;
@@ -87,6 +83,18 @@ namespace component
                 *front_id = this->rptr;
                 return true;
             }
+
+            bool get_front_id_stage(uint32_t *front_id, bool *front_stage)
+            {
+                if(this->is_empty())
+                {
+                    return false;
+                }
+                
+                *front_id = this->rptr;
+                *front_stage = this->rstage;
+                return true;
+            }
             
             bool get_tail_id(uint32_t *tail_id)
             {
@@ -105,6 +113,14 @@ namespace component
                 *next_id = (id + 1) % this->size;
                 return check_id_valid(*next_id);
             }
+
+            bool get_next_id_stage(uint32_t id, bool stage, uint32_t *next_id, bool *next_stage)
+            {
+                assert(check_id_valid(id));
+                *next_id = (id + 1) % this->size;
+                *next_stage = ((id + 1) >= this->size) != stage;
+                return check_id_valid(*next_id);
+            }
         
         public:
             store_buffer(uint32_t size, memory *memory_if) : fifo<store_buffer_item_t>(size)
@@ -114,7 +130,7 @@ namespace component
 
             virtual void reset()
             {
-                fifo<T>::reset();
+                fifo<store_buffer_item_t>::reset();
                 clear_queue(sync_request_q);
             }
 
@@ -138,7 +154,7 @@ namespace component
                 sync_request_t item;
 
                 item.req = sync_request_type_t::restore;
-                item.arg1.store_buffer_state_pack = pack;
+                item.arg1_store_buffer_state_pack = pack;
                 sync_request_q.push(item);
             }
             
@@ -147,7 +163,7 @@ namespace component
                 sync_request_t item;
 
                 item.req = sync_request_type_t::push;
-                item.arg1.store_buffer_item = element;
+                item.arg1_store_buffer_item = element;
                 sync_request_q.push(item);
             }
             
@@ -159,11 +175,69 @@ namespace component
                 sync_request_q.push(item);
             }
 
+            uint32_t get_feedback_value(uint32_t addr, uint32_t size, uint32_t memory_value)
+            {
+                uint32_t result = memory_value;
+                uint32_t cur_id;
+                
+                if(get_front_id(&cur_id))
+                {
+                    auto first_id = cur_id;
+
+                    do
+                    {
+                        auto cur_item = get_item(cur_id);
+
+                        if((cur_item.addr >= addr) && (cur_item.addr < (addr + size)))
+                        {
+                            uint32_t bit_offset = (cur_item.addr - addr) << 3;
+                            uint32_t bit_length = std::min(cur_item.size, addr + size - cur_item.addr) << 3;
+                            uint32_t bit_mask = (bit_length == 32) ? 0xffffffffu : ((1 << bit_length) - 1);
+                            result &= ~(bit_mask << bit_offset);
+                            result |= (cur_item.data & bit_mask) << bit_offset;
+                        }
+                        else if((cur_item.addr < addr) && ((cur_item.addr + cur_item.size) > addr))
+                        {
+                            uint32_t bit_offset = (addr - cur_item.addr) << 3;
+                            uint32_t bit_length = std::min(size, cur_item.addr + cur_item.size - addr);
+                            uint32_t bit_mask = (bit_length == 32) ? 0xffffffffu : ((1 << bit_length) - 1);
+                            result &= ~bit_mask;
+                            result |= (cur_item.data >> bit_offset) & bit_mask;
+                        }
+                    }while(get_next_id(cur_id, &cur_id) && (cur_id != first_id));
+                }
+
+                return result;
+            }
+
             void run(pipeline::commit_feedback_pack_t commit_feedback_pack)
             {
                 if(commit_feedback_pack.enable && commit_feedback_pack.flush)
                 {
-                    reset();
+                    uint32_t cur_id;
+                    bool cur_stage;
+                    bool found = false;
+
+                    if(get_front_id_stage(&cur_id, &cur_stage))
+                    {
+                        auto first_id = cur_id;
+
+                        do
+                        {
+                            auto cur_item = get_item(cur_id);
+
+                            if(!cur_item.committed)
+                            {
+                                found = true;
+                            }
+                        }while(get_next_id_stage(cur_id, cur_stage, &cur_id, &cur_stage) && (cur_id != first_id));
+
+                        if(found)
+                        {
+                            wptr = cur_id;
+                            wstage = cur_stage;
+                        }
+                    }
                 }
                 else
                 {
@@ -174,6 +248,8 @@ namespace component
                     {
                         if(item.committed)
                         {
+                            store_buffer_item_t t_item;
+                            pop(&t_item);
                             assert((item.size == 1) || (item.size == 2) || (item.size == 4));
 
                             switch(item.size)
@@ -193,12 +269,15 @@ namespace component
                         }
                     }
 
+                    //handle feedback
                     if(commit_feedback_pack.enable)
                     {
                         uint32_t cur_id;
 
                         if(get_front_id(&cur_id))
                         {
+                            auto first_id = cur_id;
+
                             do
                             {
                                 auto cur_item = get_item(cur_id);
@@ -212,7 +291,7 @@ namespace component
                                 }
 
                                 set_item(cur_id, cur_item);
-                            }while(get_next_id(cur_id, &cur_id));
+                            }while(get_next_id(cur_id, &cur_id) && (cur_id != first_id));
                         }
                     }
                 }
@@ -228,16 +307,18 @@ namespace component
                     switch(item.req)
                     {
                         case sync_request_type_t::push:
-                            this->push(item.arg1.store_buffer_item);
+                            this->push(item.arg1_store_buffer_item);
                             break;
                             
                         case sync_request_type_t::pop:
-                            T v;
+                        {
+                            store_buffer_item_t v;
                             this->pop(&v);
                             break;
+                        }
 
                         case sync_request_type_t::restore:
-                            this->restore(item.arg1.store_buffer_state_pack);
+                            this->restore(item.arg1_store_buffer_state_pack);
                             break;
                     }
                 }

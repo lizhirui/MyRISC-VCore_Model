@@ -66,11 +66,14 @@ namespace pipeline
 								phy_regfile->write_sync(rob_item.old_phy_reg_id, default_phy_reg_item);
 								rat->commit_map_sync(rob_item.new_phy_reg_id);
 							}
-
-							feedback_pack.enable = rob->get_next_id(rob_item_id, &feedback_pack.next_handle_rob_id);
+							
 							rob->set_committed(true);
 							rob->add_commit_num(1);
 						}
+					}
+					else
+					{
+						break;
 					}
 
 					if(!rob->get_next_id(this->rob_item_id, &this->rob_item_id))
