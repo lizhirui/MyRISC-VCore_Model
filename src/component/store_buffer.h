@@ -290,31 +290,31 @@ namespace component
                             }
                         }
                     }
+                }
 
-                    //handle feedback
-                    if(commit_feedback_pack.enable)
+                //handle feedback
+                if(commit_feedback_pack.enable)
+                {
+                    uint32_t cur_id;
+
+                    if(get_front_id(&cur_id))
                     {
-                        uint32_t cur_id;
+                        auto first_id = cur_id;
 
-                        if(get_front_id(&cur_id))
+                        do
                         {
-                            auto first_id = cur_id;
+                            auto cur_item = get_item(cur_id);
 
-                            do
+                            for(auto i = 0;i < COMMIT_WIDTH;i++)
                             {
-                                auto cur_item = get_item(cur_id);
-
-                                for(auto i = 0;i < COMMIT_WIDTH;i++)
+                                if(commit_feedback_pack.committed_rob_id_valid[i] && (commit_feedback_pack.committed_rob_id[i] == cur_item.rob_id))
                                 {
-                                    if(commit_feedback_pack.committed_rob_id_valid[i] && (commit_feedback_pack.committed_rob_id[i] == cur_item.rob_id))
-                                    {
-                                        cur_item.committed = true;
-                                    }
+                                    cur_item.committed = true;
                                 }
+                            }
 
-                                set_item(cur_id, cur_item);
-                            }while(get_next_id(cur_id, &cur_id) && (cur_id != first_id));
-                        }
+                            set_item(cur_id, cur_item);
+                        }while(get_next_id(cur_id, &cur_id) && (cur_id != first_id));
                     }
                 }
             }

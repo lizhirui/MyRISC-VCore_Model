@@ -784,7 +784,7 @@ static void run()
 
     while(1)
     {
-        /*if(cpu_clock_cycle == 567680)
+        /*if(cpu_clock_cycle == 30420)
         {
             step_state = true;
             wait_commit = false;
@@ -862,7 +862,7 @@ static void run()
             /*auto v1 = store_buffer.get_feedback_value(0x800170f8, 4, memory.read32(0x800170f8));
             auto v2 = store_buffer.get_feedback_value(0x8000f022, 1, memory.read8(0x8000f022));*/
             //trace_file << cpu_clock_cycle << "," << fillzero(8) << outhex(get_current_pc()) << "," << fillzero(8) << outhex(v1) << "," << fillzero(2) << outhex(v2) << std::endl;
-            /*trace_file << cpu_clock_cycle << "," << fillzero(8) << outhex(get_current_pc());
+            /*trace_file << cpu_clock_cycle << "," << committed_instruction_num << "," << fillzero(8) << outhex(get_current_pc());
 
             for(auto i = 1;i < 32;i++)
             {
