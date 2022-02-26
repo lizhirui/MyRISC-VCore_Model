@@ -35,6 +35,12 @@ namespace pipeline
                 send_pack.exception_id = rev_pack.exception_id;
                 send_pack.exception_value = rev_pack.exception_value;
 
+                send_pack.predicted = rev_pack.predicted;
+                send_pack.predicted_jump = rev_pack.predicted_jump;
+                send_pack.predicted_next_pc = rev_pack.predicted_next_pc;
+                send_pack.checkpoint_id_valid = rev_pack.checkpoint_id_valid;
+                send_pack.checkpoint_id = rev_pack.checkpoint_id;
+
                 send_pack.rs1 = rev_pack.rs1;
                 send_pack.arg1_src = rev_pack.arg1_src;
                 send_pack.rs1_need_map = rev_pack.rs1_need_map;
@@ -58,55 +64,59 @@ namespace pipeline
                 send_pack.op = rev_pack.op;
                 send_pack.op_unit = rev_pack.op_unit;
                 memcpy(&send_pack.sub_op, &rev_pack.sub_op, sizeof(rev_pack.sub_op));
-                feedback_pack.enable = true;
-                feedback_pack.next_pc = rev_pack.pc + rev_pack.imm;
+                //feedback_pack.enable = true;
+                //feedback_pack.next_pc = rev_pack.pc + rev_pack.imm;
+                send_pack.bru_next_pc = rev_pack.pc + rev_pack.imm;
 
                 if(rev_pack.enable && rev_pack.valid)
                 {
                     switch(rev_pack.sub_op.bru_op)
                     {
                         case bru_op_t::beq:
-                            feedback_pack.jump = rev_pack.src1_value == rev_pack.src2_value;
+                            send_pack.bru_jump = rev_pack.src1_value == rev_pack.src2_value;
                             break;
 
                         case bru_op_t::bge:
-                            feedback_pack.jump = ((int32_t)rev_pack.src1_value) >= ((int32_t)rev_pack.src2_value);
+                            send_pack.bru_jump = ((int32_t)rev_pack.src1_value) >= ((int32_t)rev_pack.src2_value);
                             break;
 
                         case bru_op_t::bgeu:
-                            feedback_pack.jump = ((uint32_t)rev_pack.src1_value) >= ((uint32_t)rev_pack.src2_value);
+                            send_pack.bru_jump = ((uint32_t)rev_pack.src1_value) >= ((uint32_t)rev_pack.src2_value);
                             break;
 
                         case bru_op_t::blt:
-                            feedback_pack.jump = ((int32_t)rev_pack.src1_value) < ((int32_t)rev_pack.src2_value);
+                            send_pack.bru_jump = ((int32_t)rev_pack.src1_value) < ((int32_t)rev_pack.src2_value);
                             break;
 
                         case bru_op_t::bltu:
-                            feedback_pack.jump = ((uint32_t)rev_pack.src1_value) < ((uint32_t)rev_pack.src2_value);
+                            send_pack.bru_jump = ((uint32_t)rev_pack.src1_value) < ((uint32_t)rev_pack.src2_value);
                             break;
 
                         case bru_op_t::bne:
-                            feedback_pack.jump = rev_pack.src1_value != rev_pack.src2_value;
+                            send_pack.bru_jump = rev_pack.src1_value != rev_pack.src2_value;
                             break;
 
                         case bru_op_t::jal:
                             send_pack.rd_value = rev_pack.pc + 4;
-                            feedback_pack.jump = true;
+                            send_pack.bru_jump = true;
                             break;
 
                         case bru_op_t::jalr:
                             send_pack.rd_value = rev_pack.pc + 4;
-                            feedback_pack.jump = true;
-                            feedback_pack.next_pc = (rev_pack.imm + rev_pack.src1_value) & (~0x01);
+                            send_pack.bru_jump = true;
+                            send_pack.bru_next_pc = (rev_pack.imm + rev_pack.src1_value) & (~0x01);
                             break;
 
                         case bru_op_t::mret:
-                            feedback_pack.jump = true;
-                            feedback_pack.next_pc = csr_file->read_sys(CSR_MEPC);
+                            send_pack.bru_jump = true;
+                            send_pack.bru_next_pc = csr_file->read_sys(CSR_MEPC);
                             break;
                     }
                 }
             }
+
+            //feedback_pack.jump = send_pack.bru_jump;
+            //feedback_pack.next_pc = send_pack.bru_next_pc;
 
             bru_wb_port->set(send_pack);
             return feedback_pack;

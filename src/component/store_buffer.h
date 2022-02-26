@@ -217,6 +217,8 @@ namespace component
                     uint32_t cur_id;
                     bool cur_stage;
                     bool found = false;
+                    uint32_t found_id;
+                    bool found_stage;
 
                     if(get_front_id_stage(&cur_id, &cur_stage))
                     {
@@ -228,14 +230,34 @@ namespace component
 
                             if(!cur_item.committed)
                             {
-                                found = true;
+                                bool ready_to_commit = false;
+
+                                if(commit_feedback_pack.enable)
+                                {
+                                    for(auto i = 0;i < COMMIT_WIDTH;i++)
+                                    {
+                                        if(commit_feedback_pack.committed_rob_id_valid[i] && (commit_feedback_pack.committed_rob_id[i] == cur_item.rob_id))
+                                        {
+                                            ready_to_commit = true;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                if(!ready_to_commit)
+                                {
+                                    found = true;
+                                    found_id = cur_id;
+                                    found_stage = cur_stage;
+                                    break;
+                                }
                             }
                         }while(get_next_id_stage(cur_id, cur_stage, &cur_id, &cur_stage) && (cur_id != first_id));
 
                         if(found)
                         {
-                            wptr = cur_id;
-                            wstage = cur_stage;
+                            wptr = found_id;
+                            wstage = found_stage;
                         }
                     }
                 }

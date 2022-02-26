@@ -670,6 +670,11 @@ namespace pipeline
                         op_info.has_exception = rev_pack.op_info[i].has_exception;
                         op_info.exception_id = rev_pack.op_info[i].exception_id;
                         op_info.exception_value = rev_pack.op_info[i].exception_value;
+                        op_info.predicted = rev_pack.op_info[i].predicted;
+                        op_info.predicted_jump = rev_pack.op_info[i].predicted_jump;
+                        op_info.predicted_next_pc = rev_pack.op_info[i].predicted_next_pc;
+                        op_info.checkpoint_id_valid = rev_pack.op_info[i].checkpoint_id_valid;
+                        op_info.checkpoint_id = rev_pack.op_info[i].checkpoint_id;
                         send_pack.op_info[i] = op_info;
                     }
                 }

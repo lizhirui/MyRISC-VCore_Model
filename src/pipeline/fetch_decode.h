@@ -12,6 +12,11 @@ namespace pipeline
         bool has_exception;
         riscv_exception_t exception_id;
         uint32_t exception_value;
+        bool predicted;
+        bool predicted_jump;
+        uint32_t predicted_next_pc;
+        bool checkpoint_id_valid;
+        uint32_t checkpoint_id;
     }op_info;
 
     typedef struct fetch_decode_pack_t : public if_print_t
@@ -47,6 +52,11 @@ namespace pipeline
                 t["has_exception"] = op_info[i].has_exception;
                 t["exception_id"] = outenum(op_info[i].exception_id);
                 t["exception_value"] = op_info[i].exception_value;
+                t["predicted"] = op_info[i].predicted;
+                t["predicted_jump"] = op_info[i].predicted_jump;
+                t["predicted_next_pc"] = op_info[i].predicted_next_pc;
+                t["checkpoint_id_valid"] = op_info[i].checkpoint_id_valid;
+                t["checkpoint_id"] = op_info[i].checkpoint_id;
                 ret.push_back(t);
             }
             

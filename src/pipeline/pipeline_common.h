@@ -151,6 +151,6 @@ namespace pipeline
     typedef struct phy_regfile_item_t
     {
         uint32_t value;
-        bool valid;
+        //bool valid;
     }phy_regfile_item_t;
 }

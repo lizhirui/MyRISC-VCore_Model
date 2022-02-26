@@ -6,11 +6,13 @@
 
 namespace pipeline
 {
-    readreg::readreg(component::port<rename_readreg_pack_t> *rename_readreg_port, component::port<readreg_issue_pack_t> *readreg_issue_port, component::regfile<phy_regfile_item_t> *phy_regfile)
+    readreg::readreg(component::port<rename_readreg_pack_t> *rename_readreg_port, component::port<readreg_issue_pack_t> *readreg_issue_port, component::regfile<phy_regfile_item_t> *phy_regfile, component::checkpoint_buffer *checkpoint_buffer, component::rat *rat)
     {
         this->rename_readreg_port = rename_readreg_port;
         this->readreg_issue_port = readreg_issue_port;
         this->phy_regfile = phy_regfile;
+        this->checkpoint_buffer = checkpoint_buffer;
+        this->rat = rat;
     }
 
     void readreg::run(issue_feedback_pack_t issue_pack, wb_feedback_pack_t wb_feedback_pack, commit_feedback_pack_t commit_feedback_pack)
@@ -40,6 +42,12 @@ namespace pipeline
                     send_pack.op_info[i].exception_id = rev_pack.op_info[i].exception_id;
                     send_pack.op_info[i].exception_value = rev_pack.op_info[i].exception_value;
 
+                    send_pack.op_info[i].predicted = rev_pack.op_info[i].predicted;
+                    send_pack.op_info[i].predicted_jump = rev_pack.op_info[i].predicted_jump;
+                    send_pack.op_info[i].predicted_next_pc = rev_pack.op_info[i].predicted_next_pc;
+                    send_pack.op_info[i].checkpoint_id_valid = rev_pack.op_info[i].checkpoint_id_valid;
+                    send_pack.op_info[i].checkpoint_id = rev_pack.op_info[i].checkpoint_id;
+
                     send_pack.op_info[i].rs1 = rev_pack.op_info[i].rs1;
                     send_pack.op_info[i].arg1_src = rev_pack.op_info[i].arg1_src;
                     send_pack.op_info[i].rs1_need_map = rev_pack.op_info[i].rs1_need_map;
@@ -68,8 +76,9 @@ namespace pipeline
                         if(rev_pack.op_info[i].rs1_need_map)
                         {
                             auto reg_item = phy_regfile->read(rev_pack.op_info[i].rs1_phy);
+                            auto reg_data_valid = phy_regfile->read_data_valid(rev_pack.op_info[i].rs1_phy);
 
-                            if(reg_item.valid)
+                            if(reg_data_valid)
                             {
                                 send_pack.op_info[i].src1_value = reg_item.value;
                                 send_pack.op_info[i].src1_loaded = true;
@@ -104,8 +113,9 @@ namespace pipeline
                         if(rev_pack.op_info[i].rs2_need_map)
                         {
                             auto reg_item = phy_regfile->read(rev_pack.op_info[i].rs2_phy);
+                            auto reg_data_valid = phy_regfile->read_data_valid(rev_pack.op_info[i].rs2_phy);
 
-                            if(reg_item.valid)
+                            if(reg_data_valid)
                             {
                                 send_pack.op_info[i].src2_value = reg_item.value;
                                 send_pack.op_info[i].src2_loaded = true;
@@ -135,6 +145,13 @@ namespace pipeline
                         {
                             send_pack.op_info[i].src2_value = 0;
                             send_pack.op_info[i].src2_loaded = true;
+                        }
+
+                        if(rev_pack.op_info[i].predicted && rev_pack.op_info[i].checkpoint_id_valid)
+                        {
+                            component::checkpoint_t cp;
+                            rat->save(cp);
+                            checkpoint_buffer->set_item_sync(rev_pack.op_info[i].checkpoint_id, cp);
                         }
                     }
                     else

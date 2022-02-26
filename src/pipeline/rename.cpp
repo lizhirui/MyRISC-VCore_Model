@@ -58,6 +58,11 @@ namespace pipeline
                         send_pack.op_info[i].has_exception = rev_pack.op_info[i].has_exception;
                         send_pack.op_info[i].exception_id = rev_pack.op_info[i].exception_id;
                         send_pack.op_info[i].exception_value = rev_pack.op_info[i].exception_value;
+                        send_pack.op_info[i].predicted = rev_pack.op_info[i].predicted;
+                        send_pack.op_info[i].predicted_jump = rev_pack.op_info[i].predicted_jump;
+                        send_pack.op_info[i].predicted_next_pc = rev_pack.op_info[i].predicted_next_pc;
+                        send_pack.op_info[i].checkpoint_id_valid = rev_pack.op_info[i].checkpoint_id_valid;
+                        send_pack.op_info[i].checkpoint_id = rev_pack.op_info[i].checkpoint_id;
                         send_pack.op_info[i].rs1 = rev_pack.op_info[i].rs1;
                         send_pack.op_info[i].arg1_src = rev_pack.op_info[i].arg1_src;
                         send_pack.op_info[i].rs1_need_map = rev_pack.op_info[i].rs1_need_map;
@@ -70,6 +75,7 @@ namespace pipeline
                         send_pack.op_info[i].csr = rev_pack.op_info[i].csr;
                         send_pack.op_info[i].op = rev_pack.op_info[i].op;
                         send_pack.op_info[i].op_unit = rev_pack.op_info[i].op_unit;
+                        
                         memcpy(&send_pack.op_info[i].sub_op, &rev_pack.op_info[i].sub_op, sizeof(rev_pack.op_info[i].sub_op));
                     }
 
@@ -93,7 +99,7 @@ namespace pipeline
                     //start to rename
                     uint32_t new_phy_reg_id[RENAME_WIDTH];
 
-                    if(rat->get_free_phy_id(phy_reg_req_cnt, new_phy_reg_id) && rob->get_free_space() >= (rob_req_cnt))
+                    if((rat->get_free_phy_id(phy_reg_req_cnt, new_phy_reg_id) >= phy_reg_req_cnt) && rob->get_free_space() >= (rob_req_cnt))
                     {
                         //generate rob items&
                         component::rob_item_t rob_item[RENAME_WIDTH];
@@ -202,6 +208,14 @@ namespace pipeline
                         rename_readreg_port->set(send_pack);
                         this->busy = false;
                     }
+                    else if(rat->get_free_phy_id(phy_reg_req_cnt, new_phy_reg_id) < phy_reg_req_cnt)
+                    {
+                        assert(true);//phy_regfile is full
+                    }
+                    else
+                    {
+                        assert(true);//is busy
+                    }
                 }
             }
         }
@@ -210,6 +224,8 @@ namespace pipeline
             rename_readreg_pack_t send_pack;
             memset(&send_pack, 0, sizeof(send_pack));
             rename_readreg_port->set(send_pack);
+            busy = false;
+            memset(&rev_pack, 0, sizeof(rev_pack));
         }
     }
 }

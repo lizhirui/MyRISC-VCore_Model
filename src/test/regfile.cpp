@@ -17,7 +17,7 @@ namespace test
 
             for(uint32_t i = 0;i < 32;i++)
             {
-                regfile.write(i, i);
+                regfile.write(i, i, true);
             }
 
             for(uint32_t i = 0;i < 32;i++)
@@ -27,7 +27,7 @@ namespace test
 
             for(uint32_t i = 0;i < 32;i++)
             {
-                regfile.write_sync(i, i + 1);
+                regfile.write_sync(i, i + 1, true);
             }
 
             for(uint32_t i = 0;i < 32;i++)

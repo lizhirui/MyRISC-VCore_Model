@@ -3,7 +3,7 @@
 
 namespace pipeline
 {
-    wb::wb(component::port<execute_wb_pack_t> **alu_wb_port, component::port<execute_wb_pack_t> **bru_wb_port, component::port<execute_wb_pack_t> **csr_wb_port, component::port<execute_wb_pack_t> **div_wb_port, component::port<execute_wb_pack_t> **lsu_wb_port, component::port<execute_wb_pack_t> **mul_wb_port, component::port<wb_commit_pack_t> *wb_commit_port, component::regfile<phy_regfile_item_t> *phy_regfile)
+    wb::wb(component::port<execute_wb_pack_t> **alu_wb_port, component::port<execute_wb_pack_t> **bru_wb_port, component::port<execute_wb_pack_t> **csr_wb_port, component::port<execute_wb_pack_t> **div_wb_port, component::port<execute_wb_pack_t> **lsu_wb_port, component::port<execute_wb_pack_t> **mul_wb_port, component::port<wb_commit_pack_t> *wb_commit_port, component::regfile<phy_regfile_item_t> *phy_regfile, component::checkpoint_buffer *checkpoint_buffer)
     {
         this->alu_wb_port = alu_wb_port;
         this->bru_wb_port = bru_wb_port;
@@ -13,6 +13,7 @@ namespace pipeline
         this->mul_wb_port = mul_wb_port;
         this->wb_commit_port = wb_commit_port;
         this->phy_regfile = phy_regfile;
+        this->checkpoint_buffer = checkpoint_buffer;
     }
 
     void wb::init()
@@ -72,6 +73,15 @@ namespace pipeline
                 send_pack.op_info[i].exception_id = rev_pack.exception_id;
                 send_pack.op_info[i].exception_value = rev_pack.exception_value;
 
+                send_pack.op_info[i].predicted = rev_pack.predicted;
+                send_pack.op_info[i].predicted_jump = rev_pack.predicted_jump;
+                send_pack.op_info[i].predicted_next_pc = rev_pack.predicted_next_pc;
+                send_pack.op_info[i].checkpoint_id_valid = rev_pack.checkpoint_id_valid;
+                send_pack.op_info[i].checkpoint_id = rev_pack.checkpoint_id;
+
+                send_pack.op_info[i].bru_jump = rev_pack.bru_jump;
+                send_pack.op_info[i].bru_next_pc = rev_pack.bru_next_pc;
+
                 send_pack.op_info[i].rs1 = rev_pack.rs1;
                 send_pack.op_info[i].arg1_src = rev_pack.arg1_src;
                 send_pack.op_info[i].rs1_need_map = rev_pack.rs1_need_map;
@@ -102,12 +112,20 @@ namespace pipeline
                     phy_regfile_item_t t_item;
 
                     t_item.value = rev_pack.rd_value;
-                    t_item.valid = true;
-                    phy_regfile->write_sync(rev_pack.rd_phy, t_item);
+                    //t_item.valid = true;
+                    phy_regfile->write_sync(rev_pack.rd_phy, t_item, true);
                     feedback_pack.channel[i].enable = true;
                     feedback_pack.channel[i].phy_id = rev_pack.rd_phy;
                     feedback_pack.channel[i].value = rev_pack.rd_value;
                 }
+
+                /*if(rev_pack.enable && rev_pack.valid && rev_pack.checkpoint_id_valid)
+				{
+					auto cp = checkpoint_buffer->get_item(rev_pack.checkpoint_id);
+					phy_regfile->save(cp);
+                    phy_regfile->cp_set_data_valid(cp, rev_pack.rd_phy, true);
+					checkpoint_buffer->set_item_sync(rev_pack.checkpoint_id, cp);
+				}*/
             }
         }
 

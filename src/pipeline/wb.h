@@ -2,6 +2,7 @@
 #include "common.h"
 #include "../component/port.h"
 #include "../component/regfile.h"
+#include "../component/checkpoint_buffer.h"
 #include "execute_wb.h"
 #include "wb_commit.h"
 #include "commit.h"
@@ -56,9 +57,10 @@ namespace pipeline
             component::port<wb_commit_pack_t> *wb_commit_port;
 
             component::regfile<phy_regfile_item_t> *phy_regfile;
+            component::checkpoint_buffer *checkpoint_buffer;
 
         public:
-            wb(component::port<execute_wb_pack_t> **alu_wb_port, component::port<execute_wb_pack_t> **bru_wb_port, component::port<execute_wb_pack_t> **csr_wb_port, component::port<execute_wb_pack_t> **div_wb_port, component::port<execute_wb_pack_t> **lsu_wb_port, component::port<execute_wb_pack_t> **mul_wb_port, component::port<wb_commit_pack_t> *wb_commit_port, component::regfile<phy_regfile_item_t> *phy_regfile);
+            wb(component::port<execute_wb_pack_t> **alu_wb_port, component::port<execute_wb_pack_t> **bru_wb_port, component::port<execute_wb_pack_t> **csr_wb_port, component::port<execute_wb_pack_t> **div_wb_port, component::port<execute_wb_pack_t> **lsu_wb_port, component::port<execute_wb_pack_t> **mul_wb_port, component::port<wb_commit_pack_t> *wb_commit_port, component::regfile<phy_regfile_item_t> *phy_regfile, component::checkpoint_buffer *checkpoint_buffer);
             void init();
             wb_feedback_pack_t run(commit_feedback_pack_t commit_feedback_pack);
     };

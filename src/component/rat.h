@@ -1,5 +1,6 @@
 #pragma once
 #include "common.h"
+#include "checkpoint_buffer.h"
 
 namespace component
 {
@@ -11,7 +12,8 @@ namespace component
                 set_map,
                 release_map,
                 commit_map,
-                restore_map
+                restore_map,
+                restore
             };
 
             typedef struct sync_request_t
@@ -19,6 +21,7 @@ namespace component
                 sync_request_type_t req;
                 uint32_t arg1;
                 uint32_t arg2;
+                checkpoint_t cp;
             }sync_request_t;
 
             std::queue<sync_request_t> sync_request_q;
@@ -127,6 +130,89 @@ namespace component
                 init_rat = false;
             }
 
+            void cp_set_valid(checkpoint_t &cp, uint32_t phy_id, bool v)
+            {
+                assert(phy_id < phy_reg_num);
+                
+                if(v)
+                {
+                    cp.rat_phy_map_table_valid[phy_id / bitsizeof(cp.rat_phy_map_table_valid[0])] |= 1ULL << (phy_id % bitsizeof(cp.rat_phy_map_table_valid[0]));
+                }
+                else
+                {
+                    cp.rat_phy_map_table_valid[phy_id / bitsizeof(cp.rat_phy_map_table_valid[0])] &= ~(1ULL << (phy_id % bitsizeof(cp.rat_phy_map_table_valid[0])));
+                }
+            }
+
+            bool cp_get_valid(checkpoint_t &cp, uint32_t phy_id)
+            {
+                assert(phy_id < phy_reg_num);
+                return cp.rat_phy_map_table_valid[phy_id / bitsizeof(cp.rat_phy_map_table_valid[0])] & (1ULL << (phy_id % bitsizeof(cp.rat_phy_map_table_valid[0])));
+            }
+
+            void cp_set_visible(checkpoint_t &cp, uint32_t phy_id, bool v)
+            {
+                assert(phy_id < phy_reg_num);
+                
+                if(v)
+                {
+                    cp.rat_phy_map_table_visible[phy_id / bitsizeof(cp.rat_phy_map_table_visible[0])] |= 1ULL << (phy_id % bitsizeof(cp.rat_phy_map_table_visible[0]));
+                }
+                else
+                {
+                    cp.rat_phy_map_table_visible[phy_id / bitsizeof(cp.rat_phy_map_table_visible[0])] &= ~(1ULL << (phy_id % bitsizeof(cp.rat_phy_map_table_visible[0])));
+                }
+            }
+
+            bool cp_get_visible(checkpoint_t &cp, uint32_t phy_id)
+            {
+                assert(phy_id < phy_reg_num);
+                return cp.rat_phy_map_table_visible[phy_id / bitsizeof(cp.rat_phy_map_table_visible[0])] & (1ULL << (phy_id % bitsizeof(cp.rat_phy_map_table_visible[0])));
+            }
+
+            void cp_set_commit(checkpoint_t &cp, uint32_t phy_id, bool v)
+            {
+                assert(phy_id < phy_reg_num);
+                
+                if(v)
+                {
+                    cp.rat_phy_map_table_commit[phy_id / bitsizeof(cp.rat_phy_map_table_commit[0])] |= 1ULL << (phy_id % bitsizeof(cp.rat_phy_map_table_commit[0]));
+                }
+                else
+                {
+                    cp.rat_phy_map_table_commit[phy_id / bitsizeof(cp.rat_phy_map_table_commit[0])] &= ~(1ULL << (phy_id % bitsizeof(cp.rat_phy_map_table_commit[0])));
+                }
+            }
+
+            bool cp_get_commit(checkpoint_t &cp, uint32_t phy_id)
+            {
+                assert(phy_id < phy_reg_num);
+                return cp.rat_phy_map_table_commit[phy_id / bitsizeof(cp.rat_phy_map_table_commit[0])] & (1ULL << (phy_id % bitsizeof(cp.rat_phy_map_table_commit[0])));
+            }
+
+            void save(checkpoint_t &cp)
+            {
+                memcpy(cp.rat_phy_map_table_valid, phy_map_table_valid, sizeof(cp.rat_phy_map_table_valid));
+                memcpy(cp.rat_phy_map_table_visible, phy_map_table_visible, sizeof(cp.rat_phy_map_table_visible));
+                //memcpy(cp.rat_phy_map_table_commit, phy_map_table_commit, sizeof(cp.rat_phy_map_table_commit));
+            }
+
+            void restore(checkpoint_t &cp)
+            {
+                memcpy(phy_map_table_valid, cp.rat_phy_map_table_valid, sizeof(cp.rat_phy_map_table_valid));
+                memcpy(phy_map_table_visible, cp.rat_phy_map_table_visible, sizeof(cp.rat_phy_map_table_visible));
+                //memcpy(phy_map_table_commit, cp.rat_phy_map_table_commit, sizeof(cp.rat_phy_map_table_commit));
+            }
+
+            void restore_sync(checkpoint_t &cp)
+            {
+                sync_request_t t_req;
+
+                t_req.req = sync_request_type_t::restore;
+                t_req.cp = cp;
+                sync_request_q.push(t_req);
+            }
+
             uint32_t get_free_phy_id(uint32_t num, uint32_t *ret)
             {
                 uint32_t ret_cnt = 0;
@@ -190,6 +276,14 @@ namespace component
                 set_commit(phy_id, true);
             }
 
+            void cp_commit_map(checkpoint_t &cp, uint32_t phy_id)
+            {
+                assert(phy_id < phy_reg_num);
+                assert(cp_get_valid(cp, phy_id));
+                assert(!cp_get_commit(cp, phy_id));
+                cp_set_commit(cp, phy_id, true);
+            }
+
             void commit_map_sync(uint32_t phy_id)
             {
                 sync_request_t t_req;
@@ -235,6 +329,14 @@ namespace component
                  set_valid(phy_id, false);
             }
 
+            void cp_release_map(checkpoint_t &cp, uint32_t phy_id)
+            {
+                assert(phy_id < phy_reg_num);
+                assert(cp_get_valid(cp, phy_id));
+                assert(!cp_get_visible(cp, phy_id));
+                cp_set_valid(cp, phy_id, false);
+            }
+
             void restore_map(uint32_t new_phy_id, uint32_t old_phy_id)
             {
                 assert(new_phy_id < phy_reg_num);
@@ -263,6 +365,8 @@ namespace component
             {
                 sync_request_t t_req;
 
+                assert(phy_id < phy_reg_num);
+                assert((arch_id > 0) && (arch_id < arch_reg_num));
                 t_req.req = sync_request_type_t::set_map;
                 t_req.arg1 = arch_id;
                 t_req.arg2 = phy_id;
@@ -313,6 +417,10 @@ namespace component
                         
                         case sync_request_type_t::restore_map:
                             restore_map(t_req.arg1, t_req.arg2);
+                            break;
+
+                        case sync_request_type_t::restore:
+                            restore(t_req.cp);
                             break;
                     }
                 }

@@ -1,69 +1,32 @@
 #pragma once
 #include "common.h"
+#include "config.h"
 #include "fifo.h"
 
 namespace component
 {
-    typedef struct rob_item_t : public if_print_t
+    static const uint32_t phy_reg_num_bitmap_size = (PHY_REG_NUM + bitsizeof(uint64_t) - 1) / (bitsizeof(uint64_t));
+
+    typedef struct checkpoint_t : public if_print_t
     {
-        uint32_t new_phy_reg_id;
-        uint32_t old_phy_reg_id;
-        bool old_phy_reg_id_valid;
-        bool finish;
-        uint32_t pc;
-        uint32_t inst_value;
-        bool has_exception;
-        riscv_exception_t exception_id;
-        uint32_t exception_value;
-        bool predicted;
-        bool predicted_jump;
-        uint32_t predicted_next_pc;
-        bool checkpoint_id_valid;
-        uint32_t checkpoint_id;
-        bool bru_op;
-        bool bru_jump;
-        uint32_t bru_next_pc;
+        uint64_t rat_phy_map_table_valid[phy_reg_num_bitmap_size];
+        uint64_t rat_phy_map_table_visible[phy_reg_num_bitmap_size];
+        uint64_t rat_phy_map_table_commit[phy_reg_num_bitmap_size];
+        uint64_t phy_regfile_data_valid[phy_reg_num_bitmap_size];
 
         virtual void print(std::string indent)
         {
-            std::string blank = "    ";
-            std::cout << indent << "new_phy_reg_id = " << new_phy_reg_id;
-            std::cout << blank << "old_phy_reg_id = " << old_phy_reg_id;
-            std::cout << blank << "old_phy_reg_id_valid = " << outbool(old_phy_reg_id_valid);
-            std::cout << blank << "finish = " << outbool(finish);
-            std::cout << blank << "pc = 0x" << fillzero(8) << outhex(pc);
-            std::cout << blank << "inst_value = 0x" << fillzero(8) << outhex(inst_value);
-            std::cout << blank << "has_exception = " << outbool(has_exception);
-            std::cout << blank << "exception_id = " << outenum(exception_id);
-            std::cout << blank << "exception_value = 0x" << fillzero(8) << outhex(exception_value) << std::endl;
+            
         }
 
         virtual json get_json()
         {
             json ret;
-
-            ret["new_phy_reg_id"] = new_phy_reg_id;
-            ret["old_phy_reg_id"] = old_phy_reg_id;
-            ret["old_phy_reg_id_valid"] = old_phy_reg_id_valid;
-            ret["finish"] = finish;
-            ret["pc"] = pc;
-            ret["inst_value"] = inst_value;
-            ret["has_exception"] = has_exception;
-            ret["exception_id"] = outenum(exception_id);
-            ret["exception_value"] = exception_value;
-            ret["predicted"] = predicted;
-            ret["predicted_jump"] = predicted_jump;
-            ret["predicted_next_pc"] = predicted_next_pc;
-            ret["checkpoint_id_valid"] = checkpoint_id_valid;
-            ret["checkpoint_id"] = checkpoint_id;
-            ret["bru_op"] = bru_op;
-            ret["bru_jump"] = bru_jump;
-            ret["bru_next_pc"] = bru_next_pc;
             return ret;
         }
-    }rob_item_t;
+    }checkpoint_t;
 
-    class rob : public fifo<rob_item_t>
+    class checkpoint_buffer : public fifo<checkpoint_t>
     {
         private:
             enum class sync_request_type_t
@@ -76,14 +39,10 @@ namespace component
             {
                 sync_request_type_t req;
                 uint32_t arg1;
-                rob_item_t arg2;
+                checkpoint_t arg2;
             }sync_request_t;
 
             std::queue<sync_request_t> sync_request_q;
-
-            bool committed = false;
-            uint32_t commit_num = 0;
-            uint32_t global_commit_num = 0;
 
             bool check_new_id_valid(uint32_t id)
             {
@@ -118,68 +77,34 @@ namespace component
             }
 
         public:
-            rob(uint32_t size) : fifo<rob_item_t>(size)
+            checkpoint_buffer(uint32_t size) : fifo<checkpoint_t>(size)
             {
                 
             }
 
             virtual void reset()
             {
-                fifo<rob_item_t>::reset();
+                fifo<checkpoint_t>::reset();
                 clear_queue(sync_request_q);
-                committed = false;
-                commit_num = 0;
-                global_commit_num = 0;
             }
 
-            bool get_committed()
-            {
-                return committed;
-            }
-
-            void set_committed(bool value)
-            {
-                committed = value;
-            }
-
-            void add_commit_num(uint32_t add_num)
-            {
-                commit_num += add_num;
-                global_commit_num += add_num;
-            }
-
-            uint32_t get_global_commit_num()
-            {
-                return global_commit_num;
-            }
-
-            uint32_t get_commit_num()
-            {
-                return commit_num;
-            }
-
-            void clear_commit_num()
-            {
-                commit_num = 0;
-            }
-
-            bool push(rob_item_t element, uint32_t *item_id)
+            bool push(checkpoint_t element, uint32_t *item_id)
             {
                 *item_id = this->wptr;
-                return fifo<rob_item_t>::push(element);
+                return fifo<checkpoint_t>::push(element);
             }
 
-            rob_item_t get_item(uint32_t item_id)
+            checkpoint_t get_item(uint32_t item_id)
             {
                 return this->buffer[item_id];
             }
 
-            void set_item(uint32_t item_id, rob_item_t item)
+            void set_item(uint32_t item_id, checkpoint_t &item)
             {
                 this->buffer[item_id] = item;
             }
 
-            void set_item_sync(uint32_t item_id, rob_item_t item)
+            void set_item_sync(uint32_t item_id, checkpoint_t &item)
             {
                 sync_request_t t_req;
 
@@ -189,7 +114,7 @@ namespace component
                 sync_request_q.push(t_req);
             }
 
-            rob_item_t get_front()
+            checkpoint_t get_front()
             {
                 return this->buffer[rptr];
             }
@@ -264,8 +189,8 @@ namespace component
 
             bool pop()
             {
-                rob_item_t t;
-                return fifo<rob_item_t>::pop(&t);
+                checkpoint_t t;
+                return fifo<checkpoint_t>::pop(&t);
             }
 
             void pop_sync()
@@ -301,35 +226,6 @@ namespace component
             virtual json get_json()
             {
                 json ret = json::array();
-                if_print_t *if_print;
-
-                if(!is_empty())
-                {
-                    auto cur = rptr;
-                    auto cur_stage = rstage;
-
-                    while(1)
-                    {
-                        if_print = dynamic_cast<if_print_t *>(&buffer[cur]);
-                        json item = if_print->get_json();
-                        item["rob_id"] = cur;
-                        ret.push_back(item);
-                
-                        cur++;
-
-                        if(cur >= size)
-                        {
-                            cur = 0;
-                            cur_stage = !cur_stage;
-                        }
-
-                        if((cur == wptr) && (cur_stage == wstage))
-                        {
-                            break;
-                        }
-                    }
-                }
-
                 return ret;
             }
     };

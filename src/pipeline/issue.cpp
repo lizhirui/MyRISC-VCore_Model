@@ -93,6 +93,12 @@ namespace pipeline
                             }
                         }
 
+                        //bru instruction must be executed independently
+                        if((items[i].op_unit == op_unit_t::bru) && (i != 0))
+                        {
+                            break;
+                        }
+
                         bool src1_feedback = false;
                         uint32_t src1_feedback_value = 0;
                         bool src2_feedback = false;
@@ -138,6 +144,12 @@ namespace pipeline
                         send_pack.has_exception = items[i].has_exception;
                         send_pack.exception_id = items[i].exception_id;
                         send_pack.exception_value = items[i].exception_value;
+
+                        send_pack.predicted = items[i].predicted;
+                        send_pack.predicted_jump = items[i].predicted_jump;
+                        send_pack.predicted_next_pc = items[i].predicted_next_pc;
+                        send_pack.checkpoint_id_valid = items[i].checkpoint_id_valid;
+                        send_pack.checkpoint_id = items[i].checkpoint_id;
                     
                         send_pack.rs1 = items[i].rs1;
                         send_pack.arg1_src = items[i].arg1_src;
@@ -244,6 +256,12 @@ namespace pipeline
                         {
                             break;
                         }
+
+                        //bru instruction must be executed independently
+                        if(items[i].op_unit == op_unit_t::bru)
+                        {
+                            break;
+                        }
                     }
                 }
             }    
@@ -266,6 +284,8 @@ namespace pipeline
 
                 if(!no_need_feedback_items)
                 {
+                    auto first_item_id = cur_item_id;
+
                     do
                     {
                         auto cur_item = issue_q.get_item(cur_item_id);
@@ -295,7 +315,7 @@ namespace pipeline
                         { 
                             issue_q.set_item_sync(cur_item_id, cur_item);
                         }
-                    }while(issue_q.get_next_id(cur_item_id, &cur_item_id));
+                    }while(issue_q.get_next_id(cur_item_id, &cur_item_id) && (cur_item_id != first_item_id));
                 }
             }
         
@@ -331,6 +351,12 @@ namespace pipeline
                 t_item.rob_id = cur_op.rob_id;
                 t_item.pc = cur_op.pc;
                 t_item.imm = cur_op.imm;
+
+                t_item.predicted = cur_op.predicted;
+                t_item.predicted_jump = cur_op.predicted_jump;
+                t_item.predicted_next_pc = cur_op.predicted_next_pc;
+                t_item.checkpoint_id_valid = cur_op.checkpoint_id_valid;
+                t_item.checkpoint_id = cur_op.checkpoint_id;
             
                 t_item.rs1 = cur_op.rs1;
                 t_item.arg1_src = cur_op.arg1_src;

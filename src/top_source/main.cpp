@@ -8,6 +8,8 @@
 #include "../component/csrfile.h"
 #include "../component/csr_all.h"
 #include "../component/store_buffer.h"
+#include "../component/checkpoint_buffer.h"
+#include "../component/branch_predictor.h"
 #include "../pipeline/fetch.h"
 #include "../pipeline/fetch_decode.h"
 #include "../pipeline/decode.h"
@@ -38,6 +40,7 @@
 static std::atomic<bool> ctrl_c_detected = false;
 
 static uint64_t cpu_clock_cycle = 0;
+
 static uint64_t committed_instruction_num = 0;
 
 static component::fifo<pipeline::fetch_decode_pack_t> fetch_decode_fifo(16);
@@ -71,11 +74,13 @@ static component::rob rob(16);
 static component::regfile<pipeline::phy_regfile_item_t> phy_regfile(PHY_REG_NUM);
 static component::csrfile csr_file;
 static component::store_buffer store_buffer(16, &memory);
+static component::checkpoint_buffer checkpoint_buffer(16);
+static component::branch_predictor branch_predictor;
 
-static pipeline::fetch fetch_stage(&memory, &fetch_decode_fifo, 0x80000000);
+static pipeline::fetch fetch_stage(&memory, &fetch_decode_fifo, &checkpoint_buffer, &branch_predictor, 0x80000000);
 static pipeline::decode decode_stage(&fetch_decode_fifo, &decode_rename_fifo);
 static pipeline::rename rename_stage(&decode_rename_fifo, &rename_readreg_port, &rat, &rob);
-static pipeline::readreg readreg_stage(&rename_readreg_port, &readreg_issue_port, &phy_regfile);
+static pipeline::readreg readreg_stage(&rename_readreg_port, &readreg_issue_port, &phy_regfile, &checkpoint_buffer, &rat);
 static pipeline::issue issue_stage(&readreg_issue_port, issue_alu_fifo, issue_bru_fifo, issue_csr_fifo, issue_div_fifo, issue_lsu_fifo, issue_mul_fifo);
 static pipeline::execute::alu *execute_alu_stage[ALU_UNIT_NUM];
 static pipeline::execute::bru *execute_bru_stage[BRU_UNIT_NUM];
@@ -83,8 +88,8 @@ static pipeline::execute::csr *execute_csr_stage[CSR_UNIT_NUM];
 static pipeline::execute::div *execute_div_stage[DIV_UNIT_NUM];
 static pipeline::execute::lsu *execute_lsu_stage[LSU_UNIT_NUM];
 static pipeline::execute::mul *execute_mul_stage[MUL_UNIT_NUM];
-static pipeline::wb wb_stage(alu_wb_port, bru_wb_port, csr_wb_port, div_wb_port, lsu_wb_port, mul_wb_port, &wb_commit_port, &phy_regfile);
-static pipeline::commit commit_stage(&wb_commit_port, &rat, &rob, &csr_file, &phy_regfile);
+static pipeline::wb wb_stage(alu_wb_port, bru_wb_port, csr_wb_port, div_wb_port, lsu_wb_port, mul_wb_port, &wb_commit_port, &phy_regfile, &checkpoint_buffer);
+static pipeline::commit commit_stage(&wb_commit_port, &rat, &rob, &csr_file, &phy_regfile, &checkpoint_buffer, &branch_predictor);
 
 static pipeline::issue_feedback_pack_t t_issue_feedback_pack;
 static pipeline::execute::bru_feedback_pack_t t_bru_feedback_pack;
@@ -271,14 +276,16 @@ static void reset()
         rat.commit_map(i);
         pipeline::phy_regfile_item_t t_item;
         t_item.value = 0;
-        t_item.valid = true;
-        phy_regfile.write(i, t_item);
+        //t_item.valid = true;
+        phy_regfile.write(i, t_item, true);
     }
 
     rat.init_finish();
     rob.reset();
     csr_file.reset();
     store_buffer.reset();
+    checkpoint_buffer.reset();
+    branch_predictor.reset();
     fetch_stage.reset();
     rename_stage.reset();
     issue_stage.reset();
@@ -298,6 +305,7 @@ static void init()
     telnet_init();
 
     //std::ifstream binfile("../../../testprgenv/main/test.bin", std::ios::binary);
+    //std::ifstream binfile("../../../testfile.bin", std::ios::binary);
     std::ifstream binfile("../../../coremark.bin", std::ios::binary);
 
     if(!binfile || !binfile.is_open())
@@ -427,8 +435,8 @@ static void init()
         rat.commit_map(i);
         pipeline::phy_regfile_item_t t_item;
         t_item.value = 0;
-        t_item.valid = true;
-        phy_regfile.write(i, t_item);
+        //t_item.valid = true;
+        phy_regfile.write(i, t_item, true);
     }
 
     rat.init_finish();
@@ -662,7 +670,8 @@ static void cmd_arch()
             uint32_t phy_id;
             rat.get_commit_phy_id(i, &phy_id);
             auto v = phy_regfile.read(phy_id);
-            assert(v.valid);
+            //assert(v.valid);
+            assert(phy_regfile.read_data_valid(phy_id));
             std::cout << "x" << i << " = 0x" << fillzero(8) << outhex(v.value) << "(" << v.value << ") -> " << phy_id << std::endl;
         }
     }
@@ -764,6 +773,7 @@ static bool cmd_handle(std::string cmd)
 
 static void run()
 {
+    //std::ofstream trace_file("no_branch.txt");
     init();
     reset();
     cmd_gui();
@@ -774,8 +784,20 @@ static void run()
 
     while(1)
     {
+        /*if(cpu_clock_cycle == 567680)
+        {
+            step_state = true;
+            wait_commit = false;
+        }*/
+
         if(ctrl_c_detected || (step_state && ((!wait_commit) || (wait_commit && rob.get_committed()))))
         {
+            if(ctrl_c_detected)
+            {
+                step_state = true;
+                wait_commit = false;
+            }
+
             pause_state = true;
 
             if(gui_mode)
@@ -835,6 +857,26 @@ static void run()
             ctrl_c_detected = false;
         }
 
+        if(rob.get_committed())
+        {
+            /*auto v1 = store_buffer.get_feedback_value(0x800170f8, 4, memory.read32(0x800170f8));
+            auto v2 = store_buffer.get_feedback_value(0x8000f022, 1, memory.read8(0x8000f022));*/
+            //trace_file << cpu_clock_cycle << "," << fillzero(8) << outhex(get_current_pc()) << "," << fillzero(8) << outhex(v1) << "," << fillzero(2) << outhex(v2) << std::endl;
+            /*trace_file << cpu_clock_cycle << "," << fillzero(8) << outhex(get_current_pc());
+
+            for(auto i = 1;i < 32;i++)
+            {
+                uint32_t phy_id;
+                rat.get_commit_phy_id(i, &phy_id);
+                auto v = phy_regfile.read(phy_id);
+                trace_file << "," << fillzero(8) << outhex(v.value);
+            }
+
+            trace_file << std::endl;*/
+
+            auto t = 0;
+        }
+
         rob.set_committed(false);
         t_commit_feedback_pack = commit_stage.run();
         t_wb_feedback_pack = wb_stage.run(t_commit_feedback_pack);
@@ -881,12 +923,23 @@ static void run()
         store_buffer.run(t_commit_feedback_pack);
         memory.sync();
         store_buffer.sync();
+        checkpoint_buffer.sync();
+        branch_predictor.sync();
         cpu_clock_cycle++;
         csr_file.write_sys(CSR_MCYCLE, (uint32_t)(cpu_clock_cycle & 0xffffffffu));
         csr_file.write_sys(CSR_MCYCLEH, (uint32_t)(cpu_clock_cycle >> 32));
         committed_instruction_num = rob.get_global_commit_num();
         csr_file.write_sys(CSR_MINSTRET, (uint32_t)(committed_instruction_num & 0xffffffffu));
         csr_file.write_sys(CSR_MINSTRETH, (uint32_t)(committed_instruction_num >> 32));
+
+        //integrity check
+        /*for(auto i = 1;i < ARCH_REG_NUM;i++)
+        {
+            uint32_t phy_id;
+            rat.get_commit_phy_id(i, &phy_id);
+            auto v = phy_regfile.read(phy_id);
+            assert(phy_regfile.read_data_valid(phy_id));
+        }*/
     }
 }
 
@@ -1067,7 +1120,8 @@ static std::string socket_cmd_read_archreg(std::vector<std::string> args)
             uint32_t phy_id;
             rat.get_commit_phy_id(i, &phy_id);
             auto v = phy_regfile.read(phy_id);
-            assert(v.valid);
+            //assert(v.valid);
+            assert(phy_regfile.read_data_valid(phy_id));
             result << "," << std::hex << v.value;
         }
     }

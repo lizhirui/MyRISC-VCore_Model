@@ -17,6 +17,15 @@ namespace pipeline
         riscv_exception_t exception_id;
         uint32_t exception_value;
 
+        bool predicted;
+        bool predicted_jump;
+        uint32_t predicted_next_pc;
+        bool checkpoint_id_valid;
+        uint32_t checkpoint_id;
+
+        bool bru_jump;
+        uint32_t bru_next_pc;
+
         uint32_t rs1;
         arg_src_t arg1_src;
         bool rs1_need_map;
@@ -135,6 +144,13 @@ namespace pipeline
             t["has_exception"] = has_exception;
             t["exception_id"] = outenum(exception_id);
             t["exception_value"] = exception_value;
+            t["predicted"] = predicted;
+            t["predicted_jump"] = predicted_jump;
+            t["predicted_next_pc"] = predicted_next_pc;
+            t["checkpoint_id_valid"] = checkpoint_id_valid;
+            t["checkpoint_id"] = checkpoint_id;
+            t["bru_jump"] = bru_jump;
+            t["bru_next_pc"] = bru_next_pc;
             t["rs1"] = rs1;
             t["arg1_src"] = arg1_src;
             t["rs1_need_map"] = rs1_need_map;

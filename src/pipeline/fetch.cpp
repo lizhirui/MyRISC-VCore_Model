@@ -7,10 +7,12 @@
 
 namespace pipeline
 {
-    fetch::fetch(component::memory *memory, component::fifo<fetch_decode_pack_t> *fetch_decode_fifo, uint32_t init_pc)
+    fetch::fetch(component::memory *memory, component::fifo<fetch_decode_pack_t> *fetch_decode_fifo, component::checkpoint_buffer *checkpoint_buffer, component::branch_predictor *branch_predictor, uint32_t init_pc)
     {
         this->memory = memory;
         this->fetch_decode_fifo = fetch_decode_fifo;
+        this->checkpoint_buffer = checkpoint_buffer;
+        this->branch_predictor = branch_predictor;
         this->init_pc = init_pc;
         this->pc = init_pc;
         this->jump_wait = false;
@@ -40,7 +42,7 @@ namespace pipeline
 
             if(jump_wait)
             {
-                if(bru_feedback_pack.enable)
+                /*if(bru_feedback_pack.enable)
                 {
                     this->jump_wait = false;
 
@@ -48,18 +50,61 @@ namespace pipeline
                     {
                         this->pc = bru_feedback_pack.next_pc;
                     }
+                }*/
+
+                if(commit_feedback_pack.jump_enable)
+                {
+                    this->jump_wait = false;
+
+                    if(commit_feedback_pack.jump)
+                    {
+                        this->pc = commit_feedback_pack.next_pc;
+                    }
                 }
             }
             else if(!this->fetch_decode_fifo->is_full())
             {
+                fetch_decode_pack_t t_fetch_decode_pack;
+                
+                memset(&t_fetch_decode_pack, 0, sizeof(t_fetch_decode_pack));
+
                 if((i0_enable && i0_jump) || (i1_enable && i1_jump))
                 {
-                    this->jump_wait = true;
-                }
-                
-                this->pc += (i1_enable ? 8 : 4);
+                    uint32_t jump_pc = (i0_enable && i0_jump) ? i0_pc : i1_pc;
+                    uint32_t jump_instruction = (i0_enable && i0_jump) ? i0 : i1;
+                    uint32_t jump_index = (i0_enable && i0_jump) ? 0 : 1;
+                    uint32_t jump_next_pc = 0;
+                    bool jump_result = false;
 
-                fetch_decode_pack_t t_fetch_decode_pack;
+                    if(branch_predictor->get_prediction(jump_pc, jump_instruction, &jump_result, &jump_next_pc))
+                    {
+                        component::checkpoint_t cp;
+                        t_fetch_decode_pack.op_info[jump_index].checkpoint_id_valid = checkpoint_buffer->push(cp, &t_fetch_decode_pack.op_info[jump_index].checkpoint_id);
+                        
+                        if(!t_fetch_decode_pack.op_info[jump_index].checkpoint_id_valid)
+                        {
+                            this->jump_wait = true;
+                            this->pc += (i1_enable ? 8 : 4);
+                        }
+                        else
+                        {
+                            t_fetch_decode_pack.op_info[jump_index].predicted = true;
+                            t_fetch_decode_pack.op_info[jump_index].predicted_jump = jump_result;
+                            t_fetch_decode_pack.op_info[jump_index].predicted_next_pc = jump_next_pc;
+                            this->jump_wait = false;
+                            this->pc = jump_result ? jump_next_pc : ((i1_enable ? 8 : 4));
+                        }
+                    }
+                    else
+                    {
+                        this->jump_wait = true;
+                        this->pc += (i1_enable ? 8 : 4);
+                    }
+                }
+                else
+                {
+                    this->pc += (i1_enable ? 8 : 4);
+                }
 
                 t_fetch_decode_pack.op_info[0].value = i0_enable ? i0 : 0;
                 t_fetch_decode_pack.op_info[0].enable = i0_enable;
@@ -85,6 +130,10 @@ namespace pipeline
             if(commit_feedback_pack.has_exception)
             {
                 this->pc = commit_feedback_pack.exception_pc;
+            }
+            else if(commit_feedback_pack.jump_enable)
+            {
+                this->pc = commit_feedback_pack.next_pc;
             }
         }
     }

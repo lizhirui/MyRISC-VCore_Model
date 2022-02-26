@@ -37,7 +37,6 @@ using json = nlohmann::json;
     if(!(cond)) \
     { \
         printf("In file %s, Line %d, %s\n", __FILE__, __LINE__, #cond);\
-        abort();\
     }
 
 //machine types

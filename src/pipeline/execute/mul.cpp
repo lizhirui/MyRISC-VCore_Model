@@ -32,6 +32,12 @@ namespace pipeline
                 send_pack.exception_id = rev_pack.exception_id;
                 send_pack.exception_value = rev_pack.exception_value;
 
+                send_pack.predicted = rev_pack.predicted;
+                send_pack.predicted_jump = rev_pack.predicted_jump;
+                send_pack.predicted_next_pc = rev_pack.predicted_next_pc;
+                send_pack.checkpoint_id_valid = rev_pack.checkpoint_id_valid;
+                send_pack.checkpoint_id = rev_pack.checkpoint_id;
+
                 send_pack.rs1 = rev_pack.rs1;
                 send_pack.arg1_src = rev_pack.arg1_src;
                 send_pack.rs1_need_map = rev_pack.rs1_need_map;
