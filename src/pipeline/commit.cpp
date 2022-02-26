@@ -111,7 +111,8 @@ namespace pipeline
 											}
 											else
 											{
-												assert(phy_regfile->cp_get_data_valid(cp, i));
+												//assert(phy_regfile->cp_get_data_valid(cp, i));
+												phy_regfile->cp_set_data_valid(cp, i, true);
 												_cnt++;
 											}
 										}
@@ -186,12 +187,12 @@ namespace pipeline
 						rob_item.bru_next_pc = rev_pack.op_info[i].bru_next_pc;
 						rob->set_item_sync(rev_pack.op_info[i].rob_id, rob_item);
 
-						if(rev_pack.op_info[i].checkpoint_id_valid)
+						/*if(rev_pack.op_info[i].checkpoint_id_valid)
 						{
 							auto cp = checkpoint_buffer->get_item(rev_pack.op_info[i].checkpoint_id);
 							phy_regfile->save(cp);
 							checkpoint_buffer->set_item_sync(rev_pack.op_info[i].checkpoint_id, cp);
-						}
+						}*/
 					}
 				}
 			}

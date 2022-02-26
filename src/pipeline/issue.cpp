@@ -94,10 +94,10 @@ namespace pipeline
                         }
 
                         //bru instruction must be executed independently
-                        if((items[i].op_unit == op_unit_t::bru) && (i != 0))
+                        /*if((items[i].op_unit == op_unit_t::bru) && (i != 0))
                         {
                             break;
-                        }
+                        }*/
 
                         bool src1_feedback = false;
                         uint32_t src1_feedback_value = 0;
@@ -258,10 +258,10 @@ namespace pipeline
                         }
 
                         //bru instruction must be executed independently
-                        if(items[i].op_unit == op_unit_t::bru)
+                        /*if(items[i].op_unit == op_unit_t::bru)
                         {
                             break;
-                        }
+                        }*/
                     }
                 }
             }    
