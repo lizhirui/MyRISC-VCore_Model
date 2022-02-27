@@ -34,10 +34,12 @@ namespace pipeline
             uint32_t i0 = i0_has_exception ? 0 : this->memory->read32(i0_pc);
             bool i0_enable = !jump_wait;
             bool i0_jump = ((i0 & 0x7f) == 0x6f) || ((i0 & 0x7f) == 0x67) || ((i0 & 0x7f) == 0x63) || (i0 == 0x30200073);
-            uint32_t i1_pc = cur_pc ^ 0x04;
+            //uint32_t i1_pc = cur_pc ^ 0x04;
+            uint32_t i1_pc = cur_pc + 4;
             bool i1_has_exception = !memory->check_align(i1_pc, 4) || !memory->check_boundary(i1_pc, 4);
             uint32_t i1 = i1_has_exception ? 0 : this->memory->read32(i1_pc);
-            bool i1_enable = is_align(cur_pc, 8) && !jump_wait && !i0_jump;
+            //bool i1_enable = is_align(cur_pc, 8) && !jump_wait && !i0_jump;
+            bool i1_enable = !jump_wait && !i0_jump;
             bool i1_jump = ((i1 & 0x7f) == 0x6f) || ((i1 & 0x7f) == 0x67) || ((i1 & 0x7f) == 0x63) || (i1 == 0x30200073);
 
             if(jump_wait)
@@ -76,6 +78,10 @@ namespace pipeline
                     uint32_t jump_next_pc = 0;
                     bool jump_result = false;
 
+                    /*uint32_t i1_jump_next_pc = 0;
+                    bool i1_jump_result = false;
+                    bool i1_can_prediction = branch_predictor->get_prediction(i1_pc, i1, &i1_jump_result, &i1_jump_next_pc);*/
+
                     if(branch_predictor->get_prediction(jump_pc, jump_instruction, &jump_result, &jump_next_pc))
                     {
                         component::checkpoint_t cp;
@@ -91,8 +97,48 @@ namespace pipeline
                             t_fetch_decode_pack.op_info[jump_index].predicted = true;
                             t_fetch_decode_pack.op_info[jump_index].predicted_jump = jump_result;
                             t_fetch_decode_pack.op_info[jump_index].predicted_next_pc = jump_next_pc;
+                            uint32_t next_pc = jump_result ? jump_next_pc : (this->pc + (i1_enable ? 8 : 4));
+
+                            //judge i1_enable isn't necessary
+                            /*if(i0_enable && i0_jump && (next_pc == i1_pc))
+                            {
+                                i1_enable = true;
+
+                                if(i1_jump)
+                                {
+                                    if(i1_can_prediction)
+                                    {
+                                        t_fetch_decode_pack.op_info[1].checkpoint_id_valid = checkpoint_buffer->push(cp, &t_fetch_decode_pack.op_info[1].checkpoint_id);
+
+                                        if(!t_fetch_decode_pack.op_info[1].checkpoint_id_valid)
+                                        {
+                                            this->jump_wait = true;
+                                            this->pc = i1_pc + 4;
+                                        }
+                                        else
+                                        {
+                                            t_fetch_decode_pack.op_info[1].predicted = true;
+                                            t_fetch_decode_pack.op_info[1].predicted_jump = i1_jump_result;
+                                            t_fetch_decode_pack.op_info[1].predicted_next_pc = i1_jump_next_pc;
+                                            this->pc = i1_jump_result ? i1_jump_next_pc : (i1_pc + 4);
+                                            this->jump_wait = false;
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    this->pc = i1_pc + 4;
+                                    this->jump_wait = false;
+                                }
+                            }
+                            else
+                            {
+                                this->pc = next_pc;
+                                this->jump_wait = false;
+                            }*/
+
+                            this->pc = next_pc;
                             this->jump_wait = false;
-                            this->pc = jump_result ? jump_next_pc : (this->pc + (i1_enable ? 8 : 4));
                         }
                     }
                     else
