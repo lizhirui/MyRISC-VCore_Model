@@ -92,7 +92,7 @@ namespace pipeline
                             t_fetch_decode_pack.op_info[jump_index].predicted_jump = jump_result;
                             t_fetch_decode_pack.op_info[jump_index].predicted_next_pc = jump_next_pc;
                             this->jump_wait = false;
-                            this->pc = jump_result ? jump_next_pc : ((i1_enable ? 8 : 4));
+                            this->pc = jump_result ? jump_next_pc : (this->pc + (i1_enable ? 8 : 4));
                         }
                     }
                     else

@@ -23,6 +23,8 @@
 #include "./csr/pmpcfg.h"
 #include "./csr/charfifo.h"
 #include "./csr/finish.h"
+#include "./csr/mhpmcounter.h"
+#include "./csr/mhpmcounterh.h"
 
 #define CSR_MVENDORID 0xf11
 #define CSR_MARCHID 0xf12
@@ -46,3 +48,12 @@
 #define CSR_MINSTRET 0xB02
 #define CSR_MCYCLEH 0xB80
 #define CSR_MINSTRETH 0xB82
+
+#define CSR_BRANCHNUM 0xB03
+#define CSR_BRANCHNUMH 0xB83
+#define CSR_BRANCHPREDICTED 0xB04
+#define CSR_BRANCHPREDICTEDH 0xB84
+#define CSR_BRANCHHIT 0xB05
+#define CSR_BRANCHHITH 0xB85
+#define CSR_BRANCHMISS 0xB06
+#define CSR_BRANCHMISSH 0xB86

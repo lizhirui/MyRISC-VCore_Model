@@ -113,6 +113,11 @@ namespace pipeline
                             break;
                     }
                 }
+
+                if(!send_pack.bru_jump)
+                {
+                    send_pack.bru_next_pc = rev_pack.pc + 4;
+                }
             }
 
             //feedback_pack.jump = send_pack.bru_jump;

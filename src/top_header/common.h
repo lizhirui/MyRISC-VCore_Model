@@ -138,3 +138,8 @@ void clear_queue(std::queue<T> &c)
     std::queue<T> empty; 
     std::swap(empty, c);
 } 
+
+void branch_num_add();
+void branch_predicted_add();
+void branch_hit_add();
+void branch_miss_add();

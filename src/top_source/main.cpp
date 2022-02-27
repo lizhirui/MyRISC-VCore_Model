@@ -40,8 +40,31 @@
 static std::atomic<bool> ctrl_c_detected = false;
 
 static uint64_t cpu_clock_cycle = 0;
-
 static uint64_t committed_instruction_num = 0;
+static uint64_t branch_num = 0;
+static uint64_t branch_predicted = 0;
+static uint64_t branch_hit = 0;
+static uint64_t branch_miss = 0;
+
+void branch_num_add()
+{
+    branch_num++;
+}
+
+void branch_predicted_add()
+{
+    branch_predicted++;
+}
+
+void branch_hit_add()
+{
+    branch_hit++;
+}
+
+void branch_miss_add()
+{
+    branch_miss++;
+}
 
 static component::fifo<pipeline::fetch_decode_pack_t> fetch_decode_fifo(16);
 static component::fifo<pipeline::decode_rename_pack_t> decode_rename_fifo(16);
@@ -74,7 +97,7 @@ static component::rob rob(16);
 static component::regfile<pipeline::phy_regfile_item_t> phy_regfile(PHY_REG_NUM);
 static component::csrfile csr_file;
 static component::store_buffer store_buffer(16, &memory);
-static component::checkpoint_buffer checkpoint_buffer(16);
+static component::checkpoint_buffer checkpoint_buffer(64);
 static component::branch_predictor branch_predictor;
 
 static pipeline::fetch fetch_stage(&memory, &fetch_decode_fifo, &checkpoint_buffer, &branch_predictor, 0x80000000);
@@ -298,6 +321,10 @@ static void reset()
     commit_stage.reset();
     cpu_clock_cycle = 0;
     committed_instruction_num = 0;
+    branch_num = 0;
+    branch_predicted = 0;
+    branch_hit = 0;
+    branch_miss = 0;
 }
 
 static void init()
@@ -463,6 +490,14 @@ static void init()
     csr_file.map(CSR_MINSTRET, false, std::make_shared<component::csr::minstret>());
     csr_file.map(CSR_MCYCLEH, false, std::make_shared<component::csr::mcycleh>());
     csr_file.map(CSR_MINSTRETH, false, std::make_shared<component::csr::minstreth>());
+    csr_file.map(CSR_BRANCHNUM, true, std::make_shared<component::csr::mhpmcounter>("branchnum"));
+    csr_file.map(CSR_BRANCHNUMH, true, std::make_shared<component::csr::mhpmcounterh>("branchnumh"));
+    csr_file.map(CSR_BRANCHPREDICTED, true, std::make_shared<component::csr::mhpmcounter>("branchpredicted"));
+    csr_file.map(CSR_BRANCHPREDICTEDH, true, std::make_shared<component::csr::mhpmcounterh>("branchpredictedh"));
+    csr_file.map(CSR_BRANCHHIT, true, std::make_shared<component::csr::mhpmcounter>("branchhit"));
+    csr_file.map(CSR_BRANCHHITH, true, std::make_shared<component::csr::mhpmcounterh>("branchhith"));
+    csr_file.map(CSR_BRANCHMISS, true, std::make_shared<component::csr::mhpmcounter>("branchmiss"));
+    csr_file.map(CSR_BRANCHMISSH, true, std::make_shared<component::csr::mhpmcounterh>("branchmissh"));
 
     for(auto i = 0;i < 16;i++)
     {
@@ -784,7 +819,7 @@ static void run()
 
     while(1)
     {
-        /*if(cpu_clock_cycle == 30420)
+        /*if(cpu_clock_cycle == 104428)
         {
             step_state = true;
             wait_commit = false;
@@ -931,6 +966,14 @@ static void run()
         committed_instruction_num = rob.get_global_commit_num();
         csr_file.write_sys(CSR_MINSTRET, (uint32_t)(committed_instruction_num & 0xffffffffu));
         csr_file.write_sys(CSR_MINSTRETH, (uint32_t)(committed_instruction_num >> 32));
+        csr_file.write_sys(CSR_BRANCHNUM, (uint32_t)(branch_num & 0xffffffffu));
+        csr_file.write_sys(CSR_BRANCHNUMH, (uint32_t)(branch_num >> 32));
+        csr_file.write_sys(CSR_BRANCHPREDICTED, (uint32_t)(branch_predicted & 0xffffffffu));
+        csr_file.write_sys(CSR_BRANCHPREDICTEDH, (uint32_t)(branch_predicted >> 32));
+        csr_file.write_sys(CSR_BRANCHHIT, (uint32_t)(branch_hit & 0xffffffffu));
+        csr_file.write_sys(CSR_BRANCHHITH, (uint32_t)(branch_hit >> 32));
+        csr_file.write_sys(CSR_BRANCHMISS, (uint32_t)(branch_miss & 0xffffffffu));
+        csr_file.write_sys(CSR_BRANCHMISSH, (uint32_t)(branch_miss >> 32));
 
         //integrity check
         /*for(auto i = 1;i < ARCH_REG_NUM;i++)

@@ -79,18 +79,24 @@ namespace pipeline
 							//branch handle
 							if(rob_item.bru_op)
 							{
+								branch_num_add();
+
 								if(rob_item.predicted)
 								{
-									branch_predictor->update_prediction_sync(rob_item.pc, rob_item.inst_value, rob_item.bru_jump, rob_item.bru_next_pc);
+									branch_predicted_add();
 
 									//whether prediction is success
 									if((rob_item.bru_jump == rob_item.predicted_jump) && ((rob_item.bru_next_pc == rob_item.predicted_next_pc) || (!rob_item.predicted_jump)))
 									{
+										branch_hit_add();
+										branch_predictor->update_prediction_sync(rob_item.pc, rob_item.inst_value, rob_item.bru_jump, rob_item.bru_next_pc, true);
 										checkpoint_buffer->pop_sync();
 										//nothing to do
 									}
 									else if(rob_item.checkpoint_id_valid)
 									{
+										branch_miss_add();
+										branch_predictor->update_prediction_sync(rob_item.pc, rob_item.inst_value, rob_item.bru_jump, rob_item.bru_next_pc, false);
 										auto cp = checkpoint_buffer->get_item(rob_item.checkpoint_id);
 
 										if(rob_item.old_phy_reg_id_valid)
