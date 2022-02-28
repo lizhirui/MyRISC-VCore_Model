@@ -4,6 +4,7 @@
 #include "../component/port.h"
 #include "../component/fifo.h"
 #include "../component/issue_queue.h"
+#include "../component/regfile.h"
 #include "readreg_issue.h"
 #include "issue_execute.h"
 #include "wb.h"
@@ -228,6 +229,8 @@ namespace pipeline
             component::fifo<issue_execute_pack_t> **issue_div_fifo;
             component::fifo<issue_execute_pack_t> **issue_lsu_fifo;
             component::fifo<issue_execute_pack_t> **issue_mul_fifo;
+
+            component::regfile<phy_regfile_item_t> *phy_regfile;
             
             component::issue_queue<issue_queue_item_t> issue_q;
             bool busy = false;
@@ -243,7 +246,7 @@ namespace pipeline
             uint32_t mul_index = 0;
                
         public:
-            issue(component::port<readreg_issue_pack_t> *readreg_issue_port, component::fifo<issue_execute_pack_t> **issue_alu_fifo, component::fifo<issue_execute_pack_t> **issue_bru_fifo, component::fifo<issue_execute_pack_t> **issue_csr_fifo, component::fifo<issue_execute_pack_t> **issue_div_fifo, component::fifo<issue_execute_pack_t> **issue_lsu_fifo, component::fifo<issue_execute_pack_t> **issue_mul_fifo);
+            issue(component::port<readreg_issue_pack_t> *readreg_issue_port, component::fifo<issue_execute_pack_t> **issue_alu_fifo, component::fifo<issue_execute_pack_t> **issue_bru_fifo, component::fifo<issue_execute_pack_t> **issue_csr_fifo, component::fifo<issue_execute_pack_t> **issue_div_fifo, component::fifo<issue_execute_pack_t> **issue_lsu_fifo, component::fifo<issue_execute_pack_t> **issue_mul_fifo, component::regfile<phy_regfile_item_t> *phy_regfile);
             virtual void reset();
             issue_feedback_pack_t run(wb_feedback_pack_t wb_feedback_pack, commit_feedback_pack_t commit_feedback_pack);
             virtual void print(std::string indent);

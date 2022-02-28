@@ -210,10 +210,18 @@ namespace pipeline
                     }
                     else if(rat->get_free_phy_id(phy_reg_req_cnt, new_phy_reg_id) < phy_reg_req_cnt)
                     {
+                        phy_regfile_full_add();
+
+                        if(rob->get_free_space() < (rob_req_cnt))
+                        {
+                            rob_full_add();
+                        }
+
                         assert(true);//phy_regfile is full
                     }
                     else
                     {
+                        rob_full_add();
                         assert(true);//is busy
                     }
                 }

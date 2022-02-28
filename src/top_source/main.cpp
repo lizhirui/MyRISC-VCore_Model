@@ -45,6 +45,15 @@ static uint64_t branch_num = 0;
 static uint64_t branch_predicted = 0;
 static uint64_t branch_hit = 0;
 static uint64_t branch_miss = 0;
+static uint64_t fetch_decode_fifo_full = 0;
+static uint64_t decode_rename_fifo_full = 0;
+static uint64_t issue_queue_full = 0;
+static uint64_t issue_execute_fifo_full = 0;
+static uint64_t checkpoint_buffer_full = 0;
+static uint64_t rob_full = 0;
+static uint64_t phy_regfile_full = 0;
+static uint64_t ras_full = 0;
+static uint64_t fetch_not_full = 0;
 
 void branch_num_add()
 {
@@ -66,8 +75,53 @@ void branch_miss_add()
     branch_miss++;
 }
 
-static component::fifo<pipeline::fetch_decode_pack_t> fetch_decode_fifo(16);
-static component::fifo<pipeline::decode_rename_pack_t> decode_rename_fifo(16);
+void fetch_decode_fifo_full_add()
+{
+    fetch_decode_fifo_full++;
+}
+
+void decode_rename_fifo_full_add()
+{
+    decode_rename_fifo_full++;
+}
+
+void issue_queue_full_add()
+{
+    issue_queue_full++;
+}
+
+void issue_execute_fifo_full_add()
+{
+    issue_execute_fifo_full++;
+}
+
+void checkpoint_buffer_full_add()
+{
+    checkpoint_buffer_full++;
+}
+
+void rob_full_add()
+{
+    rob_full++;
+}
+
+void phy_regfile_full_add()
+{
+    phy_regfile_full++;
+}
+
+void ras_full_add()
+{
+    ras_full++;
+}
+
+void fetch_not_full_add()
+{
+    fetch_not_full++;
+}
+
+static component::fifo<pipeline::fetch_decode_pack_t> fetch_decode_fifo(FETCH_DECODE_FIFO_SIZE);
+static component::fifo<pipeline::decode_rename_pack_t> decode_rename_fifo(FETCH_DECODE_FIFO_SIZE);
 static pipeline::rename_readreg_pack_t default_rename_readreg_pack;
 static pipeline::readreg_issue_pack_t default_readreg_issue_pack;
 static pipeline::execute_wb_pack_t default_execute_wb_pack;
@@ -93,18 +147,18 @@ static component::port<pipeline::wb_commit_pack_t> wb_commit_port(default_wb_com
 
 static component::memory memory(0x80000000, 1048576);
 static component::rat rat(PHY_REG_NUM, ARCH_REG_NUM);
-static component::rob rob(16);
+static component::rob rob(ROB_SIZE);
 static component::regfile<pipeline::phy_regfile_item_t> phy_regfile(PHY_REG_NUM);
 static component::csrfile csr_file;
 static component::store_buffer store_buffer(16, &memory);
-static component::checkpoint_buffer checkpoint_buffer(64);
+static component::checkpoint_buffer checkpoint_buffer(CHECKPOINT_BUFFER_SIZE);
 static component::branch_predictor branch_predictor;
 
 static pipeline::fetch fetch_stage(&memory, &fetch_decode_fifo, &checkpoint_buffer, &branch_predictor, 0x80000000);
 static pipeline::decode decode_stage(&fetch_decode_fifo, &decode_rename_fifo);
 static pipeline::rename rename_stage(&decode_rename_fifo, &rename_readreg_port, &rat, &rob);
 static pipeline::readreg readreg_stage(&rename_readreg_port, &readreg_issue_port, &phy_regfile, &checkpoint_buffer, &rat);
-static pipeline::issue issue_stage(&readreg_issue_port, issue_alu_fifo, issue_bru_fifo, issue_csr_fifo, issue_div_fifo, issue_lsu_fifo, issue_mul_fifo);
+static pipeline::issue issue_stage(&readreg_issue_port, issue_alu_fifo, issue_bru_fifo, issue_csr_fifo, issue_div_fifo, issue_lsu_fifo, issue_mul_fifo, &phy_regfile);
 static pipeline::execute::alu *execute_alu_stage[ALU_UNIT_NUM];
 static pipeline::execute::bru *execute_bru_stage[BRU_UNIT_NUM];
 static pipeline::execute::csr *execute_csr_stage[CSR_UNIT_NUM];
@@ -325,6 +379,14 @@ static void reset()
     branch_predicted = 0;
     branch_hit = 0;
     branch_miss = 0;
+    fetch_decode_fifo_full = 0;
+    decode_rename_fifo_full = 0;
+    issue_queue_full = 0;
+    issue_execute_fifo_full = 0;
+    checkpoint_buffer_full = 0;
+    rob_full = 0;
+    phy_regfile_full = 0;
+    ras_full = 0;
 }
 
 static void init()
@@ -498,6 +560,24 @@ static void init()
     csr_file.map(CSR_BRANCHHITH, true, std::make_shared<component::csr::mhpmcounterh>("branchhith"));
     csr_file.map(CSR_BRANCHMISS, true, std::make_shared<component::csr::mhpmcounter>("branchmiss"));
     csr_file.map(CSR_BRANCHMISSH, true, std::make_shared<component::csr::mhpmcounterh>("branchmissh"));
+    csr_file.map(CSR_FD, true, std::make_shared<component::csr::mhpmcounter>("fd"));
+    csr_file.map(CSR_FDH, true, std::make_shared<component::csr::mhpmcounterh>("fdh"));
+    csr_file.map(CSR_DR, true, std::make_shared<component::csr::mhpmcounter>("dr"));
+    csr_file.map(CSR_DRH, true, std::make_shared<component::csr::mhpmcounterh>("drh"));
+    csr_file.map(CSR_IQ, true, std::make_shared<component::csr::mhpmcounter>("iq"));
+    csr_file.map(CSR_IQH, true, std::make_shared<component::csr::mhpmcounterh>("iqh"));
+    csr_file.map(CSR_IE, true, std::make_shared<component::csr::mhpmcounter>("ie"));
+    csr_file.map(CSR_IEH, true, std::make_shared<component::csr::mhpmcounterh>("ieh"));
+    csr_file.map(CSR_CB, true, std::make_shared<component::csr::mhpmcounter>("cb"));
+    csr_file.map(CSR_CBH, true, std::make_shared<component::csr::mhpmcounterh>("cbh"));
+    csr_file.map(CSR_ROB, true, std::make_shared<component::csr::mhpmcounter>("rob"));
+    csr_file.map(CSR_ROBH, true, std::make_shared<component::csr::mhpmcounterh>("robh"));
+    csr_file.map(CSR_PHY, true, std::make_shared<component::csr::mhpmcounter>("phy"));
+    csr_file.map(CSR_PHYH, true, std::make_shared<component::csr::mhpmcounterh>("phyh"));
+    csr_file.map(CSR_RAS, true, std::make_shared<component::csr::mhpmcounter>("ras"));
+    csr_file.map(CSR_RASH, true, std::make_shared<component::csr::mhpmcounterh>("rash"));
+    csr_file.map(CSR_FNF, true, std::make_shared<component::csr::mhpmcounterh>("fnf"));
+    csr_file.map(CSR_FNFH, true, std::make_shared<component::csr::mhpmcounterh>("fnfh"));
 
     for(auto i = 0;i < 16;i++)
     {
@@ -819,7 +899,13 @@ static void run()
 
     while(1)
     {
-        /*if(cpu_clock_cycle == 104428)
+        /*if(cpu_clock_cycle == 735)
+        {
+            step_state = true;
+            wait_commit = false;
+        }*/
+
+        /*if(committed_instruction_num == 32470)
         {
             step_state = true;
             wait_commit = false;
@@ -974,6 +1060,24 @@ static void run()
         csr_file.write_sys(CSR_BRANCHHITH, (uint32_t)(branch_hit >> 32));
         csr_file.write_sys(CSR_BRANCHMISS, (uint32_t)(branch_miss & 0xffffffffu));
         csr_file.write_sys(CSR_BRANCHMISSH, (uint32_t)(branch_miss >> 32));
+        csr_file.write_sys(CSR_FD, (uint32_t)(fetch_decode_fifo_full & 0xffffffffu));
+        csr_file.write_sys(CSR_FDH, (uint32_t)(fetch_decode_fifo_full >> 32));
+        csr_file.write_sys(CSR_DR, (uint32_t)(decode_rename_fifo_full & 0xffffffffu));
+        csr_file.write_sys(CSR_DRH, (uint32_t)(decode_rename_fifo_full >> 32));
+        csr_file.write_sys(CSR_IQ, (uint32_t)(issue_queue_full & 0xffffffffu));
+        csr_file.write_sys(CSR_IQH, (uint32_t)(issue_queue_full >> 32));
+        csr_file.write_sys(CSR_IE, (uint32_t)(issue_execute_fifo_full & 0xffffffffu));
+        csr_file.write_sys(CSR_IEH, (uint32_t)(issue_execute_fifo_full >> 32));
+        csr_file.write_sys(CSR_CB, (uint32_t)(checkpoint_buffer_full & 0xffffffffu));
+        csr_file.write_sys(CSR_CBH, (uint32_t)(checkpoint_buffer_full >> 32));
+        csr_file.write_sys(CSR_ROB, (uint32_t)(rob_full & 0xffffffffu));
+        csr_file.write_sys(CSR_ROBH, (uint32_t)(rob_full >> 32));
+        csr_file.write_sys(CSR_PHY, (uint32_t)(phy_regfile_full & 0xffffffffu));
+        csr_file.write_sys(CSR_PHYH, (uint32_t)(phy_regfile_full >> 32));
+        csr_file.write_sys(CSR_RAS, (uint32_t)(ras_full & 0xffffffffu));
+        csr_file.write_sys(CSR_RASH, (uint32_t)(ras_full >> 32));
+        csr_file.write_sys(CSR_FNF, (uint32_t)(fetch_not_full & 0xffffffffu));
+        csr_file.write_sys(CSR_FNFH, (uint32_t)(fetch_not_full >> 32));
 
         //integrity check
         /*for(auto i = 1;i < ARCH_REG_NUM;i++)

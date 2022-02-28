@@ -42,6 +42,11 @@ namespace pipeline
             bool i1_enable = !jump_wait && !i0_jump;
             bool i1_jump = ((i1 & 0x7f) == 0x6f) || ((i1 & 0x7f) == 0x67) || ((i1 & 0x7f) == 0x63) || (i1 == 0x30200073);
 
+            if(i0_enable && !i1_enable)
+            {
+                fetch_not_full_add();
+            }
+
             if(jump_wait)
             {
                 /*if(bru_feedback_pack.enable)
@@ -89,6 +94,7 @@ namespace pipeline
                         
                         if(!t_fetch_decode_pack.op_info[jump_index].checkpoint_id_valid)
                         {
+                            checkpoint_buffer_full_add();
                             this->jump_wait = true;
                             this->pc += (i1_enable ? 8 : 4);
                         }
@@ -166,6 +172,10 @@ namespace pipeline
                 t_fetch_decode_pack.op_info[1].exception_value = i1_pc;
 
                 this->fetch_decode_fifo->push(t_fetch_decode_pack);
+            }
+            else
+            {
+                fetch_decode_fifo_full_add();
             }
         }
         else

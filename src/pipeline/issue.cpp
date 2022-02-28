@@ -3,7 +3,7 @@
 
 namespace pipeline
 {
-    issue::issue(component::port<readreg_issue_pack_t> *readreg_issue_port, component::fifo<issue_execute_pack_t> **issue_alu_fifo, component::fifo<issue_execute_pack_t> **issue_bru_fifo, component::fifo<issue_execute_pack_t> **issue_csr_fifo, component::fifo<issue_execute_pack_t> **issue_div_fifo, component::fifo<issue_execute_pack_t> **issue_lsu_fifo, component::fifo<issue_execute_pack_t> **issue_mul_fifo) : issue_q(component::issue_queue<issue_queue_item_t>(ISSUE_QUEUE_SIZE))
+    issue::issue(component::port<readreg_issue_pack_t> *readreg_issue_port, component::fifo<issue_execute_pack_t> **issue_alu_fifo, component::fifo<issue_execute_pack_t> **issue_bru_fifo, component::fifo<issue_execute_pack_t> **issue_csr_fifo, component::fifo<issue_execute_pack_t> **issue_div_fifo, component::fifo<issue_execute_pack_t> **issue_lsu_fifo, component::fifo<issue_execute_pack_t> **issue_mul_fifo, component::regfile<phy_regfile_item_t> *phy_regfile) : issue_q(component::issue_queue<issue_queue_item_t>(ISSUE_QUEUE_SIZE))
     {
         this->readreg_issue_port = readreg_issue_port;
         this->issue_alu_fifo = issue_alu_fifo;
@@ -12,6 +12,7 @@ namespace pipeline
         this->issue_div_fifo = issue_div_fifo;
         this->issue_lsu_fifo = issue_lsu_fifo;
         this->issue_mul_fifo = issue_mul_fifo;
+        this->phy_regfile = phy_regfile;
         this->is_inst_waiting = false;
         this->inst_waiting_rob_id = 0;
     }
@@ -54,12 +55,13 @@ namespace pipeline
             
                 //get up to 2 items from issue_queue
                 assert(this->issue_q.get_front_id(&id));
+                auto first_id = id;
             
                 for(uint32_t i = 0;i < ISSUE_WIDTH;i++)
                 {
                     items[i] = this->issue_q.get_item(id);
                 
-                    if(!this->issue_q.get_next_id(id, &id))
+                    if(!this->issue_q.get_next_id(id, &id) || (first_id == id))
                     {
                         break;
                     }
@@ -248,6 +250,7 @@ namespace pipeline
                         }
                         else
                         {
+                            issue_execute_fifo_full_add();
                             break;
                         }
 
@@ -271,16 +274,19 @@ namespace pipeline
 
             if(issue_q.get_front_id(&cur_item_id))
             {
+                auto first_item_id = cur_item_id;
                 bool no_need_feedback_items = false;
 
                 for(uint32_t i = 0;i < output_item_cnt;i++)
                 {
-                    if(!issue_q.get_next_id(cur_item_id, &cur_item_id))
+                    if((!issue_q.get_next_id(cur_item_id, &cur_item_id)) || (cur_item_id == first_item_id))
                     {
                         no_need_feedback_items = true;
                         break;
                     }
                 }
+
+                auto end_item_id = first_item_id;
 
                 if(!no_need_feedback_items)
                 {
@@ -315,7 +321,7 @@ namespace pipeline
                         { 
                             issue_q.set_item_sync(cur_item_id, cur_item);
                         }
-                    }while(issue_q.get_next_id(cur_item_id, &cur_item_id) && (cur_item_id != first_item_id));
+                    }while(issue_q.get_next_id(cur_item_id, &cur_item_id) && (cur_item_id != first_item_id) && (cur_item_id != end_item_id));
                 }
             }
         
@@ -338,6 +344,7 @@ namespace pipeline
                 //if issue_queue is full, pause to handle this input until next cycle
                 if(this->issue_q.is_full())
                 {
+                    issue_queue_full_add();
                     finish = false;
                     break;
                 }
@@ -381,6 +388,18 @@ namespace pipeline
                 t_item.op = cur_op.op;
                 t_item.op_unit = cur_op.op_unit;
                 memcpy(&t_item.sub_op, &cur_op.sub_op, sizeof(t_item.sub_op));
+
+                if(!t_item.src1_loaded && t_item.rs1_need_map && phy_regfile->read_data_valid(t_item.rs1_phy))
+                {
+                    t_item.src1_loaded = true;
+                    t_item.src1_value = phy_regfile->read(t_item.rs1_phy).value;
+                }
+
+                if(!t_item.src2_loaded && t_item.rs2_need_map && phy_regfile->read_data_valid(t_item.rs2_phy))
+                {
+                    t_item.src2_loaded = true;
+                    t_item.src2_value = phy_regfile->read(t_item.rs2_phy).value;
+                }
 
                 for(auto i = 0;i < EXECUTE_UNIT_NUM;i++)
                 {

@@ -37,6 +37,7 @@ using json = nlohmann::json;
     if(!(cond)) \
     { \
         printf("In file %s, Line %d, %s\n", __FILE__, __LINE__, #cond);\
+        abort();\
     }
 
 //machine types
@@ -143,3 +144,12 @@ void branch_num_add();
 void branch_predicted_add();
 void branch_hit_add();
 void branch_miss_add();
+void fetch_decode_fifo_full_add();
+void decode_rename_fifo_full_add();
+void issue_queue_full_add();
+void issue_execute_fifo_full_add();
+void checkpoint_buffer_full_add();
+void rob_full_add();
+void phy_regfile_full_add();
+void ras_full_add();
+void fetch_not_full_add();

@@ -681,6 +681,10 @@ namespace pipeline
             
                 decode_rename_fifo->push(send_pack);
             }
+            else if(this->decode_rename_fifo->is_full())
+            {
+                decode_rename_fifo_full_add();
+            }
         }
         else
         {

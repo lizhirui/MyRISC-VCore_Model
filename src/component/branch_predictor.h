@@ -1,6 +1,7 @@
 #pragma once
 #include "common.h"
 #include "config.h"
+#include "ras.h"
 
 namespace component
 {
@@ -19,7 +20,7 @@ namespace component
             {
                 uint32_t pc_p1 = (pc >> (2 + GSHARE_PC_P2_ADDR_WIDTH)) & GSHARE_PC_P1_ADDR_MASK;
                 uint32_t pc_p2 = (pc >> 2) & GSHARE_PC_P2_ADDR_MASK;
-                uint32_t pht_addr = ((gshare_global_history ^ pc_p1) << 6) | pc_p2;
+                uint32_t pht_addr = ((gshare_global_history ^ pc_p1) << GSHARE_PC_P2_ADDR_WIDTH) | pc_p2;
                 return gshare_pht[pht_addr] >= 2;
             }
 
@@ -127,6 +128,58 @@ namespace component
                 return cpht[cpht_addr] <= 1;
             }
 
+            component::ras main_ras;
+
+            uint32_t call_global_history = 0;
+            uint32_t call_target_cache[CALL_TARGET_CACHE_SIZE];
+
+            void call_global_history_update(bool jump)
+            {
+                call_global_history = ((call_global_history << 1) & CALL_GLOBAL_HISTORY_MASK) | (jump ? 1 : 0);
+            }
+
+            void call_update_prediction(uint32_t pc, bool jump, uint32_t target)
+            {
+                uint32_t pc_p1 = (pc >> (2 + CALL_PC_P2_ADDR_WIDTH)) & CALL_PC_P1_ADDR_MASK;
+                uint32_t pc_p2 = (pc >> 2) & CALL_PC_P2_ADDR_MASK;
+                uint32_t target_cache_addr = ((call_global_history ^ pc_p1) << CALL_PC_P2_ADDR_WIDTH) | pc_p2; 
+                call_target_cache[target_cache_addr] = target;
+                call_global_history_update(jump);
+            }
+
+            uint32_t call_get_prediction(uint32_t pc)
+            {
+                uint32_t pc_p1 = (pc >> (2 + CALL_PC_P2_ADDR_WIDTH)) & CALL_PC_P1_ADDR_MASK;
+                uint32_t pc_p2 = (pc >> 2) & CALL_PC_P2_ADDR_MASK;
+                uint32_t target_cache_addr = ((call_global_history ^ pc_p1) << CALL_PC_P2_ADDR_WIDTH) | pc_p2;
+                return call_target_cache[target_cache_addr];
+            }
+
+            uint32_t normal_global_history = 0;
+            uint32_t normal_target_cache[NORMAL_TARGET_CACHE_SIZE];
+
+            void normal_global_history_update(bool jump)
+            {
+                normal_global_history = ((normal_global_history << 1) & NORMAL_GLOBAL_HISTORY_MASK) | (jump ? 1 : 0);
+            }
+
+            void normal_update_prediction(uint32_t pc, bool jump, uint32_t target)
+            {
+                uint32_t pc_p1 = (pc >> (2 + NORMAL_PC_P2_ADDR_WIDTH)) & NORMAL_PC_P1_ADDR_MASK;
+                uint32_t pc_p2 = (pc >> 2) & NORMAL_PC_P2_ADDR_MASK;
+                uint32_t target_cache_addr = ((normal_global_history ^ pc_p1) << NORMAL_PC_P2_ADDR_WIDTH) | pc_p2; 
+                normal_target_cache[target_cache_addr] = target;
+                normal_global_history_update(jump);
+            }
+
+            uint32_t normal_get_prediction(uint32_t pc)
+            {
+                uint32_t pc_p1 = (pc >> (2 + NORMAL_PC_P2_ADDR_WIDTH)) & NORMAL_PC_P1_ADDR_MASK;
+                uint32_t pc_p2 = (pc >> 2) & NORMAL_PC_P2_ADDR_MASK;
+                uint32_t target_cache_addr = ((normal_global_history ^ pc_p1) << NORMAL_PC_P2_ADDR_WIDTH) | pc_p2;
+                return normal_target_cache[target_cache_addr];
+            }
+
             enum class sync_request_type_t
             {
                 update_prediction
@@ -145,6 +198,19 @@ namespace component
             std::queue<sync_request_t> sync_request_q;
 
         public:
+            branch_predictor() : main_ras(RAS_SIZE)
+            {
+                gshare_global_history = 0;
+                memset(gshare_pht, 0, sizeof(gshare_pht));
+                memset(local_bht, 0, sizeof(local_bht));
+                memset(local_pht, 0, sizeof(local_pht));
+                memset(cpht, 0, sizeof(cpht));
+                call_global_history = 0;
+                memset(call_target_cache, 0, sizeof(call_target_cache));
+                normal_global_history = 0;
+                memset(normal_target_cache, 0, sizeof(normal_target_cache));
+            }
+
             virtual void reset()
             {
                 gshare_global_history = 0;
@@ -152,6 +218,10 @@ namespace component
                 memset(local_bht, 0, sizeof(local_bht));
                 memset(local_pht, 0, sizeof(local_pht));
                 memset(cpht, 0, sizeof(cpht));
+                call_global_history = 0;
+                memset(call_target_cache, 0, sizeof(call_target_cache));
+                normal_global_history = 0;
+                memset(normal_target_cache, 0, sizeof(normal_target_cache));
                 clear_queue(sync_request_q);
             }
 
@@ -174,17 +244,70 @@ namespace component
                 auto instruction_next_pc_valid = true;
                 uint32_t instruction_next_pc = 0;
 
+                auto rd_is_link = (rd == 1) || (rd == 5);
+                auto rs1_is_link = (rs1 == 1) || (rs1 == 5);
+
                 switch(opcode)
                 {
                     case 0x6f://jal
                         need_jump_prediction = false;
                         instruction_next_pc_valid = true;
                         instruction_next_pc = pc + sign_extend(imm_j, 21);
+
+                        if(rd_is_link)
+                        {
+                            main_ras.push_addr(pc + 4);
+                        }
+
                         break;
 
                     case 0x67://jalr
                         need_jump_prediction = false;
                         instruction_next_pc_valid = false;
+
+                        if(rd_is_link)
+                        {
+                            if(rs1_is_link)
+                            {
+                                if(rs1 == rd)
+                                {
+                                    //push
+                                    instruction_next_pc_valid = true;
+                                    instruction_next_pc = call_get_prediction(pc);
+                                    main_ras.push_addr(pc + 4);
+                                }
+                                else
+                                {
+                                    //pop, then push for coroutine context switch
+                                    instruction_next_pc_valid = true;
+                                    instruction_next_pc = main_ras.pop_addr();
+                                    main_ras.push_addr(pc + 4);
+                                }
+                            }
+                            else
+                            {
+                                //push
+                                instruction_next_pc_valid = true;
+                                instruction_next_pc = call_get_prediction(pc);
+                                main_ras.push_addr(pc + 4);
+                            }
+                        }
+                        else
+                        {
+                            if(rs1_is_link)
+                            {
+                                //pop
+                                instruction_next_pc_valid = true;
+                                instruction_next_pc = main_ras.pop_addr();
+                            }
+                            else
+                            {
+                                //none
+                                instruction_next_pc_valid = true;
+                                instruction_next_pc = normal_get_prediction(pc);
+                            }
+                        }
+                        
                         break;
 
                     case 0x63://beq bne blt bge bltu bgeu
@@ -238,6 +361,10 @@ namespace component
             {
                 auto op_data = instruction;
                 auto opcode = op_data & 0x7f;
+                auto rd = (op_data >> 7) & 0x1f;
+                auto rs1 = (op_data >> 15) & 0x1f;
+                auto rd_is_link = (rd == 1) || (rd == 5);
+                auto rs1_is_link = (rs1 == 1) || (rs1 == 5);
 
                 //condition branch instruction
                 if(opcode == 0x63)
@@ -252,6 +379,41 @@ namespace component
                     }
 
                     cpht_update_prediction(pc, hit);
+                }
+                else if(opcode == 0x67)
+                {
+                    if(rd_is_link)
+                    {
+                        if(rs1_is_link)
+                        {
+                            if(rs1 == rd)
+                            {
+                                //push
+                                call_update_prediction(pc, jump, next_pc);
+                            }
+                            else
+                            {
+                                //pop, then push for coroutine context switch
+                            }
+                        }
+                        else
+                        {
+                            //push
+                            call_update_prediction(pc, jump, next_pc);
+                        }
+                    }
+                    else
+                    {
+                        if(rs1_is_link)
+                        {
+                            //pop
+                        }
+                        else
+                        {
+                            //none
+                            normal_update_prediction(pc, jump, next_pc);
+                        }
+                    }
                 }
             }
 
