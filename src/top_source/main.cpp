@@ -803,16 +803,16 @@ static uint32_t get_current_pc()
 
     pipeline::decode_rename_pack_t drpack;
 
-    if(decode_rename_fifo.get_front(&drpack) && (drpack.op_info[0].enable || drpack.op_info[1].enable))
+    if(decode_rename_fifo.get_front(&drpack) && drpack.enable)
     {
-        return drpack.op_info[0].enable ? drpack.op_info[0].pc : drpack.op_info[1].pc;
+        return drpack.pc;
     }
 
     pipeline::fetch_decode_pack_t fdpack;
 
-    if(fetch_decode_fifo.get_front(&fdpack) && (fdpack.op_info[0].enable || fdpack.op_info[1].enable))
+    if(fetch_decode_fifo.get_front(&fdpack) && fdpack.enable)
     {
-        return fdpack.op_info[0].enable ? fdpack.op_info[0].pc : fdpack.op_info[1].pc;
+        return fdpack.pc;
     }
 
     return fetch_stage.get_pc();

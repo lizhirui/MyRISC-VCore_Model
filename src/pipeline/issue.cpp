@@ -334,7 +334,7 @@ namespace pipeline
         
             auto finish = true;
         
-            for(;this->last_index < ISSUE_WIDTH;this->last_index++)
+            for(;this->last_index < READREG_WIDTH;this->last_index++)
             {
                 if(!rev_pack.op_info[this->last_index].enable)
                 {

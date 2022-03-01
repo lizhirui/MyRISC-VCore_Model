@@ -40,76 +40,79 @@ namespace pipeline
                     }
                 }
             }
-            else if(!this->fetch_decode_fifo->is_full())
+            else
             {
-                fetch_decode_pack_t t_fetch_decode_pack;
-                memset(&t_fetch_decode_pack, 0, sizeof(t_fetch_decode_pack));
                 uint32_t old_pc = this->pc;
 
                 for(auto i = 0;i < FETCH_WIDTH;i++)
                 {
-                    uint32_t cur_pc = old_pc + i * 4;
-                    bool has_exception = !memory->check_align(cur_pc, 4) || !memory->check_boundary(cur_pc, 4);
-                    uint32_t opcode = has_exception ? 0 : this->memory->read32(cur_pc);
-                    bool jump = ((opcode & 0x7f) == 0x6f) || ((opcode & 0x7f) == 0x67) || ((opcode & 0x7f) == 0x63) || (opcode == 0x30200073);
-
-                    if(jump)
+                    if(!this->fetch_decode_fifo->is_full())
                     {
-                        uint32_t jump_next_pc = 0;
-                        bool jump_result = false;
+                        fetch_decode_pack_t t_fetch_decode_pack;
+                        memset(&t_fetch_decode_pack, 0, sizeof(t_fetch_decode_pack));
 
-                        if(branch_predictor->get_prediction(cur_pc, opcode, &jump_result, &jump_next_pc))
+                        uint32_t cur_pc = old_pc + i * 4;
+                        bool has_exception = !memory->check_align(cur_pc, 4) || !memory->check_boundary(cur_pc, 4);
+                        uint32_t opcode = has_exception ? 0 : this->memory->read32(cur_pc);
+                        bool jump = ((opcode & 0x7f) == 0x6f) || ((opcode & 0x7f) == 0x67) || ((opcode & 0x7f) == 0x63) || (opcode == 0x30200073);
+
+                        if(jump)
                         {
-                            component::checkpoint_t cp;
-                            t_fetch_decode_pack.op_info[i].checkpoint_id_valid = checkpoint_buffer->push(cp, &t_fetch_decode_pack.op_info[i].checkpoint_id);
-                        
-                            if(!t_fetch_decode_pack.op_info[i].checkpoint_id_valid)
+                            uint32_t jump_next_pc = 0;
+                            bool jump_result = false;
+
+                            if(branch_predictor->get_prediction(cur_pc, opcode, &jump_result, &jump_next_pc))
                             {
-                                checkpoint_buffer_full_add();
-                                this->jump_wait = true;
-                                this->pc = cur_pc + 4;
+                                component::checkpoint_t cp;
+                                t_fetch_decode_pack.checkpoint_id_valid = checkpoint_buffer->push(cp, &t_fetch_decode_pack.checkpoint_id);
+                        
+                                if(!t_fetch_decode_pack.checkpoint_id_valid)
+                                {
+                                    checkpoint_buffer_full_add();
+                                    this->jump_wait = true;
+                                    this->pc = cur_pc + 4;
+                                }
+                                else
+                                {
+                                    t_fetch_decode_pack.predicted = true;
+                                    t_fetch_decode_pack.predicted_jump = jump_result;
+                                    t_fetch_decode_pack.predicted_next_pc = jump_next_pc;
+                                    uint32_t next_pc = jump_result ? jump_next_pc : (cur_pc + 4);
+
+                                    this->pc = next_pc;
+                                    this->jump_wait = false;
+                                }
                             }
                             else
                             {
-                                t_fetch_decode_pack.op_info[i].predicted = true;
-                                t_fetch_decode_pack.op_info[i].predicted_jump = jump_result;
-                                t_fetch_decode_pack.op_info[i].predicted_next_pc = jump_next_pc;
-                                uint32_t next_pc = jump_result ? jump_next_pc : (cur_pc + 4);
-
-                                this->pc = next_pc;
-                                this->jump_wait = false;
+                                this->jump_wait = true;
+                                this->pc = cur_pc + 4;
                             }
                         }
                         else
                         {
-                            this->jump_wait = true;
                             this->pc = cur_pc + 4;
+                        }
+
+                        t_fetch_decode_pack.value = opcode;
+                        t_fetch_decode_pack.enable = true;
+                        t_fetch_decode_pack.pc = cur_pc;
+                        t_fetch_decode_pack.has_exception = has_exception;
+                        t_fetch_decode_pack.exception_id = !memory->check_align(cur_pc, 4) ? riscv_exception_t::instruction_address_misaligned : riscv_exception_t::instruction_access_fault;
+                        t_fetch_decode_pack.exception_value = cur_pc;
+                        this->fetch_decode_fifo->push(t_fetch_decode_pack);
+
+                        if(jump)
+                        {
+                            fetch_not_full_add();
+                            break;
                         }
                     }
                     else
                     {
-                        this->pc = cur_pc + 4;
-                    }
-
-                    t_fetch_decode_pack.op_info[i].value = opcode;
-                    t_fetch_decode_pack.op_info[i].enable = true;
-                    t_fetch_decode_pack.op_info[i].pc = cur_pc;
-                    t_fetch_decode_pack.op_info[i].has_exception = has_exception;
-                    t_fetch_decode_pack.op_info[i].exception_id = !memory->check_align(cur_pc, 4) ? riscv_exception_t::instruction_address_misaligned : riscv_exception_t::instruction_access_fault;
-                    t_fetch_decode_pack.op_info[i].exception_value = cur_pc;
-
-                    if(jump)
-                    {
-                        fetch_not_full_add();
-                        break;
+                        fetch_decode_fifo_full_add();
                     }
                 }
-
-                this->fetch_decode_fifo->push(t_fetch_decode_pack);
-            }
-            else
-            {
-                fetch_decode_fifo_full_add();
             }
         }
         else

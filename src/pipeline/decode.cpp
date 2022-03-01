@@ -17,18 +17,18 @@ namespace pipeline
     {
         if(!(commit_feedback_pack.enable && commit_feedback_pack.flush))
         {
-            if(!this->fetch_decode_fifo->is_empty() && !this->decode_rename_fifo->is_full())
+            for(auto i = 0;i < DECODE_WIDTH;i++)
             {
-                fetch_decode_pack_t rev_pack;
-                decode_rename_pack_t send_pack;
-                this->fetch_decode_fifo->pop(&rev_pack);
-                std::memset(&send_pack, 0, sizeof(send_pack));
-
-                for(auto i = 0;i < FETCH_WIDTH;i++)
+                if(!this->fetch_decode_fifo->is_empty() && !this->decode_rename_fifo->is_full())
                 {
-                    if(rev_pack.op_info[i].enable)
+                    fetch_decode_pack_t rev_pack;
+                    decode_rename_pack_t send_pack;
+                    std::memset(&send_pack, 0, sizeof(send_pack));
+                    this->fetch_decode_fifo->pop(&rev_pack);
+
+                    if(rev_pack.enable)
                     {
-                        auto op_data = rev_pack.op_info[i].value;
+                        auto op_data = rev_pack.value;
                         auto opcode = op_data & 0x7f;
                         auto rd = (op_data >> 7) & 0x1f;
                         auto funct3 = (op_data >> 12) & 0x07;
@@ -41,10 +41,10 @@ namespace pipeline
                         auto imm_u = op_data & (~0xfff);
                         auto imm_j = (((op_data >> 12) & 0xff) << 12) | (((op_data >> 20) & 0x01) << 11) | (((op_data >> 21) & 0x3ff) << 1) | (((op_data >> 31) & 0x01) << 20);
 
-                        auto op_info = send_pack.op_info[i];
+                        auto op_info = send_pack;
                         op_info.enable = true;
-                        op_info.valid = !rev_pack.op_info[i].has_exception;
-                        op_info.pc = rev_pack.op_info[i].pc;
+                        op_info.valid = !rev_pack.has_exception;
+                        op_info.pc = rev_pack.pc;
 
                         switch(opcode)
                         {
@@ -666,24 +666,24 @@ namespace pipeline
                         op_info.rs1_need_map = (op_info.arg1_src == arg_src_t::reg) && (op_info.rs1 > 0);
                         op_info.rs2_need_map = (op_info.arg2_src == arg_src_t::reg) && (op_info.rs2 > 0);
                         op_info.need_rename = op_info.rd_enable && (op_info.rd > 0);
-                        op_info.value = rev_pack.op_info[i].value;
-                        op_info.has_exception = rev_pack.op_info[i].has_exception;
-                        op_info.exception_id = rev_pack.op_info[i].exception_id;
-                        op_info.exception_value = rev_pack.op_info[i].exception_value;
-                        op_info.predicted = rev_pack.op_info[i].predicted;
-                        op_info.predicted_jump = rev_pack.op_info[i].predicted_jump;
-                        op_info.predicted_next_pc = rev_pack.op_info[i].predicted_next_pc;
-                        op_info.checkpoint_id_valid = rev_pack.op_info[i].checkpoint_id_valid;
-                        op_info.checkpoint_id = rev_pack.op_info[i].checkpoint_id;
-                        send_pack.op_info[i] = op_info;
+                        op_info.value = rev_pack.value;
+                        op_info.has_exception = rev_pack.has_exception;
+                        op_info.exception_id = rev_pack.exception_id;
+                        op_info.exception_value = rev_pack.exception_value;
+                        op_info.predicted = rev_pack.predicted;
+                        op_info.predicted_jump = rev_pack.predicted_jump;
+                        op_info.predicted_next_pc = rev_pack.predicted_next_pc;
+                        op_info.checkpoint_id_valid = rev_pack.checkpoint_id_valid;
+                        op_info.checkpoint_id = rev_pack.checkpoint_id;
+                        send_pack = op_info;
                     }
+
+                    decode_rename_fifo->push(send_pack);
                 }
-            
-                decode_rename_fifo->push(send_pack);
-            }
-            else if(this->decode_rename_fifo->is_full())
-            {
-                decode_rename_fifo_full_add();
+                else if(this->decode_rename_fifo->is_full())
+                {
+                    decode_rename_fifo_full_add();
+                }
             }
         }
         else

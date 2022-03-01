@@ -42,6 +42,7 @@ namespace pipeline
 				feedback_pack.enable = true;
 				feedback_pack.next_handle_rob_id = this->rob_item_id;
 				feedback_pack.next_handle_rob_id_valid = true;
+				auto first_id = this->rob_item_id;
 
 				for(auto i = 0;i < COMMIT_WIDTH;i++)
 				{
@@ -49,7 +50,7 @@ namespace pipeline
 
 					if(rob_item.finish)
 					{
-						feedback_pack.next_handle_rob_id_valid = rob->get_next_id(this->rob_item_id, &feedback_pack.next_handle_rob_id);
+						feedback_pack.next_handle_rob_id_valid = rob->get_next_id(this->rob_item_id, &feedback_pack.next_handle_rob_id) && (feedback_pack.next_handle_rob_id != first_id);
 						feedback_pack.committed_rob_id_valid[i] = true;
 						feedback_pack.committed_rob_id[i] = this->rob_item_id;
 
@@ -159,7 +160,7 @@ namespace pipeline
 						break;
 					}
 
-					if(!rob->get_next_id(this->rob_item_id, &this->rob_item_id))
+					if(!rob->get_next_id(this->rob_item_id, &this->rob_item_id) || (this->rob_item_id == first_id))
 					{
 						break;
 					}
