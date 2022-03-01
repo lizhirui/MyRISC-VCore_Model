@@ -28,6 +28,110 @@ namespace pipeline
     {
         if(!(commit_feedback_pack.enable && commit_feedback_pack.flush))
         {
+            if(jump_wait)
+            {
+                if(commit_feedback_pack.jump_enable)
+                {
+                    this->jump_wait = false;
+
+                    if(commit_feedback_pack.jump)
+                    {
+                        this->pc = commit_feedback_pack.next_pc;
+                    }
+                }
+            }
+            else if(!this->fetch_decode_fifo->is_full())
+            {
+                fetch_decode_pack_t t_fetch_decode_pack;
+                memset(&t_fetch_decode_pack, 0, sizeof(t_fetch_decode_pack));
+                uint32_t old_pc = this->pc;
+
+                for(auto i = 0;i < FETCH_WIDTH;i++)
+                {
+                    uint32_t cur_pc = old_pc + i * 4;
+                    bool has_exception = !memory->check_align(cur_pc, 4) || !memory->check_boundary(cur_pc, 4);
+                    uint32_t opcode = has_exception ? 0 : this->memory->read32(cur_pc);
+                    bool jump = ((opcode & 0x7f) == 0x6f) || ((opcode & 0x7f) == 0x67) || ((opcode & 0x7f) == 0x63) || (opcode == 0x30200073);
+
+                    if(jump)
+                    {
+                        uint32_t jump_next_pc = 0;
+                        bool jump_result = false;
+
+                        if(branch_predictor->get_prediction(cur_pc, opcode, &jump_result, &jump_next_pc))
+                        {
+                            component::checkpoint_t cp;
+                            t_fetch_decode_pack.op_info[i].checkpoint_id_valid = checkpoint_buffer->push(cp, &t_fetch_decode_pack.op_info[i].checkpoint_id);
+                        
+                            if(!t_fetch_decode_pack.op_info[i].checkpoint_id_valid)
+                            {
+                                checkpoint_buffer_full_add();
+                                this->jump_wait = true;
+                                this->pc = cur_pc + 4;
+                            }
+                            else
+                            {
+                                t_fetch_decode_pack.op_info[i].predicted = true;
+                                t_fetch_decode_pack.op_info[i].predicted_jump = jump_result;
+                                t_fetch_decode_pack.op_info[i].predicted_next_pc = jump_next_pc;
+                                uint32_t next_pc = jump_result ? jump_next_pc : (cur_pc + 4);
+
+                                this->pc = next_pc;
+                                this->jump_wait = false;
+                            }
+                        }
+                        else
+                        {
+                            this->jump_wait = true;
+                            this->pc = cur_pc + 4;
+                        }
+                    }
+                    else
+                    {
+                        this->pc = cur_pc + 4;
+                    }
+
+                    t_fetch_decode_pack.op_info[i].value = opcode;
+                    t_fetch_decode_pack.op_info[i].enable = true;
+                    t_fetch_decode_pack.op_info[i].pc = cur_pc;
+                    t_fetch_decode_pack.op_info[i].has_exception = has_exception;
+                    t_fetch_decode_pack.op_info[i].exception_id = !memory->check_align(cur_pc, 4) ? riscv_exception_t::instruction_address_misaligned : riscv_exception_t::instruction_access_fault;
+                    t_fetch_decode_pack.op_info[i].exception_value = cur_pc;
+
+                    if(jump)
+                    {
+                        fetch_not_full_add();
+                        break;
+                    }
+                }
+
+                this->fetch_decode_fifo->push(t_fetch_decode_pack);
+            }
+            else
+            {
+                fetch_decode_fifo_full_add();
+            }
+        }
+        else
+        {
+            this->fetch_decode_fifo->flush();
+            this->jump_wait = false;
+
+            if(commit_feedback_pack.has_exception)
+            {
+                this->pc = commit_feedback_pack.exception_pc;
+            }
+            else if(commit_feedback_pack.jump_enable)
+            {
+                this->pc = commit_feedback_pack.next_pc;
+            }
+        }
+    }
+
+    /*void fetch::run(pipeline::execute::bru_feedback_pack_t bru_feedback_pack, commit_feedback_pack_t commit_feedback_pack)
+    {
+        if(!(commit_feedback_pack.enable && commit_feedback_pack.flush))
+        {
             uint32_t cur_pc = this->pc;
             uint32_t i0_pc = cur_pc;
             bool i0_has_exception = !memory->check_align(i0_pc, 4) || !memory->check_boundary(i0_pc, 4);
@@ -59,7 +163,7 @@ namespace pipeline
                     }
                 }*/
 
-                if(commit_feedback_pack.jump_enable)
+                /*if(commit_feedback_pack.jump_enable)
                 {
                     this->jump_wait = false;
 
@@ -87,7 +191,7 @@ namespace pipeline
                     bool i1_jump_result = false;
                     bool i1_can_prediction = branch_predictor->get_prediction(i1_pc, i1, &i1_jump_result, &i1_jump_next_pc);*/
 
-                    if(branch_predictor->get_prediction(jump_pc, jump_instruction, &jump_result, &jump_next_pc))
+                    /*if(branch_predictor->get_prediction(jump_pc, jump_instruction, &jump_result, &jump_next_pc))
                     {
                         component::checkpoint_t cp;
                         t_fetch_decode_pack.op_info[jump_index].checkpoint_id_valid = checkpoint_buffer->push(cp, &t_fetch_decode_pack.op_info[jump_index].checkpoint_id);
@@ -143,7 +247,7 @@ namespace pipeline
                                 this->jump_wait = false;
                             }*/
 
-                            this->pc = next_pc;
+                            /*this->pc = next_pc;
                             this->jump_wait = false;
                         }
                     }
@@ -192,7 +296,7 @@ namespace pipeline
                 this->pc = commit_feedback_pack.next_pc;
             }
         }
-    }
+    }*/
 
     uint32_t fetch::get_pc()
     {

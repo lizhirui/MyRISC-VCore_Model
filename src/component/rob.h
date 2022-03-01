@@ -68,6 +68,7 @@ namespace component
         private:
             enum class sync_request_type_t
             {
+                push,
                 pop,
                 set_item
             };
