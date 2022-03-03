@@ -14,6 +14,15 @@ namespace component
         uint64_t rat_phy_map_table_commit[phy_reg_num_bitmap_size];
         uint64_t phy_regfile_data_valid[phy_reg_num_bitmap_size];
 
+        //only for global_cp
+        uint32_t rat_phy_map_table[PHY_REG_NUM];
+
+        void clone(checkpoint_t &cp)
+        {
+            memcpy(&cp.rat_phy_map_table_valid, &rat_phy_map_table_valid, sizeof(rat_phy_map_table_valid));
+            memcpy(&cp.rat_phy_map_table_visible, &rat_phy_map_table_visible, sizeof(rat_phy_map_table_visible));
+        }
+
         virtual void print(std::string indent)
         {
             

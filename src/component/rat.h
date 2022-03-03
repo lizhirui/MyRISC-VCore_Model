@@ -190,11 +190,50 @@ namespace component
                 return cp.rat_phy_map_table_commit[phy_id / bitsizeof(cp.rat_phy_map_table_commit[0])] & (1ULL << (phy_id % bitsizeof(cp.rat_phy_map_table_commit[0])));
             }
 
+            bool cp_get_phy_id(checkpoint_t &cp, uint32_t arch_id, uint32_t *phy_id)
+            {
+                int cnt = 0;
+                assert((arch_id > 0) && (arch_id < arch_reg_num));
+
+                for(uint32_t i = 0;i < phy_reg_num;i++)
+                {
+                    if(cp_get_valid(cp, i) && cp_get_visible(cp, i) && (cp.rat_phy_map_table[i] == arch_id))
+                    {
+                        *phy_id = i;
+                        cnt++;
+                    }
+                }
+
+                assert(cnt <= 1);
+                return cnt == 1;
+            }
+
+            void cp_set_map(checkpoint_t &cp, uint32_t arch_id, uint32_t phy_id)
+            {
+                uint32_t old_phy_id;
+                assert(phy_id < phy_reg_num);
+                assert((arch_id > 0) && (arch_id < arch_reg_num));
+                assert(!cp_get_valid(cp, phy_id));
+                bool ret = cp_get_phy_id(cp, arch_id, &old_phy_id);
+                cp.rat_phy_map_table[phy_id] = arch_id;
+                cp_set_valid(cp, phy_id, true);
+                cp_set_visible(cp, phy_id, true);
+                cp_set_commit(cp, phy_id, false);
+
+                if(ret)
+                {
+                    cp_set_visible(cp, old_phy_id, false);
+                }
+            }
+
             void save(checkpoint_t &cp)
             {
                 memcpy(cp.rat_phy_map_table_valid, phy_map_table_valid, sizeof(cp.rat_phy_map_table_valid));
                 memcpy(cp.rat_phy_map_table_visible, phy_map_table_visible, sizeof(cp.rat_phy_map_table_visible));
                 //memcpy(cp.rat_phy_map_table_commit, phy_map_table_commit, sizeof(cp.rat_phy_map_table_commit));
+
+                //only for global_cp
+                memcpy(cp.rat_phy_map_table, phy_map_table, sizeof(cp.rat_phy_map_table));
             }
 
             void restore(checkpoint_t &cp)

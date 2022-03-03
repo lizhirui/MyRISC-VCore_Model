@@ -6,12 +6,13 @@
 
 namespace pipeline
 {
-    rename::rename(component::fifo<decode_rename_pack_t> *decode_rename_fifo, component::port<rename_readreg_pack_t> *rename_readreg_port, component::rat *rat, component::rob *rob)
+    rename::rename(component::fifo<decode_rename_pack_t> *decode_rename_fifo, component::port<rename_readreg_pack_t> *rename_readreg_port, component::rat *rat, component::rob *rob, component::checkpoint_buffer *checkpoint_buffer)
     {
         this->decode_rename_fifo = decode_rename_fifo;
         this->rename_readreg_port = rename_readreg_port;
         this->rat = rat;
         this->rob = rob;
+        this->checkpoint_buffer = checkpoint_buffer;
         this->busy = false;
     }
 
@@ -42,6 +43,8 @@ namespace pipeline
                 component::rob_item_t rob_item[RENAME_WIDTH];
                 memset(rob_item, 0 ,sizeof(rob_item));
                 uint32_t used_phy_reg_cnt = 0;
+                component::checkpoint_t global_cp;
+                rat->save(global_cp);
 
                 //generate base send_pack
                 for(uint32_t i = 0;i < RENAME_WIDTH;i++)
@@ -103,6 +106,7 @@ namespace pipeline
                                         assert(rat->get_phy_id(rev_pack.rd, &rob_item[i].old_phy_reg_id));
                                         send_pack.op_info[i].rd_phy = new_phy_reg_id[used_phy_reg_cnt++];
                                         rat->set_map_sync(rev_pack.rd, send_pack.op_info[i].rd_phy);
+                                        rat->cp_set_map(global_cp, rev_pack.rd, send_pack.op_info[i].rd_phy);
 
                                         if(i > 0)
                                         {
@@ -176,10 +180,17 @@ namespace pipeline
                                     }
                                 }
 
-                                if(rev_pack.valid && (rev_pack.op_unit == op_unit_t::bru))
+                                if(rev_pack.valid && rev_pack.predicted && rev_pack.checkpoint_id_valid)
+                                {
+                                    component::checkpoint_t cp;
+                                    global_cp.clone(cp);
+                                    checkpoint_buffer->set_item_sync(rev_pack.checkpoint_id, cp);
+                                }
+
+                                /*if(rev_pack.valid && (rev_pack.op_unit == op_unit_t::bru))
                                 {
                                     break;
-                                }
+                                }*/
                             }
                         }
                         else if(rat->get_free_phy_id(phy_reg_req_cnt, new_phy_reg_id) < phy_reg_req_cnt)
@@ -203,7 +214,6 @@ namespace pipeline
                     }
                     else
                     {
-                        decode_rename_fifo_full_add();
                         break;
                     }
                 }

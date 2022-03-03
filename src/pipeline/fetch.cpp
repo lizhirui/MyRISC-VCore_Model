@@ -102,6 +102,7 @@ namespace pipeline
                         t_fetch_decode_pack.exception_value = cur_pc;
                         this->fetch_decode_fifo->push(t_fetch_decode_pack);
 
+                        //if(jump && ((t_fetch_decode_pack.predicted && t_fetch_decode_pack.predicted_jump) || (!t_fetch_decode_pack.predicted)))
                         if(jump)
                         {
                             fetch_not_full_add();

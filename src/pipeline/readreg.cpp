@@ -147,12 +147,15 @@ namespace pipeline
                             send_pack.op_info[i].src2_loaded = true;
                         }
 
-                        if(rev_pack.op_info[i].predicted && rev_pack.op_info[i].checkpoint_id_valid)
+                        /*if(rev_pack.op_info[i].predicted && rev_pack.op_info[i].checkpoint_id_valid)
                         {
                             component::checkpoint_t cp;
                             rat->save(cp);
-                            checkpoint_buffer->set_item_sync(rev_pack.op_info[i].checkpoint_id, cp);
-                        }
+                            component::checkpoint_t t_cp;
+                            t_cp = checkpoint_buffer->get_item(rev_pack.op_info[i].checkpoint_id);
+                            //assert((memcmp(&cp.rat_phy_map_table_valid, &t_cp.rat_phy_map_table_valid, sizeof(t_cp.rat_phy_map_table_valid)) == 0) && (memcmp(&cp.rat_phy_map_table_visible, &t_cp.rat_phy_map_table_visible, sizeof(t_cp.rat_phy_map_table_visible)) == 0));
+                            //checkpoint_buffer->set_item_sync(rev_pack.op_info[i].checkpoint_id, cp);
+                        }*/
                     }
                     else
                     {

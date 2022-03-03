@@ -156,7 +156,7 @@ static component::branch_predictor branch_predictor;
 
 static pipeline::fetch fetch_stage(&memory, &fetch_decode_fifo, &checkpoint_buffer, &branch_predictor, 0x80000000);
 static pipeline::decode decode_stage(&fetch_decode_fifo, &decode_rename_fifo);
-static pipeline::rename rename_stage(&decode_rename_fifo, &rename_readreg_port, &rat, &rob);
+static pipeline::rename rename_stage(&decode_rename_fifo, &rename_readreg_port, &rat, &rob, &checkpoint_buffer);
 static pipeline::readreg readreg_stage(&rename_readreg_port, &readreg_issue_port, &phy_regfile, &checkpoint_buffer, &rat);
 static pipeline::issue issue_stage(&readreg_issue_port, issue_alu_fifo, issue_bru_fifo, issue_csr_fifo, issue_div_fifo, issue_lsu_fifo, issue_mul_fifo, &phy_regfile);
 static pipeline::execute::alu *execute_alu_stage[ALU_UNIT_NUM];
