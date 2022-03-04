@@ -32,7 +32,7 @@ namespace pipeline
         this->mul_index = 0;
     }
     
-    issue_feedback_pack_t issue::run(wb_feedback_pack_t wb_feedback_pack, commit_feedback_pack_t commit_feedback_pack)
+    issue_feedback_pack_t issue::run(execute_feedback_pack_t execute_feedback_pack, wb_feedback_pack_t wb_feedback_pack, commit_feedback_pack_t commit_feedback_pack)
     {
         auto rev_pack = readreg_issue_port->get();
         issue_feedback_pack_t feedback_pack;
@@ -109,18 +109,33 @@ namespace pipeline
                         //wait src load
                         if(!(items[i].src1_loaded && items[i].src2_loaded))
                         {
-                            //attempt to get feedback from wb
+                            //attempt to get feedback from execute and wb
                             for(auto j = 0;j < EXECUTE_UNIT_NUM;j++)
                             {
+                                if(execute_feedback_pack.channel[j].enable)
+                                {
+                                    if(!items[i].src1_loaded && items[i].rs1_need_map && (items[i].rs1_phy == execute_feedback_pack.channel[j].phy_id))
+                                    {
+                                        src1_feedback = true;
+                                        src1_feedback_value = execute_feedback_pack.channel[j].value;
+                                    }
+
+                                    if(!items[i].src2_loaded && items[i].rs2_need_map && (items[i].rs2_phy == execute_feedback_pack.channel[j].phy_id))
+                                    {
+                                        src2_feedback = true;
+                                        src2_feedback_value = execute_feedback_pack.channel[j].value;
+                                    }
+                                }
+
                                 if(wb_feedback_pack.channel[j].enable)
                                 {
-                                    if(!items[i].src1_loaded && items[i].rs1_need_map && (items[i].rs1_phy == wb_feedback_pack.channel[j].phy_id))
+                                    if(!items[i].src1_loaded && !src1_feedback && items[i].rs1_need_map && (items[i].rs1_phy == wb_feedback_pack.channel[j].phy_id))
                                     {
                                         src1_feedback = true;
                                         src1_feedback_value = wb_feedback_pack.channel[j].value;
                                     }
 
-                                    if(!items[i].src2_loaded && items[i].rs2_need_map && (items[i].rs2_phy == wb_feedback_pack.channel[j].phy_id))
+                                    if(!items[i].src2_loaded && !src2_feedback && items[i].rs2_need_map && (items[i].rs2_phy == wb_feedback_pack.channel[j].phy_id))
                                     {
                                         src2_feedback = true;
                                         src2_feedback_value = wb_feedback_pack.channel[j].value;
@@ -299,6 +314,23 @@ namespace pipeline
 
                         for(auto i = 0;i < EXECUTE_UNIT_NUM;i++)
                         {
+                            if(execute_feedback_pack.channel[i].enable)
+                            {
+                                if(!cur_item.src1_loaded && cur_item.rs1_need_map && (cur_item.rs1_phy == execute_feedback_pack.channel[i].phy_id))
+                                {
+                                    cur_item.src1_loaded = true;
+                                    cur_item.src1_value = execute_feedback_pack.channel[i].value;
+                                    modified = true;
+                                }
+
+                                if(!cur_item.src2_loaded && cur_item.rs2_need_map && (cur_item.rs2_phy == execute_feedback_pack.channel[i].phy_id))
+                                {
+                                    cur_item.src2_loaded = true;
+                                    cur_item.src2_value = execute_feedback_pack.channel[i].value;
+                                    modified = true;
+                                }
+                            }
+
                             if(wb_feedback_pack.channel[i].enable)
                             {
                                 if(!cur_item.src1_loaded && cur_item.rs1_need_map && (cur_item.rs1_phy == wb_feedback_pack.channel[i].phy_id))
@@ -403,6 +435,21 @@ namespace pipeline
 
                 for(auto i = 0;i < EXECUTE_UNIT_NUM;i++)
                 {
+                    if(execute_feedback_pack.channel[i].enable)
+                    {
+                        if(!t_item.src1_loaded && t_item.rs1_need_map && (t_item.rs1_phy == execute_feedback_pack.channel[i].phy_id))
+                        {
+                            t_item.src1_loaded = true;
+                            t_item.src1_value = execute_feedback_pack.channel[i].value;
+                        }
+
+                        if(!t_item.src2_loaded && t_item.rs2_need_map && (t_item.rs2_phy == execute_feedback_pack.channel[i].phy_id))
+                        {
+                            t_item.src2_loaded = true;
+                            t_item.src2_value = execute_feedback_pack.channel[i].value;
+                        }
+                    }
+
                     if(wb_feedback_pack.channel[i].enable)
                     {
                         if(!t_item.src1_loaded && t_item.rs1_need_map && (t_item.rs1_phy == wb_feedback_pack.channel[i].phy_id))

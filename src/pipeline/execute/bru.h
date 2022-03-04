@@ -5,6 +5,7 @@
 #include "../../component/csrfile.h"
 #include "../../component/csr_all.h"
 #include "../issue_execute.h"
+#include "../execute.h"
 #include "../execute_wb.h"
 #include "../commit.h"
 
@@ -17,6 +18,7 @@ namespace pipeline
             bool enable;
             bool jump;
             uint32_t next_pc;
+            execute_feedback_channel_t execute_feedback_channel;
 
             virtual json get_json()
             {

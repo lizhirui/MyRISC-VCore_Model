@@ -124,6 +124,11 @@ namespace pipeline
             //feedback_pack.next_pc = send_pack.bru_next_pc;
 
             bru_wb_port->set(send_pack);
+            execute_feedback_channel_t exe_feedback_pack;
+            exe_feedback_pack.enable = send_pack.enable && send_pack.valid && send_pack.rd_enable && send_pack.need_rename;
+            exe_feedback_pack.phy_id = send_pack.rd_phy;
+            exe_feedback_pack.value = send_pack.rd_value;
+            feedback_pack.execute_feedback_channel = exe_feedback_pack;
             return feedback_pack;
         }
     }

@@ -20,6 +20,7 @@
 #include "../pipeline/readreg_issue.h"
 #include "../pipeline/issue.h"
 #include "../pipeline/issue_execute.h"
+#include "../pipeline/execute.h"
 #include "../pipeline/execute/alu.h"
 #include "../pipeline/execute/bru.h"
 #include "../pipeline/execute/csr.h"
@@ -170,6 +171,7 @@ static pipeline::commit commit_stage(&wb_commit_port, &rat, &rob, &csr_file, &ph
 
 static pipeline::issue_feedback_pack_t t_issue_feedback_pack;
 static pipeline::execute::bru_feedback_pack_t t_bru_feedback_pack;
+static pipeline::execute_feedback_pack_t t_execute_feedback_pack;
 static pipeline::wb_feedback_pack_t t_wb_feedback_pack;
 static pipeline::commit_feedback_pack_t t_commit_feedback_pack;
 
@@ -1002,38 +1004,41 @@ static void run()
         t_commit_feedback_pack = commit_stage.run();
         t_wb_feedback_pack = wb_stage.run(t_commit_feedback_pack);
 
+        uint32_t execute_feedback_channel = 0;
+
         for(auto i = 0;i < ALU_UNIT_NUM;i++)
         {
-            execute_alu_stage[i]->run(t_commit_feedback_pack);
+            t_execute_feedback_pack.channel[execute_feedback_channel++] = execute_alu_stage[i]->run(t_commit_feedback_pack);
         }
 
         for(auto i = 0;i < BRU_UNIT_NUM;i++)
         {
             t_bru_feedback_pack = execute_bru_stage[i]->run(t_commit_feedback_pack);
+            t_execute_feedback_pack.channel[execute_feedback_channel++] = t_bru_feedback_pack.execute_feedback_channel;
         }
 
         for(auto i = 0;i < CSR_UNIT_NUM;i++)
         {
-            execute_csr_stage[i]->run(t_commit_feedback_pack);
+            t_execute_feedback_pack.channel[execute_feedback_channel++] = execute_csr_stage[i]->run(t_commit_feedback_pack);
         }
 
         for(auto i = 0;i < DIV_UNIT_NUM;i++)
         {
-            execute_div_stage[i]->run(t_commit_feedback_pack);
+            t_execute_feedback_pack.channel[execute_feedback_channel++] = execute_div_stage[i]->run(t_commit_feedback_pack);
         }
 
         for(auto i = 0;i < LSU_UNIT_NUM;i++)
         {
-            execute_lsu_stage[i]->run(t_commit_feedback_pack);
+            t_execute_feedback_pack.channel[execute_feedback_channel++] = execute_lsu_stage[i]->run(t_commit_feedback_pack);
         }
 
         for(auto i = 0;i < MUL_UNIT_NUM;i++)
         {
-            execute_mul_stage[i]->run(t_commit_feedback_pack);
+            t_execute_feedback_pack.channel[execute_feedback_channel++] = execute_mul_stage[i]->run(t_commit_feedback_pack);
         }
 
-        t_issue_feedback_pack = issue_stage.run(t_wb_feedback_pack, t_commit_feedback_pack);
-        readreg_stage.run(t_issue_feedback_pack, t_wb_feedback_pack, t_commit_feedback_pack);
+        t_issue_feedback_pack = issue_stage.run(t_execute_feedback_pack, t_wb_feedback_pack, t_commit_feedback_pack);
+        readreg_stage.run(t_issue_feedback_pack, t_execute_feedback_pack, t_wb_feedback_pack, t_commit_feedback_pack);
         rename_stage.run(t_issue_feedback_pack, t_commit_feedback_pack);
         decode_stage.run(t_commit_feedback_pack);
         fetch_stage.run(t_bru_feedback_pack, t_commit_feedback_pack);

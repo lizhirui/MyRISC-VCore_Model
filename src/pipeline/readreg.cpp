@@ -3,6 +3,7 @@
 #include "pipeline_common.h"
 #include "readreg.h"
 #include "issue.h"
+#include "wb.h"
 
 namespace pipeline
 {
@@ -15,7 +16,7 @@ namespace pipeline
         this->rat = rat;
     }
 
-    void readreg::run(issue_feedback_pack_t issue_pack, wb_feedback_pack_t wb_feedback_pack, commit_feedback_pack_t commit_feedback_pack)
+    void readreg::run(issue_feedback_pack_t issue_pack, execute_feedback_pack_t execute_feedback_pack, wb_feedback_pack_t wb_feedback_pack, commit_feedback_pack_t commit_feedback_pack)
     {
         rename_readreg_pack_t rev_pack;
         bool stall = issue_pack.stall;       
@@ -87,14 +88,17 @@ namespace pipeline
                             {
                                 for(auto j = 0;j < EXECUTE_UNIT_NUM;j++)
                                 {
-                                    if(wb_feedback_pack.channel[j].enable)
+                                    if(execute_feedback_pack.channel[j].enable && (rev_pack.op_info[i].rs1_phy == execute_feedback_pack.channel[j].phy_id))
                                     {
-                                        if(rev_pack.op_info[i].rs1_phy == wb_feedback_pack.channel[j].phy_id)
-                                        {
-                                            send_pack.op_info[i].src1_value = wb_feedback_pack.channel[j].value;
-                                            send_pack.op_info[i].src1_loaded = true;
-                                            break;
-                                        }
+                                        send_pack.op_info[i].src1_value = execute_feedback_pack.channel[j].value;
+                                        send_pack.op_info[i].src1_loaded = true;
+                                        break;
+                                    }
+                                    else if(wb_feedback_pack.channel[j].enable && (rev_pack.op_info[i].rs1_phy == wb_feedback_pack.channel[j].phy_id))
+                                    {
+                                        send_pack.op_info[i].src1_value = wb_feedback_pack.channel[j].value;
+                                        send_pack.op_info[i].src1_loaded = true;
+                                        break;
                                     }
                                 }
                             }
@@ -124,14 +128,17 @@ namespace pipeline
                             {
                                 for(auto j = 0;j < EXECUTE_UNIT_NUM;j++)
                                 {
-                                    if(wb_feedback_pack.channel[j].enable)
+                                    if(execute_feedback_pack.channel[j].enable && (rev_pack.op_info[i].rs2_phy == execute_feedback_pack.channel[j].phy_id))
                                     {
-                                        if(rev_pack.op_info[i].rs2_phy == wb_feedback_pack.channel[j].phy_id)
-                                        {
-                                            send_pack.op_info[i].src2_value = wb_feedback_pack.channel[j].value;
-                                            send_pack.op_info[i].src2_loaded = true;
-                                            break;
-                                        }
+                                        send_pack.op_info[i].src2_value = execute_feedback_pack.channel[j].value;
+                                        send_pack.op_info[i].src2_loaded = true;
+                                        break;
+                                    }
+                                    else if(wb_feedback_pack.channel[j].enable && (rev_pack.op_info[i].rs2_phy == wb_feedback_pack.channel[j].phy_id))
+                                    {
+                                        send_pack.op_info[i].src2_value = wb_feedback_pack.channel[j].value;
+                                        send_pack.op_info[i].src2_loaded = true;
+                                        break;
                                     }
                                 }
                             }

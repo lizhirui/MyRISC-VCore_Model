@@ -14,7 +14,7 @@ namespace pipeline
             this->alu_wb_port = alu_wb_port;
         }
 
-        void alu::run(commit_feedback_pack_t commit_feedback_pack)
+        execute_feedback_channel_t alu::run(commit_feedback_pack_t commit_feedback_pack)
         {
             execute_wb_pack_t send_pack;
 
@@ -154,6 +154,11 @@ namespace pipeline
             }
 
             alu_wb_port->set(send_pack);
+            execute_feedback_channel_t feedback_pack;
+            feedback_pack.enable = send_pack.enable && send_pack.valid && send_pack.rd_enable && send_pack.need_rename;
+            feedback_pack.phy_id = send_pack.rd_phy;
+            feedback_pack.value = send_pack.rd_value;
+            return feedback_pack;
         }
     }
 }
