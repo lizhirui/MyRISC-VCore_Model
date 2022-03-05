@@ -9,9 +9,32 @@ namespace component
     {
         private:
             uint32_t gshare_global_history = 0;
+            uint32_t gshare_global_history_bru = 0;
+            uint32_t gshare_global_history_retired = 0;
             uint32_t gshare_pht[GSHARE_PHT_SIZE];
 
-            void gshare_global_history_update(bool jump)
+            void gshare_global_history_update(bool jump, bool hit)
+            {
+                gshare_global_history_retired = ((gshare_global_history_retired << 1) & GSHARE_GLOBAL_HISTORY_MASK) | (jump ? 1 : 0);
+
+                if(!hit)
+                {
+                    gshare_global_history_bru = gshare_global_history_retired;
+                    gshare_global_history = gshare_global_history_retired;
+                }
+            }
+
+            void gshare_global_history_update_bru_fix(bool jump, bool hit)
+            {
+                gshare_global_history_bru = ((gshare_global_history_bru << 1) & GSHARE_GLOBAL_HISTORY_MASK) | (jump ? 1 : 0);
+
+                /*if(!hit)
+                {
+                    gshare_global_history = gshare_global_history_bru;
+                }*/
+            }
+
+            void gshare_global_history_update_guess(bool jump)
             {
                 gshare_global_history = ((gshare_global_history << 1) & GSHARE_GLOBAL_HISTORY_MASK) | (jump ? 1 : 0);
             }
@@ -24,28 +47,34 @@ namespace component
                 return gshare_pht[pht_addr] >= 2;
             }
 
-            void gshare_update_prediction(uint32_t pc, bool jump)
+            void gshare_update_prediction(uint32_t pc, bool jump, bool hit)
             {
                 uint32_t pc_p1 = (pc >> (2 + GSHARE_PC_P2_ADDR_WIDTH)) & GSHARE_PC_P1_ADDR_MASK;
                 uint32_t pc_p2 = (pc >> 2) & GSHARE_PC_P2_ADDR_MASK;
-                uint32_t pht_addr = ((gshare_global_history ^ pc_p1) << GSHARE_PC_P2_ADDR_WIDTH) | pc_p2;
+                uint32_t pht_addr = ((gshare_global_history_retired ^ pc_p1) << GSHARE_PC_P2_ADDR_WIDTH) | pc_p2;
+                uint32_t true_next_state[] = {0x01, 0x03, 0x03, 0x03};
+                uint32_t false_next_state[] = {0x00, 0x00, 0x00, 0x02};
+
+                //trace_file << ":" << gshare_global_history << ":" << gshare_pht[pht_addr] << ":" << pht_addr;
 
                 if(jump)
                 {
-                    if(gshare_pht[pht_addr] < 3)
+                    /*if(gshare_pht[pht_addr] < 3)
                     {
                         gshare_pht[pht_addr]++;
-                    }
+                    }*/
+                    gshare_pht[pht_addr] = true_next_state[gshare_pht[pht_addr] & 0x03];
                 }
                 else
                 {
-                    if(gshare_pht[pht_addr] > 0)
+                    /*if(gshare_pht[pht_addr] > 0)
                     {
                         gshare_pht[pht_addr]--;
-                    }
+                    }*/
+                    gshare_pht[pht_addr] = false_next_state[gshare_pht[pht_addr] & 0x03];
                 }
 
-                gshare_global_history_update(jump);
+                gshare_global_history_update(jump, hit);
             }
 
             uint32_t local_bht[LOCAL_BHT_SIZE];
@@ -95,7 +124,8 @@ namespace component
                 uint32_t pc_p2 = (pc >> 2) & GSHARE_PC_P2_ADDR_MASK;
                 uint32_t cpht_addr = ((gshare_global_history ^ pc_p1) << GSHARE_PC_P2_ADDR_WIDTH) | pc_p2;
                 
-                if(cpht[cpht_addr] <= 1)//gshare
+                //if(cpht[cpht_addr] <= 1)//gshare
+                if(false)
                 {
                     if(hit && (cpht[cpht_addr] > 0))
                     {
@@ -125,6 +155,7 @@ namespace component
                 uint32_t pc_p1 = (pc >> (2 + GSHARE_PC_P2_ADDR_WIDTH)) & GSHARE_PC_P1_ADDR_MASK;
                 uint32_t pc_p2 = (pc >> 2) & GSHARE_PC_P2_ADDR_MASK;
                 uint32_t cpht_addr = ((gshare_global_history ^ pc_p1) << GSHARE_PC_P2_ADDR_WIDTH) | pc_p2;
+                return false;
                 return cpht[cpht_addr] <= 1;
             }
 
@@ -196,9 +227,10 @@ namespace component
             }sync_request_t;
 
             std::queue<sync_request_t> sync_request_q;
+            //std::ofstream trace_file;
 
         public:
-            branch_predictor() : main_ras(RAS_SIZE)
+            branch_predictor() : main_ras(RAS_SIZE)//, trace_file("jump_trace.txt")
             {
                 gshare_global_history = 0;
                 memset(gshare_pht, 0, sizeof(gshare_pht));
@@ -214,6 +246,8 @@ namespace component
             virtual void reset()
             {
                 gshare_global_history = 0;
+                gshare_global_history_bru = 0;
+                gshare_global_history_retired = 0;
                 memset(gshare_pht, 0, sizeof(gshare_pht));
                 memset(local_bht, 0, sizeof(local_bht));
                 memset(local_pht, 0, sizeof(local_pht));
@@ -223,6 +257,37 @@ namespace component
                 normal_global_history = 0;
                 memset(normal_target_cache, 0, sizeof(normal_target_cache));
                 clear_queue(sync_request_q);
+
+                for(auto i = 0;i < GSHARE_PHT_SIZE;i++)
+                {
+                    gshare_pht[i] = 0x00;
+                }
+            }
+
+            uint32_t s_state = 0;
+
+            void s_update_prediction(uint32_t pc, bool jump)
+            {
+                if(jump)
+                {
+                    if(s_state < 3)
+                    {
+                        s_state++;
+                    }
+                }
+                else
+                {
+                    if(s_state > 0)
+                    {
+                        s_state--;
+                    }
+                }
+            }
+
+            bool s_get_prediction(uint32_t pc)
+            {
+                return true;
+                return s_state > 1;
             }
 
             bool get_prediction(uint32_t pc, uint32_t instruction, bool *jump, uint32_t *next_pc)
@@ -312,7 +377,9 @@ namespace component
 
                     case 0x63://beq bne blt bge bltu bgeu
                         need_jump_prediction = true;
-                        instruction_next_pc_valid = cpht_get_prediction(pc) ? gshare_get_prediction(pc) : local_get_prediction(pc);
+                        instruction_next_pc_valid = gshare_get_prediction(pc);
+                        //instruction_next_pc_valid = cpht_get_prediction(pc) ? gshare_get_prediction(pc) : local_get_prediction(pc);
+                        //instruction_next_pc_valid = s_get_prediction(pc);
                         instruction_next_pc = instruction_next_pc_valid ? (pc + sign_extend(imm_b, 13)) : (pc + 4);
                         /*instruction_next_pc_valid = false;
                         instruction_next_pc = pc + sign_extend(imm_b, 13);*/
@@ -340,6 +407,7 @@ namespace component
                 if(!need_jump_prediction)
                 {
                     *jump = true;
+                    return false;
 
                     if(!instruction_next_pc_valid)
                     {
@@ -357,6 +425,38 @@ namespace component
                 return true;
             }
 
+            void update_prediction_guess(uint32_t pc, uint32_t instruction, bool jump, uint32_t next_pc)
+            {
+                auto op_data = instruction;
+                auto opcode = op_data & 0x7f;
+                auto rd = (op_data >> 7) & 0x1f;
+                auto rs1 = (op_data >> 15) & 0x1f;
+                auto rd_is_link = (rd == 1) || (rd == 5);
+                auto rs1_is_link = (rs1 == 1) || (rs1 == 5);
+
+                //condition branch instruction
+                if(opcode == 0x63)
+                {
+                    gshare_global_history_update_guess(jump);
+                }
+            }
+
+            void update_prediction_bru_guess(uint32_t pc, uint32_t instruction, bool jump, uint32_t next_pc, bool hit)
+            {
+                auto op_data = instruction;
+                auto opcode = op_data & 0x7f;
+                auto rd = (op_data >> 7) & 0x1f;
+                auto rs1 = (op_data >> 15) & 0x1f;
+                auto rd_is_link = (rd == 1) || (rd == 5);
+                auto rs1_is_link = (rs1 == 1) || (rs1 == 5);
+
+                //condition branch instruction
+                if(opcode == 0x63)
+                {
+                    gshare_global_history_update_bru_fix(jump, hit);
+                }
+            }
+
             void update_prediction(uint32_t pc, uint32_t instruction, bool jump, uint32_t next_pc, bool hit)
             {
                 auto op_data = instruction;
@@ -369,16 +469,7 @@ namespace component
                 //condition branch instruction
                 if(opcode == 0x63)
                 {
-                    if(cpht_get_prediction(pc))//gshare
-                    {
-                        gshare_update_prediction(pc, jump);
-                    }
-                    else//local
-                    {
-                        local_update_prediction(pc, jump);
-                    }
-
-                    cpht_update_prediction(pc, hit);
+                    gshare_update_prediction(pc, jump, hit);
                 }
                 else if(opcode == 0x67)
                 {

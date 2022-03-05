@@ -63,6 +63,7 @@ namespace pipeline
 
                             if(branch_predictor->get_prediction(cur_pc, opcode, &jump_result, &jump_next_pc))
                             {
+                                branch_predictor->update_prediction_guess(cur_pc, opcode, jump_result, jump_next_pc);
                                 component::checkpoint_t cp;
                                 t_fetch_decode_pack.checkpoint_id_valid = checkpoint_buffer->push(cp, &t_fetch_decode_pack.checkpoint_id);
                         

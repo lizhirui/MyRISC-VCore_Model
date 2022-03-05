@@ -489,7 +489,7 @@ static void init()
 
     for(auto i = 0;i < BRU_UNIT_NUM;i++)
     {
-        execute_bru_stage[i] = new pipeline::execute::bru(issue_bru_fifo[i], bru_wb_port[i], &csr_file);
+        execute_bru_stage[i] = new pipeline::execute::bru(issue_bru_fifo[i], bru_wb_port[i], &csr_file, &branch_predictor);
     }
 
     for(auto i = 0;i < CSR_UNIT_NUM;i++)
@@ -888,6 +888,11 @@ static bool cmd_handle(std::string cmd)
     return false;
 }
 
+uint64_t get_cpu_clock_cycle()
+{
+    return cpu_clock_cycle;
+}
+
 static void run()
 {
     //std::ofstream trace_file("no_branch.txt");
@@ -901,7 +906,7 @@ static void run()
 
     while(1)
     {
-        /*if(cpu_clock_cycle == 735)
+        /*if(cpu_clock_cycle == 20815)
         {
             step_state = true;
             wait_commit = false;

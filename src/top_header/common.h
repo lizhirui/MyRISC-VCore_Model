@@ -153,3 +153,5 @@ void rob_full_add();
 void phy_regfile_full_add();
 void ras_full_add();
 void fetch_not_full_add();
+
+uint64_t get_cpu_clock_cycle();

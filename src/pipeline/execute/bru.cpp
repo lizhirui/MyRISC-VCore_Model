@@ -5,11 +5,12 @@ namespace pipeline
 {
     namespace execute
     {
-        bru::bru(component::fifo<issue_execute_pack_t> *issue_bru_fifo, component::port<execute_wb_pack_t> *bru_wb_port, component::csrfile *csr_file)
+        bru::bru(component::fifo<issue_execute_pack_t> *issue_bru_fifo, component::port<execute_wb_pack_t> *bru_wb_port, component::csrfile *csr_file, component::branch_predictor *branch_predictor)
         {
             this->issue_bru_fifo = issue_bru_fifo;
             this->bru_wb_port = bru_wb_port;
             this->csr_file = csr_file;
+            this->branch_predictor = branch_predictor;
         }
 
         bru_feedback_pack_t bru::run(commit_feedback_pack_t commit_feedback_pack)
@@ -117,6 +118,11 @@ namespace pipeline
                 if(!send_pack.bru_jump)
                 {
                     send_pack.bru_next_pc = rev_pack.pc + 4;
+                }
+
+                if(send_pack.valid)
+                {
+                    branch_predictor->update_prediction_bru_guess(send_pack.pc, send_pack.value, send_pack.bru_jump, send_pack.bru_next_pc, send_pack.predicted_jump == send_pack.bru_jump);
                 }
             }
 
