@@ -438,7 +438,6 @@ namespace component
                 if(!need_jump_prediction)
                 {
                     *jump = true;
-                    return false;
 
                     if(!instruction_next_pc_valid)
                     {
