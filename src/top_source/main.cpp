@@ -397,7 +397,7 @@ static void init()
 
     //std::ifstream binfile("../../../testprgenv/main/test.bin", std::ios::binary);
     //std::ifstream binfile("../../../testfile.bin", std::ios::binary);
-    std::ifstream binfile("../../../coremark.bin", std::ios::binary);
+    std::ifstream binfile("../../../coremark_10.bin", std::ios::binary);
 
     if(!binfile || !binfile.is_open())
     {
@@ -489,7 +489,7 @@ static void init()
 
     for(auto i = 0;i < BRU_UNIT_NUM;i++)
     {
-        execute_bru_stage[i] = new pipeline::execute::bru(issue_bru_fifo[i], bru_wb_port[i], &csr_file, &branch_predictor);
+        execute_bru_stage[i] = new pipeline::execute::bru(issue_bru_fifo[i], bru_wb_port[i], &csr_file, &branch_predictor, &checkpoint_buffer);
     }
 
     for(auto i = 0;i < CSR_UNIT_NUM;i++)

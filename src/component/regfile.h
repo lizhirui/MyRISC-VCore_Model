@@ -112,10 +112,10 @@ namespace component
                 sync_request_q.push(t_req);
             }
 
-            void save(checkpoint_t &cp)
+            /*void save(checkpoint_t &cp)
             {
                 memcpy(cp.phy_regfile_data_valid, reg_data_valid, sizeof(cp.phy_regfile_data_valid));
-            }
+            }*/
 
             void restore(checkpoint_t &cp)
             {

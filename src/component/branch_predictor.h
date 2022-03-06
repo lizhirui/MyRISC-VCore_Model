@@ -2,6 +2,7 @@
 #include "common.h"
 #include "config.h"
 #include "ras.h"
+#include "checkpoint_buffer.h"
 
 namespace component
 {
@@ -9,7 +10,6 @@ namespace component
     {
         private:
             uint32_t gshare_global_history = 0;
-            uint32_t gshare_global_history_bru = 0;
             uint32_t gshare_global_history_retired = 0;
             uint32_t gshare_pht[GSHARE_PHT_SIZE];
 
@@ -19,19 +19,18 @@ namespace component
 
                 if(!hit)
                 {
-                    gshare_global_history_bru = gshare_global_history_retired;
                     gshare_global_history = gshare_global_history_retired;
                 }
             }
 
-            void gshare_global_history_update_bru_fix(bool jump, bool hit)
+            void gshare_global_history_update_bru_fix(checkpoint_t &cp, bool jump, bool hit)
             {
-                gshare_global_history_bru = ((gshare_global_history_bru << 1) & GSHARE_GLOBAL_HISTORY_MASK) | (jump ? 1 : 0);
+                uint32_t gshare_global_history_bru = ((cp.global_history << 1) & GSHARE_GLOBAL_HISTORY_MASK) | (jump ? 1 : 0);
 
-                /*if(!hit)
+                if(!hit)
                 {
                     gshare_global_history = gshare_global_history_bru;
-                }*/
+                }
             }
 
             void gshare_global_history_update_guess(bool jump)
@@ -52,43 +51,43 @@ namespace component
                 uint32_t pc_p1 = (pc >> (2 + GSHARE_PC_P2_ADDR_WIDTH)) & GSHARE_PC_P1_ADDR_MASK;
                 uint32_t pc_p2 = (pc >> 2) & GSHARE_PC_P2_ADDR_MASK;
                 uint32_t pht_addr = ((gshare_global_history_retired ^ pc_p1) << GSHARE_PC_P2_ADDR_WIDTH) | pc_p2;
-                uint32_t true_next_state[] = {0x01, 0x03, 0x03, 0x03};
-                uint32_t false_next_state[] = {0x00, 0x00, 0x00, 0x02};
+                /*uint32_t true_next_state[] = {0x01, 0x03, 0x03, 0x03};
+                uint32_t false_next_state[] = {0x00, 0x00, 0x00, 0x02};*/
 
                 //trace_file << ":" << gshare_global_history << ":" << gshare_pht[pht_addr] << ":" << pht_addr;
 
                 if(jump)
                 {
-                    /*if(gshare_pht[pht_addr] < 3)
+                    if(gshare_pht[pht_addr] < 3)
                     {
                         gshare_pht[pht_addr]++;
-                    }*/
-                    gshare_pht[pht_addr] = true_next_state[gshare_pht[pht_addr] & 0x03];
+                    }
+                    //gshare_pht[pht_addr] = true_next_state[gshare_pht[pht_addr] & 0x03];
                 }
                 else
                 {
-                    /*if(gshare_pht[pht_addr] > 0)
+                    if(gshare_pht[pht_addr] > 0)
                     {
                         gshare_pht[pht_addr]--;
-                    }*/
-                    gshare_pht[pht_addr] = false_next_state[gshare_pht[pht_addr] & 0x03];
+                    }
+                    //gshare_pht[pht_addr] = false_next_state[gshare_pht[pht_addr] & 0x03];
                 }
 
                 gshare_global_history_update(jump, hit);
             }
 
             uint32_t local_bht[LOCAL_BHT_SIZE];
+            uint32_t local_bht_retired[LOCAL_BHT_SIZE];
             uint32_t local_pht[LOCAL_PHT_SIZE];
 
-            void local_update_prediction(uint32_t pc, bool jump)
+            void local_update_prediction(uint32_t pc, bool jump, bool hit)
             {
-                uint32_t pc_p1 = (pc >> (2 + LOCAL_PC_P2_ADDR_WIDTH + LOCAL_PC_P3_ADDR_WIDTH)) & LOCAL_PC_P1_ADDR_MASK;
-                uint32_t pc_p2 = (pc >> (2 + LOCAL_PC_P3_ADDR_WIDTH)) & LOCAL_PC_P2_ADDR_MASK;
-                uint32_t pc_p3 = (pc >> 2) & LOCAL_PC_P3_ADDR_MASK;
-                uint32_t bht_value = local_bht[pc_p1];
-                uint32_t pht_addr = ((bht_value ^ pc_p2) << LOCAL_PC_P3_ADDR_WIDTH) | pc_p3;     
+                uint32_t pc_p1 = (pc >> (2 + LOCAL_PC_P2_ADDR_WIDTH)) & LOCAL_PC_P1_ADDR_MASK;
+                uint32_t pc_p2 = (pc >> 2) & LOCAL_PC_P2_ADDR_MASK;
+                uint32_t bht_value = local_bht_retired[pc_p1];
+                uint32_t pht_addr = ((bht_value ^ pc_p1) << LOCAL_PC_P2_ADDR_WIDTH) | pc_p2;     
 
-                local_bht[pc_p1] = ((local_bht[pc_p1] << 1) & LOCAL_BHT_WIDTH_MASK) | (jump ? 1 : 0);
+                local_bht_retired[pc_p1] = ((local_bht_retired[pc_p1] << 1) & LOCAL_BHT_WIDTH_MASK) | (jump ? 1 : 0);
                 
                 if(jump)
                 {
@@ -104,15 +103,42 @@ namespace component
                         local_pht[pht_addr]--;
                     }
                 }
+
+                if(!hit)
+                {
+                    local_bht[pc_p1] = local_bht_retired[pc_p1];
+                }
+            }
+
+            uint32_t local_get_bht_value(uint32_t pc)
+            {
+                uint32_t pc_p1 = (pc >> (2 + LOCAL_PC_P2_ADDR_WIDTH)) & LOCAL_PC_P1_ADDR_MASK;
+                return local_bht[pc_p1];
+            }
+
+            void local_update_prediction_bru_fix(component::checkpoint_t &cp, uint32_t pc, bool jump, bool hit)
+            {
+                uint32_t pc_p1 = (pc >> (2 + LOCAL_PC_P2_ADDR_WIDTH)) & LOCAL_PC_P1_ADDR_MASK;
+                uint32_t local_history_bru = ((cp.local_history << 1) & LOCAL_BHT_WIDTH_MASK) | (jump ? 1 : 0);
+
+                if(!hit)
+                {
+                    local_bht[pc_p1] = local_history_bru;
+                }
+            }
+
+            void local_update_prediction_guess(uint32_t pc, bool jump)
+            {
+                uint32_t pc_p1 = (pc >> (2 + LOCAL_PC_P2_ADDR_WIDTH)) & LOCAL_PC_P1_ADDR_MASK;
+                local_bht[pc_p1] = ((local_bht[pc_p1] << 1) & LOCAL_BHT_WIDTH_MASK) | (jump ? 1 : 0);
             }
 
             bool local_get_prediction(uint32_t pc)
             {
-                uint32_t pc_p1 = (pc >> (2 + LOCAL_PC_P2_ADDR_WIDTH + LOCAL_PC_P3_ADDR_WIDTH)) & LOCAL_PC_P1_ADDR_MASK;
-                uint32_t pc_p2 = (pc >> (2 + LOCAL_PC_P3_ADDR_WIDTH)) & LOCAL_PC_P2_ADDR_MASK;
-                uint32_t pc_p3 = (pc >> 2) & LOCAL_PC_P3_ADDR_MASK;
+                uint32_t pc_p1 = (pc >> (2 + LOCAL_PC_P2_ADDR_WIDTH)) & LOCAL_PC_P1_ADDR_MASK;
+                uint32_t pc_p2 = (pc >> 2) & LOCAL_PC_P2_ADDR_MASK;
                 uint32_t bht_value = local_bht[pc_p1];
-                uint32_t pht_addr = ((bht_value ^ pc_p2) << LOCAL_PC_P3_ADDR_WIDTH) | pc_p3;
+                uint32_t pht_addr = ((bht_value ^ pc_p1) << LOCAL_PC_P2_ADDR_WIDTH) | pc_p2;
                 return local_pht[pht_addr] >= 2;
             }
 
@@ -246,7 +272,6 @@ namespace component
             virtual void reset()
             {
                 gshare_global_history = 0;
-                gshare_global_history_bru = 0;
                 gshare_global_history_retired = 0;
                 memset(gshare_pht, 0, sizeof(gshare_pht));
                 memset(local_bht, 0, sizeof(local_bht));
@@ -262,6 +287,12 @@ namespace component
                 {
                     gshare_pht[i] = 0x00;
                 }
+            }
+
+            void save(checkpoint_t &cp, uint32_t pc)
+            {
+                cp.global_history = gshare_global_history;
+                cp.local_history = local_get_bht_value(pc);
             }
 
             uint32_t s_state = 0;
@@ -377,8 +408,8 @@ namespace component
 
                     case 0x63://beq bne blt bge bltu bgeu
                         need_jump_prediction = true;
-                        instruction_next_pc_valid = gshare_get_prediction(pc);
-                        //instruction_next_pc_valid = cpht_get_prediction(pc) ? gshare_get_prediction(pc) : local_get_prediction(pc);
+                        //instruction_next_pc_valid = local_get_prediction(pc);
+                        instruction_next_pc_valid = cpht_get_prediction(pc) ? local_get_prediction(pc) : gshare_get_prediction(pc);
                         //instruction_next_pc_valid = s_get_prediction(pc);
                         instruction_next_pc = instruction_next_pc_valid ? (pc + sign_extend(imm_b, 13)) : (pc + 4);
                         /*instruction_next_pc_valid = false;
@@ -438,10 +469,11 @@ namespace component
                 if(opcode == 0x63)
                 {
                     gshare_global_history_update_guess(jump);
+                    local_update_prediction_guess(pc, jump);
                 }
             }
 
-            void update_prediction_bru_guess(uint32_t pc, uint32_t instruction, bool jump, uint32_t next_pc, bool hit)
+            void update_prediction_bru_guess(checkpoint_t &cp, uint32_t pc, uint32_t instruction, bool jump, uint32_t next_pc, bool hit)
             {
                 auto op_data = instruction;
                 auto opcode = op_data & 0x7f;
@@ -453,7 +485,8 @@ namespace component
                 //condition branch instruction
                 if(opcode == 0x63)
                 {
-                    gshare_global_history_update_bru_fix(jump, hit);
+                    gshare_global_history_update_bru_fix(cp, jump, hit);
+                    local_update_prediction_bru_fix(cp, pc, jump, hit);
                 }
             }
 
@@ -470,6 +503,8 @@ namespace component
                 if(opcode == 0x63)
                 {
                     gshare_update_prediction(pc, jump, hit);
+                    local_update_prediction(pc, jump, hit);
+                    cpht_update_prediction(pc, hit);
                 }
                 else if(opcode == 0x67)
                 {

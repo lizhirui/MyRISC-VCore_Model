@@ -170,7 +170,7 @@ namespace component
                 return cp.rat_phy_map_table_visible[phy_id / bitsizeof(cp.rat_phy_map_table_visible[0])] & (1ULL << (phy_id % bitsizeof(cp.rat_phy_map_table_visible[0])));
             }
 
-            void cp_set_commit(checkpoint_t &cp, uint32_t phy_id, bool v)
+            /*void cp_set_commit(checkpoint_t &cp, uint32_t phy_id, bool v)
             {
                 assert(phy_id < phy_reg_num);
                 
@@ -188,7 +188,7 @@ namespace component
             {
                 assert(phy_id < phy_reg_num);
                 return cp.rat_phy_map_table_commit[phy_id / bitsizeof(cp.rat_phy_map_table_commit[0])] & (1ULL << (phy_id % bitsizeof(cp.rat_phy_map_table_commit[0])));
-            }
+            }*/
 
             bool cp_get_phy_id(checkpoint_t &cp, uint32_t arch_id, uint32_t *phy_id)
             {
@@ -218,7 +218,7 @@ namespace component
                 cp.rat_phy_map_table[phy_id] = arch_id;
                 cp_set_valid(cp, phy_id, true);
                 cp_set_visible(cp, phy_id, true);
-                cp_set_commit(cp, phy_id, false);
+                //cp_set_commit(cp, phy_id, false);
 
                 if(ret)
                 {
@@ -315,13 +315,13 @@ namespace component
                 set_commit(phy_id, true);
             }
 
-            void cp_commit_map(checkpoint_t &cp, uint32_t phy_id)
+            /*void cp_commit_map(checkpoint_t &cp, uint32_t phy_id)
             {
                 assert(phy_id < phy_reg_num);
                 assert(cp_get_valid(cp, phy_id));
                 assert(!cp_get_commit(cp, phy_id));
                 cp_set_commit(cp, phy_id, true);
-            }
+            }*/
 
             void commit_map_sync(uint32_t phy_id)
             {

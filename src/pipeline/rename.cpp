@@ -184,6 +184,9 @@ namespace pipeline
                                 {
                                     component::checkpoint_t cp;
                                     global_cp.clone(cp);
+                                    component::checkpoint_t origin_cp = checkpoint_buffer->get_item(rev_pack.checkpoint_id);
+                                    cp.global_history = origin_cp.global_history;
+                                    cp.local_history = origin_cp.local_history;
                                     checkpoint_buffer->set_item_sync(rev_pack.checkpoint_id, cp);
                                 }
 
