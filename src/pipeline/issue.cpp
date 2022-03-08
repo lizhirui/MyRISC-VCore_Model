@@ -31,8 +31,612 @@ namespace pipeline
         this->lsu_index = 0;
         this->mul_index = 0;
     }
-    
+
     issue_feedback_pack_t issue::run(execute_feedback_pack_t execute_feedback_pack, wb_feedback_pack_t wb_feedback_pack, commit_feedback_pack_t commit_feedback_pack)
+    {
+        auto rev_pack = readreg_issue_port->get();
+        issue_feedback_pack_t feedback_pack;
+
+        memset(&feedback_pack, 0, sizeof(feedback_pack));
+
+        std::vector<uint32_t> item_id_list;
+        
+        if(!(commit_feedback_pack.enable && commit_feedback_pack.flush))
+        {
+            //handle output
+            if(!issue_q.is_empty() && ((!is_inst_waiting) || (commit_feedback_pack.next_handle_rob_id_valid && (commit_feedback_pack.next_handle_rob_id == inst_waiting_rob_id))))
+            {
+                issue_queue_item_t items[ISSUE_WIDTH];
+                memset(&items, 0, sizeof(items));
+                uint32_t id = 0;
+
+                //instruction waiting finish
+                is_inst_waiting = false;
+            
+                //get up to 2 items from issue_queue
+                assert(this->issue_q.get_front_id(&id));
+                auto first_id = id;
+                auto has_lsu_op = false;
+                auto has_csr_op = false;
+                auto has_mret_op = false;
+
+                uint32_t i = 0;
+                
+                do
+                {
+                    items[i] = this->issue_q.get_item(id);
+
+                    if((items[i].op_unit == op_unit_t::csr) && (i != 0))
+                    {
+                        break;
+                    }
+
+                    assert(commit_feedback_pack.enable);
+
+                    if(items[i].op_unit == op_unit_t::csr)
+                    {
+                       if(commit_feedback_pack.next_handle_rob_id != items[i].rob_id)
+                       {
+                            break;
+                       }
+                    }
+                    else if(items[i].op == op_t::mret)
+                    {
+                        if(commit_feedback_pack.next_handle_rob_id != items[i].rob_id)
+                        {
+                            break;
+                        }
+                    }
+
+                    bool src1_ready = items[i].src1_loaded;
+                    bool src2_ready = items[i].src2_loaded;
+
+                    if(!src1_ready || !src2_ready)
+                    {
+                        for(auto j = 0;j < EXECUTE_UNIT_NUM;j++)
+                        {
+                            if(execute_feedback_pack.channel[j].enable)
+                            {
+                                if(!src1_ready && items[i].rs1_phy == execute_feedback_pack.channel[j].phy_id)
+                                {
+                                    src1_ready = true;
+                                }
+
+                                if(!src2_ready && items[i].rs2_phy == execute_feedback_pack.channel[j].phy_id)
+                                {
+                                    src2_ready = true;
+                                }
+
+                                if(src1_ready && src2_ready)
+                                {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    uint32_t unit_cnt = 0;
+                    component::fifo<issue_execute_pack_t> **unit_fifo = NULL;
+                    
+                    switch(items[i].op_unit)
+                    {
+                        case op_unit_t::alu:
+                            unit_cnt = ALU_UNIT_NUM;
+                            unit_fifo = issue_alu_fifo;
+                            break;
+                            
+                        case op_unit_t::bru:
+                            unit_cnt = BRU_UNIT_NUM;
+                            unit_fifo = issue_bru_fifo;
+                            break;
+                            
+                        case op_unit_t::csr:
+                            unit_cnt =  CSR_UNIT_NUM;
+                            unit_fifo = issue_csr_fifo;
+                            break;
+                            
+                        case op_unit_t::div:
+                            unit_cnt = DIV_UNIT_NUM;
+                            unit_fifo = issue_div_fifo;
+                            break;
+                            
+                        case op_unit_t::lsu:
+                            unit_cnt = LSU_UNIT_NUM;
+                            unit_fifo = issue_lsu_fifo;
+                            break;
+                            
+                        case op_unit_t::mul:
+                            unit_cnt = MUL_UNIT_NUM;
+                            unit_fifo = issue_mul_fifo;
+                            break;
+                    }
+                    
+                    bool unit_found = false;
+                    
+                    for(uint32_t i = 0;i < unit_cnt;i++)
+                    {
+                        if(!unit_fifo[i]->is_full())
+                        {
+                            unit_found = true;
+                            break;
+                        }
+                    }
+
+                    bool need_to_exit = false;
+
+                    if((items[i].op_unit == op_unit_t::csr) || (items[i].op == op_t::mret))
+                    {
+                        need_to_exit = true;
+                    }
+                    
+                    if(src1_ready && src2_ready && unit_found && (!has_lsu_op || (items[i].op_unit != op_unit_t::lsu)) && (!has_csr_op || (items[i].op_unit != op_unit_t::csr)) && (!has_mret_op || (items[i].op != op_t::mret)))
+                    {
+                        item_id_list.push_back(id);
+                        i++;
+                    }
+                    else
+                    {
+                        items[i].enable = false;
+                    }
+
+                    if(items[i].op_unit == op_unit_t::lsu)
+                    {
+                        has_lsu_op = true;
+                    }
+
+                    if(items[i].op_unit == op_unit_t::csr)
+                    {
+                        has_csr_op = true;
+                    }
+
+                    if(items[i].op == op_t::mret)
+                    {
+                        has_mret_op = true;
+                    }
+
+                    if(need_to_exit)
+                    {
+                        break;
+                    }
+                }while(this->issue_q.get_next_id(id, &id) && (first_id != id) && (item_id_list.size() < ISSUE_WIDTH));
+            
+                //generate output to execute stage
+                for(uint32_t i = 0; i < ISSUE_WIDTH;i++)
+                {
+                    if(items[i].enable)
+                    {
+                        //csr instruction must be executed after all instructions that is before it has been commited
+                        if(items[i].op_unit == op_unit_t::csr)
+                        {
+                            assert(commit_feedback_pack.enable);
+
+                            if(commit_feedback_pack.next_handle_rob_id != items[i].rob_id)
+                            {
+                                break;
+                            }
+
+                            this->is_inst_waiting = true;
+                            this->inst_waiting_rob_id = items[i].rob_id;
+                        }
+                        else if(items[i].op == op_t::mret)
+                        {
+                            assert(commit_feedback_pack.enable);
+
+                            if(commit_feedback_pack.next_handle_rob_id != items[i].rob_id)
+                            {
+                                break;
+                            }
+                        }
+
+                        bool src1_feedback = false;
+                        uint32_t src1_feedback_value = 0;
+                        bool src2_feedback = false;
+                        uint32_t src2_feedback_value = 0;
+
+                        //wait src load
+                        if(!(items[i].src1_loaded && items[i].src2_loaded))
+                        {
+                            //attempt to get feedback from execute and wb
+                            for(auto j = 0;j < EXECUTE_UNIT_NUM;j++)
+                            {
+                                if(execute_feedback_pack.channel[j].enable)
+                                {
+                                    if(!items[i].src1_loaded && items[i].rs1_need_map && (items[i].rs1_phy == execute_feedback_pack.channel[j].phy_id))
+                                    {
+                                        src1_feedback = true;
+                                        src1_feedback_value = execute_feedback_pack.channel[j].value;
+                                    }
+
+                                    if(!items[i].src2_loaded && items[i].rs2_need_map && (items[i].rs2_phy == execute_feedback_pack.channel[j].phy_id))
+                                    {
+                                        src2_feedback = true;
+                                        src2_feedback_value = execute_feedback_pack.channel[j].value;
+                                    }
+                                }
+
+                                if(wb_feedback_pack.channel[j].enable)
+                                {
+                                    if(!items[i].src1_loaded && !src1_feedback && items[i].rs1_need_map && (items[i].rs1_phy == wb_feedback_pack.channel[j].phy_id))
+                                    {
+                                        src1_feedback = true;
+                                        src1_feedback_value = wb_feedback_pack.channel[j].value;
+                                    }
+
+                                    if(!items[i].src2_loaded && !src2_feedback && items[i].rs2_need_map && (items[i].rs2_phy == wb_feedback_pack.channel[j].phy_id))
+                                    {
+                                        src2_feedback = true;
+                                        src2_feedback_value = wb_feedback_pack.channel[j].value;
+                                    }
+                                }
+                            }
+
+                            if(!((src1_feedback || items[i].src1_loaded) && (src2_feedback || items[i].src2_loaded)))
+                            {
+                                break;
+                            }
+                        }
+
+                        issue_execute_pack_t send_pack;
+                        memset(&send_pack, 0, sizeof(send_pack));
+                    
+                        send_pack.enable = items[i].enable;
+                        send_pack.value = items[i].value;
+                        send_pack.valid = items[i].valid;
+                        send_pack.rob_id = items[i].rob_id;
+                        send_pack.pc = items[i].pc;
+                        send_pack.imm = items[i].imm;
+                        send_pack.has_exception = items[i].has_exception;
+                        send_pack.exception_id = items[i].exception_id;
+                        send_pack.exception_value = items[i].exception_value;
+
+                        send_pack.predicted = items[i].predicted;
+                        send_pack.predicted_jump = items[i].predicted_jump;
+                        send_pack.predicted_next_pc = items[i].predicted_next_pc;
+                        send_pack.checkpoint_id_valid = items[i].checkpoint_id_valid;
+                        send_pack.checkpoint_id = items[i].checkpoint_id;
+                    
+                        send_pack.rs1 = items[i].rs1;
+                        send_pack.arg1_src = items[i].arg1_src;
+                        send_pack.rs1_need_map = items[i].rs1_need_map;
+                        send_pack.rs1_phy = items[i].rs1_phy;
+                        send_pack.src1_value = src1_feedback ? src1_feedback_value : items[i].src1_value;
+                        send_pack.src1_loaded = src1_feedback || items[i].src1_loaded;
+                    
+                        send_pack.rs2 = items[i].rs2;
+                        send_pack.arg2_src = items[i].arg2_src;
+                        send_pack.rs2_need_map = items[i].rs2_need_map;
+                        send_pack.rs2_phy = items[i].rs2_phy;
+                        send_pack.src2_value = src2_feedback ? src2_feedback_value : items[i].src2_value;
+                        send_pack.src2_loaded = src2_feedback || items[i].src2_loaded;
+                    
+                        send_pack.rd = items[i].rd;
+                        send_pack.rd_enable = items[i].rd_enable;
+                        send_pack.need_rename = items[i].need_rename;
+                        send_pack.rd_phy = items[i].rd_phy;
+                    
+                        send_pack.csr = items[i].csr;
+                        send_pack.op = items[i].op;
+                        send_pack.op_unit = items[i].op_unit;
+                        memcpy(&send_pack.sub_op, &items[i].sub_op, sizeof(items[i].sub_op));
+                    
+                        //ready to dispatch
+                        uint32_t *unit_index = NULL;
+                        uint32_t unit_cnt = 0;
+                        component::fifo<issue_execute_pack_t> **unit_fifo = NULL;
+                    
+                        switch(send_pack.op_unit)
+                        {
+                            case op_unit_t::alu:
+                                unit_index = &alu_index;
+                                unit_cnt = ALU_UNIT_NUM;
+                                unit_fifo = issue_alu_fifo;
+                                break;
+                            
+                            case op_unit_t::bru:
+                                unit_index = &bru_index;
+                                unit_cnt = BRU_UNIT_NUM;
+                                unit_fifo = issue_bru_fifo;
+                                break;
+                            
+                            case op_unit_t::csr:
+                                unit_index = &csr_index;
+                                unit_cnt =  CSR_UNIT_NUM;
+                                unit_fifo = issue_csr_fifo;
+                                break;
+                            
+                            case op_unit_t::div:
+                                unit_index = &div_index;
+                                unit_cnt = DIV_UNIT_NUM;
+                                unit_fifo = issue_div_fifo;
+                                break;
+                            
+                            case op_unit_t::lsu:
+                                unit_index = &lsu_index;
+                                unit_cnt = LSU_UNIT_NUM;
+                                unit_fifo = issue_lsu_fifo;
+                                break;
+                            
+                            case op_unit_t::mul:
+                                unit_index = &mul_index;
+                                unit_cnt = MUL_UNIT_NUM;
+                                unit_fifo = issue_mul_fifo;
+                                break;
+                        }
+                    
+                        //Round-Robin dispatch with full check
+                        auto selected_index = *unit_index;
+                        bool found = false;
+                    
+                        while(1)
+                        {
+                            if(!unit_fifo[selected_index]->is_full())
+                            {
+                                found = true;
+                                break;
+                            }
+                        
+                            selected_index = (selected_index + 1) % unit_cnt;
+                        
+                            if(selected_index == *unit_index)
+                            {
+                                break;
+                            }
+                        }
+                    
+                        if(found)
+                        {
+                            *unit_index = (selected_index + 1) % unit_cnt;
+                            assert(unit_fifo[selected_index]->push(send_pack));
+                        }
+                        else
+                        {
+                            issue_execute_fifo_full_add();
+                            break;
+                        }
+
+                        //stop issue of current cycle because of instruction waiting
+                        if(is_inst_waiting)
+                        {
+                            break;
+                        }
+                    }
+                }
+            }    
+
+            //handle queue(feedback pack activates blocking items)
+            uint32_t cur_item_id = 0;
+
+            if(issue_q.get_front_id(&cur_item_id))
+            {
+                auto first_item_id = cur_item_id;
+
+                do
+                {
+                    auto id_need_ignore = false;
+
+                    for(auto i = 0;i < item_id_list.size();i++)
+                    {
+                        if(cur_item_id == item_id_list[i])
+                        {
+                            id_need_ignore = true;
+                            break;
+                        }
+                    }
+
+                    if(!id_need_ignore)
+                    {
+                        auto cur_item = issue_q.get_item(cur_item_id);
+                        auto modified = false;
+
+                        for(auto i = 0;i < EXECUTE_UNIT_NUM;i++)
+                        {
+                            if(execute_feedback_pack.channel[i].enable)
+                            {
+                                if(!cur_item.src1_loaded && cur_item.rs1_need_map && (cur_item.rs1_phy == execute_feedback_pack.channel[i].phy_id))
+                                {
+                                    cur_item.src1_loaded = true;
+                                    cur_item.src1_value = execute_feedback_pack.channel[i].value;
+                                    modified = true;
+                                }
+
+                                if(!cur_item.src2_loaded && cur_item.rs2_need_map && (cur_item.rs2_phy == execute_feedback_pack.channel[i].phy_id))
+                                {
+                                    cur_item.src2_loaded = true;
+                                    cur_item.src2_value = execute_feedback_pack.channel[i].value;
+                                    modified = true;
+                                }
+                            }
+
+                            if(wb_feedback_pack.channel[i].enable)
+                            {
+                                if(!cur_item.src1_loaded && cur_item.rs1_need_map && (cur_item.rs1_phy == wb_feedback_pack.channel[i].phy_id))
+                                {
+                                    cur_item.src1_loaded = true;
+                                    cur_item.src1_value = wb_feedback_pack.channel[i].value;
+                                    modified = true;
+                                }
+
+                                if(!cur_item.src2_loaded && cur_item.rs2_need_map && (cur_item.rs2_phy == wb_feedback_pack.channel[i].phy_id))
+                                {
+                                    cur_item.src2_loaded = true;
+                                    cur_item.src2_value = wb_feedback_pack.channel[i].value;
+                                    modified = true;
+                                }
+                            }
+                        }
+
+                        if(modified)
+                        { 
+                            issue_q.set_item_sync(cur_item_id, cur_item);
+                        }
+                    }
+                }while(issue_q.get_next_id(cur_item_id, &cur_item_id) && (cur_item_id != first_item_id));
+            }
+        
+            //handle input
+            if(!this->busy)
+            {
+                this->busy = true;
+                this->last_index = 0;//from item 0
+            }
+        
+            auto finish = true;
+        
+            for(;this->last_index < READREG_WIDTH;this->last_index++)
+            {
+                if(!rev_pack.op_info[this->last_index].enable)
+                {
+                    continue;
+                }
+            
+                //if issue_queue is full, pause to handle this input until next cycle
+                if(this->issue_q.is_full())
+                {
+                    issue_queue_full_add();
+                    finish = false;
+                    break;
+                }
+            
+                issue_queue_item_t t_item;
+                memset(&t_item, 0, sizeof(t_item));
+                auto cur_op = rev_pack.op_info[this->last_index];
+                t_item.enable = cur_op.enable;
+                t_item.value = cur_op.value;
+                t_item.valid = cur_op.valid;
+                t_item.rob_id = cur_op.rob_id;
+                t_item.pc = cur_op.pc;
+                t_item.imm = cur_op.imm;
+
+                t_item.predicted = cur_op.predicted;
+                t_item.predicted_jump = cur_op.predicted_jump;
+                t_item.predicted_next_pc = cur_op.predicted_next_pc;
+                t_item.checkpoint_id_valid = cur_op.checkpoint_id_valid;
+                t_item.checkpoint_id = cur_op.checkpoint_id;
+            
+                t_item.rs1 = cur_op.rs1;
+                t_item.arg1_src = cur_op.arg1_src;
+                t_item.rs1_need_map = cur_op.rs1_need_map;
+                t_item.rs1_phy = cur_op.rs1_phy;
+                t_item.src1_value = cur_op.src1_value;
+                t_item.src1_loaded = cur_op.src1_loaded;
+            
+                t_item.rs2 = cur_op.rs2;
+                t_item.arg2_src = cur_op.arg2_src;
+                t_item.rs2_need_map = cur_op.rs2_need_map;
+                t_item.rs2_phy = cur_op.rs2_phy;
+                t_item.src2_value = cur_op.src2_value;
+                t_item.src2_loaded = cur_op.src2_loaded;
+            
+                t_item.rd = cur_op.rd;
+                t_item.rd_enable = cur_op.rd_enable;
+                t_item.need_rename = cur_op.need_rename;
+                t_item.rd_phy = cur_op.rd_phy;
+
+                t_item.csr = cur_op.csr;
+                t_item.op = cur_op.op;
+                t_item.op_unit = cur_op.op_unit;
+                memcpy(&t_item.sub_op, &cur_op.sub_op, sizeof(t_item.sub_op));
+
+                if(!t_item.src1_loaded && t_item.rs1_need_map && phy_regfile->read_data_valid(t_item.rs1_phy))
+                {
+                    t_item.src1_loaded = true;
+                    t_item.src1_value = phy_regfile->read(t_item.rs1_phy).value;
+                }
+
+                if(!t_item.src2_loaded && t_item.rs2_need_map && phy_regfile->read_data_valid(t_item.rs2_phy))
+                {
+                    t_item.src2_loaded = true;
+                    t_item.src2_value = phy_regfile->read(t_item.rs2_phy).value;
+                }
+
+                for(auto i = 0;i < EXECUTE_UNIT_NUM;i++)
+                {
+                    if(execute_feedback_pack.channel[i].enable)
+                    {
+                        if(!t_item.src1_loaded && t_item.rs1_need_map && (t_item.rs1_phy == execute_feedback_pack.channel[i].phy_id))
+                        {
+                            t_item.src1_loaded = true;
+                            t_item.src1_value = execute_feedback_pack.channel[i].value;
+                        }
+
+                        if(!t_item.src2_loaded && t_item.rs2_need_map && (t_item.rs2_phy == execute_feedback_pack.channel[i].phy_id))
+                        {
+                            t_item.src2_loaded = true;
+                            t_item.src2_value = execute_feedback_pack.channel[i].value;
+                        }
+                    }
+
+                    if(wb_feedback_pack.channel[i].enable)
+                    {
+                        if(!t_item.src1_loaded && t_item.rs1_need_map && (t_item.rs1_phy == wb_feedback_pack.channel[i].phy_id))
+                        {
+                            t_item.src1_loaded = true;
+                            t_item.src1_value = wb_feedback_pack.channel[i].value;
+                        }
+
+                        if(!t_item.src2_loaded && t_item.rs2_need_map && (t_item.rs2_phy == wb_feedback_pack.channel[i].phy_id))
+                        {
+                            t_item.src2_loaded = true;
+                            t_item.src2_value = wb_feedback_pack.channel[i].value;
+                        }
+                    }
+                }
+            
+                issue_q.push(t_item);
+            }
+        
+            if(finish)
+            {
+                this->busy = false;
+                this->last_index = 0;
+            }
+        
+            feedback_pack.stall = this->busy;
+
+            //compress queue
+            issue_q.compress_sync(item_id_list);
+            issue_q.sync();
+        }
+        else
+        {
+            for(auto i = 0;i < ALU_UNIT_NUM;i++)
+            {
+                issue_alu_fifo[i]->flush();
+            }
+
+            for(auto i = 0;i < BRU_UNIT_NUM;i++)
+            {
+                issue_bru_fifo[i]->flush();
+            }
+
+            for(auto i = 0;i < CSR_UNIT_NUM;i++)
+            {
+                issue_csr_fifo[i]->flush();
+            }
+
+            for(auto i = 0;i < DIV_UNIT_NUM;i++)
+            {
+                issue_div_fifo[i]->flush();
+            }
+
+            for(auto i = 0;i < LSU_UNIT_NUM;i++)
+            {
+                issue_lsu_fifo[i]->flush();
+            }
+
+            for(auto i = 0;i < MUL_UNIT_NUM;i++)
+            {
+                issue_mul_fifo[i]->flush();
+            }
+
+            issue_q.flush();
+        }
+
+        return feedback_pack;
+    }
+
+    
+    /*issue_feedback_pack_t issue::run(execute_feedback_pack_t execute_feedback_pack, wb_feedback_pack_t wb_feedback_pack, commit_feedback_pack_t commit_feedback_pack)
     {
         auto rev_pack = readreg_issue_port->get();
         issue_feedback_pack_t feedback_pack;
@@ -94,12 +698,6 @@ namespace pipeline
                                 break;
                             }
                         }
-
-                        //bru instruction must be executed independently
-                        /*if((items[i].op_unit == op_unit_t::bru) && (i != 0))
-                        {
-                            break;
-                        }*/
 
                         bool src1_feedback = false;
                         uint32_t src1_feedback_value = 0;
@@ -274,12 +872,6 @@ namespace pipeline
                         {
                             break;
                         }
-
-                        //bru instruction must be executed independently
-                        /*if(items[i].op_unit == op_unit_t::bru)
-                        {
-                            break;
-                        }*/
                     }
                 }
             }    
@@ -514,7 +1106,7 @@ namespace pipeline
         }
 
         return feedback_pack;
-    }
+    }*/
 
     void issue::print(std::string indent)
     {

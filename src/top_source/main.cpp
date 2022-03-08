@@ -906,13 +906,13 @@ static void run()
 
     while(1)
     {
-        /*if(cpu_clock_cycle == 20815)
+        /*if(cpu_clock_cycle >= 1007240)
         {
             step_state = true;
             wait_commit = false;
         }*/
 
-        /*if(committed_instruction_num == 32470)
+        /*if(committed_instruction_num >= 34090)
         {
             step_state = true;
             wait_commit = false;
