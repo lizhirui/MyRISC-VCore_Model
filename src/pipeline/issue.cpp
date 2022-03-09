@@ -52,6 +52,44 @@ namespace pipeline
 
                 //instruction waiting finish
                 is_inst_waiting = false;
+
+                //calculate not full queue
+                bool alu_unit_available[ALU_UNIT_NUM];
+                bool bru_unit_available[BRU_UNIT_NUM];
+                bool csr_unit_available[CSR_UNIT_NUM];
+                bool div_unit_available[DIV_UNIT_NUM];
+                bool lsu_unit_available[LSU_UNIT_NUM];
+                bool mul_unit_available[MUL_UNIT_NUM];
+
+                for(auto i = 0;i < ALU_UNIT_NUM;i++)
+                {
+                    alu_unit_available[i] = !issue_alu_fifo[i]->is_full();
+                }
+
+                for(auto i = 0;i < BRU_UNIT_NUM;i++)
+                {
+                    bru_unit_available[i] = !issue_bru_fifo[i]->is_full();
+                }
+
+                for(auto i = 0;i < CSR_UNIT_NUM;i++)
+                {
+                    csr_unit_available[i] = !issue_csr_fifo[i]->is_full();
+                }
+
+                for(auto i = 0;i < DIV_UNIT_NUM;i++)
+                {
+                    div_unit_available[i] = !issue_div_fifo[i]->is_full();
+                }
+
+                for(auto i = 0;i < LSU_UNIT_NUM;i++)
+                {
+                    lsu_unit_available[i] = !issue_lsu_fifo[i]->is_full();
+                }
+
+                for(auto i = 0;i < MUL_UNIT_NUM;i++)
+                {
+                    mul_unit_available[i] = !issue_mul_fifo[i]->is_full();
+                }
             
                 //get up to 2 items from issue_queue
                 assert(this->issue_q.get_front_id(&id));
@@ -116,48 +154,57 @@ namespace pipeline
                     }
 
                     uint32_t unit_cnt = 0;
+                    bool *unit_available = nullptr;
                     component::fifo<issue_execute_pack_t> **unit_fifo = NULL;
                     
                     switch(items[i].op_unit)
                     {
                         case op_unit_t::alu:
                             unit_cnt = ALU_UNIT_NUM;
+                            unit_available = alu_unit_available;
                             unit_fifo = issue_alu_fifo;
                             break;
                             
                         case op_unit_t::bru:
                             unit_cnt = BRU_UNIT_NUM;
+                            unit_available = bru_unit_available;
                             unit_fifo = issue_bru_fifo;
                             break;
                             
                         case op_unit_t::csr:
                             unit_cnt =  CSR_UNIT_NUM;
+                            unit_available = csr_unit_available;
                             unit_fifo = issue_csr_fifo;
                             break;
                             
                         case op_unit_t::div:
                             unit_cnt = DIV_UNIT_NUM;
+                            unit_available = div_unit_available;
                             unit_fifo = issue_div_fifo;
                             break;
                             
                         case op_unit_t::lsu:
                             unit_cnt = LSU_UNIT_NUM;
+                            unit_available = lsu_unit_available;
                             unit_fifo = issue_lsu_fifo;
                             break;
                             
                         case op_unit_t::mul:
                             unit_cnt = MUL_UNIT_NUM;
+                            unit_available = mul_unit_available;
                             unit_fifo = issue_mul_fifo;
                             break;
                     }
                     
                     bool unit_found = false;
+                    uint32_t unit_index = 0;
                     
                     for(uint32_t i = 0;i < unit_cnt;i++)
                     {
-                        if(!unit_fifo[i]->is_full())
+                        if(unit_available[i])
                         {
                             unit_found = true;
+                            unit_index = i;
                             break;
                         }
                     }
@@ -168,9 +215,12 @@ namespace pipeline
                     {
                         need_to_exit = true;
                     }
+
+                    auto op_id = i;
                     
                     if(src1_ready && src2_ready && unit_found && (!has_lsu_op || (items[i].op_unit != op_unit_t::lsu)) && (!has_csr_op || (items[i].op_unit != op_unit_t::csr)) && (!has_mret_op || (items[i].op != op_t::mret)))
                     {
+                        unit_available[unit_index] = false;
                         item_id_list.push_back(id);
                         i++;
                     }
@@ -179,17 +229,17 @@ namespace pipeline
                         items[i].enable = false;
                     }
 
-                    if(items[i].op_unit == op_unit_t::lsu)
+                    if(items[op_id].op_unit == op_unit_t::lsu)
                     {
                         has_lsu_op = true;
                     }
 
-                    if(items[i].op_unit == op_unit_t::csr)
+                    if(items[op_id].op_unit == op_unit_t::csr)
                     {
                         has_csr_op = true;
                     }
 
-                    if(items[i].op == op_t::mret)
+                    if(items[op_id].op == op_t::mret)
                     {
                         has_mret_op = true;
                     }

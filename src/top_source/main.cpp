@@ -151,7 +151,7 @@ static component::rat rat(PHY_REG_NUM, ARCH_REG_NUM);
 static component::rob rob(ROB_SIZE);
 static component::regfile<pipeline::phy_regfile_item_t> phy_regfile(PHY_REG_NUM);
 static component::csrfile csr_file;
-static component::store_buffer store_buffer(16, &memory);
+static component::store_buffer store_buffer(STORE_BUFFER_SIZE, &memory);
 static component::checkpoint_buffer checkpoint_buffer(CHECKPOINT_BUFFER_SIZE);
 static component::branch_predictor branch_predictor;
 
@@ -893,6 +893,8 @@ uint64_t get_cpu_clock_cycle()
     return cpu_clock_cycle;
 }
 
+static bool need_to_trigger = true;
+
 static void run()
 {
     //std::ofstream trace_file("no_branch.txt");
@@ -906,16 +908,18 @@ static void run()
 
     while(1)
     {
-        /*if(cpu_clock_cycle >= 1007240)
+        /*if((cpu_clock_cycle >= 232140) && need_to_trigger)
         {
             step_state = true;
             wait_commit = false;
+            need_to_trigger = false;
         }*/
 
-        /*if(committed_instruction_num >= 34090)
+        /*if((committed_instruction_num >= 1368700) && need_to_trigger)
         {
             step_state = true;
             wait_commit = false;
+            need_to_trigger = false;
         }*/
 
         if(ctrl_c_detected || (step_state && ((!wait_commit) || (wait_commit && rob.get_committed()))))

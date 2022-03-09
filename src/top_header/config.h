@@ -4,7 +4,7 @@ const uint32_t FETCH_WIDTH = 4;
 const uint32_t DECODE_WIDTH = 4;
 const uint32_t RENAME_WIDTH = 8;
 const uint32_t READREG_WIDTH = RENAME_WIDTH;
-const uint32_t ISSUE_WIDTH = 2;
+const uint32_t ISSUE_WIDTH = 4;
 const uint32_t COMMIT_WIDTH = 4;
 
 const uint32_t PHY_REG_NUM = 512;
@@ -15,6 +15,7 @@ const uint32_t DECODE_RENAME_FIFO_SIZE = 256;
 const uint32_t ISSUE_QUEUE_SIZE = 256;
 const uint32_t ROB_SIZE = 8 + 8 * 16 + ISSUE_QUEUE_SIZE + RENAME_WIDTH + READREG_WIDTH;
 const uint32_t CHECKPOINT_BUFFER_SIZE = ROB_SIZE + FETCH_DECODE_FIFO_SIZE + DECODE_RENAME_FIFO_SIZE;
+const uint32_t STORE_BUFFER_SIZE = 256; 
 /*const uint32_t FETCH_DECODE_FIFO_SIZE = 16;
 const uint32_t DECODE_RENAME_FIFO_SIZE = 16;
 const uint32_t ISSUE_QUEUE_SIZE = 16;

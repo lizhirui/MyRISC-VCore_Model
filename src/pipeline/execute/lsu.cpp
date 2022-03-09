@@ -25,7 +25,7 @@ namespace pipeline
 
             memset(&send_pack, 0, sizeof(send_pack));
 
-            if((!issue_lsu_fifo->is_empty() && !(commit_feedback_pack.enable && commit_feedback_pack.flush)) || this->busy)
+            if((((!issue_lsu_fifo->is_empty()) || this->busy) && !(commit_feedback_pack.enable && commit_feedback_pack.flush)))
             {
                 issue_execute_pack_t rev_pack;
 
@@ -210,6 +210,10 @@ namespace pipeline
                         }
                     }
                 }
+            }
+            else if(commit_feedback_pack.enable && commit_feedback_pack.flush)
+            {
+                this->busy = false;
             }
 
             lsu_wb_port->set(send_pack);
