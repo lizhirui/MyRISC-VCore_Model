@@ -3,7 +3,7 @@
 
 namespace pipeline
 {
-    issue::issue(component::port<readreg_issue_pack_t> *readreg_issue_port, component::fifo<issue_execute_pack_t> **issue_alu_fifo, component::fifo<issue_execute_pack_t> **issue_bru_fifo, component::fifo<issue_execute_pack_t> **issue_csr_fifo, component::fifo<issue_execute_pack_t> **issue_div_fifo, component::fifo<issue_execute_pack_t> **issue_lsu_fifo, component::fifo<issue_execute_pack_t> **issue_mul_fifo, component::regfile<phy_regfile_item_t> *phy_regfile) : issue_q(component::issue_queue<issue_queue_item_t>(ISSUE_QUEUE_SIZE))
+    issue::issue(component::port<readreg_issue_pack_t> *readreg_issue_port, component::fifo<issue_execute_pack_t> **issue_alu_fifo, component::fifo<issue_execute_pack_t> **issue_bru_fifo, component::fifo<issue_execute_pack_t> **issue_csr_fifo, component::fifo<issue_execute_pack_t> **issue_div_fifo, component::fifo<issue_execute_pack_t> **issue_lsu_fifo, component::fifo<issue_execute_pack_t> **issue_mul_fifo, component::regfile<phy_regfile_item_t> *phy_regfile, component::store_buffer *store_buffer) : issue_q(component::issue_queue<issue_queue_item_t>(ISSUE_QUEUE_SIZE))
     {
         this->readreg_issue_port = readreg_issue_port;
         this->issue_alu_fifo = issue_alu_fifo;
@@ -13,6 +13,7 @@ namespace pipeline
         this->issue_lsu_fifo = issue_lsu_fifo;
         this->issue_mul_fifo = issue_mul_fifo;
         this->phy_regfile = phy_regfile;
+        this->store_buffer = store_buffer;
         this->is_inst_waiting = false;
         this->inst_waiting_rob_id = 0;
     }
@@ -216,9 +217,11 @@ namespace pipeline
                         need_to_exit = true;
                     }
 
+                    bool fence_trigger = (items[i].op == op_t::fence) && ((!store_buffer->is_empty()) || (i != 0) || (commit_feedback_pack.next_handle_rob_id != items[i].rob_id));
+
                     auto op_id = i;
                     
-                    if(src1_ready && src2_ready && unit_found && (!has_lsu_op || (items[i].op_unit != op_unit_t::lsu)) && (!has_csr_op || (items[i].op_unit != op_unit_t::csr)) && (!has_mret_op || (items[i].op != op_t::mret)))
+                    if(src1_ready && src2_ready && unit_found && (!has_lsu_op || (items[i].op_unit != op_unit_t::lsu)) && (!has_csr_op || (items[i].op_unit != op_unit_t::csr)) && (!has_mret_op || (items[i].op != op_t::mret)) && (!fence_trigger))
                     {
                         unit_available[unit_index] = false;
                         item_id_list.push_back(id);
@@ -244,7 +247,7 @@ namespace pipeline
                         has_mret_op = true;
                     }
 
-                    if(need_to_exit)
+                    if(need_to_exit || fence_trigger)
                     {
                         break;
                     }

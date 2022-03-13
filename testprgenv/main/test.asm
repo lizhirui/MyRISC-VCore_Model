@@ -8,31 +8,125 @@ Disassembly of section .text:
     .section .text.entry
     .global _start
 _start:
-    li x1, 10
-80000000:	00a00093          	li	ra,10
+    li x1, 11
+80000000:	00b00093          	li	ra,11
+    li x2, 11
+80000004:	00b00113          	li	sp,11
+    li x3, 11
+80000008:	00b00193          	li	gp,11
+    li x4, 11
+8000000c:	00b00213          	li	tp,11
+    li x5, 11
+80000010:	00b00293          	li	t0,11
+    li x6, 11
+80000014:	00b00313          	li	t1,11
+    li x7, 11
+80000018:	00b00393          	li	t2,11
+    li x8, 11
+8000001c:	00b00413          	li	s0,11
+    li x9, 11
+80000020:	00b00493          	li	s1,11
+    li x11, 11
+80000024:	00b00593          	li	a1,11
+    li x11, 11
+80000028:	00b00593          	li	a1,11
+    li x12, 11
+8000002c:	00b00613          	li	a2,11
+    li x13, 11
+80000030:	00b00693          	li	a3,11
+    li x14, 11
+80000034:	00b00713          	li	a4,11
+    li x15, 11
+80000038:	00b00793          	li	a5,11
+    li x16, 11
+8000003c:	00b00813          	li	a6,11
+    li x17, 11
+80000040:	00b00893          	li	a7,11
+    li x18, 11
+80000044:	00b00913          	li	s2,11
+    li x19, 11
+80000048:	00b00993          	li	s3,11
+    la x20, 0x80001000
+8000004c:	80001a37          	lui	s4,0x80001
+    sw x20, 0(x20)
+80000050:	014a2023          	sw	s4,0(s4) # 80001000 <_heap_start+0xffff6000>
+    fence
+80000054:	0ff0000f          	fence
+    la x20, 0x80001010
+80000058:	80001a37          	lui	s4,0x80001
+8000005c:	010a0a13          	addi	s4,s4,16 # 80001010 <_heap_start+0xffff6010>
+    sw x20, 0(x20)
+80000060:	014a2023          	sw	s4,0(s4)
+    la x20, 0x80001020
+80000064:	80001a37          	lui	s4,0x80001
+80000068:	020a0a13          	addi	s4,s4,32 # 80001020 <_heap_start+0xffff6020>
+    fence
+8000006c:	0ff0000f          	fence
+    sw x20, 0(x20)
+80000070:	014a2023          	sw	s4,0(s4)
+    fence.i
+80000074:	0000100f          	fence.i
+    li x1, 11
+80000078:	00b00093          	li	ra,11
+    li x2, 11
+8000007c:	00b00113          	li	sp,11
+    li x3, 11
+80000080:	00b00193          	li	gp,11
+    li x4, 11
+80000084:	00b00213          	li	tp,11
+    li x5, 11
+80000088:	00b00293          	li	t0,11
+    li x6, 11
+8000008c:	00b00313          	li	t1,11
+    li x7, 11
+80000090:	00b00393          	li	t2,11
+    li x8, 11
+80000094:	00b00413          	li	s0,11
+    li x9, 11
+80000098:	00b00493          	li	s1,11
+    li x11, 11
+8000009c:	00b00593          	li	a1,11
+    li x11, 11
+800000a0:	00b00593          	li	a1,11
+    li x12, 11
+800000a4:	00b00613          	li	a2,11
+    li x13, 11
+800000a8:	00b00693          	li	a3,11
+    li x14, 11
+800000ac:	00b00713          	li	a4,11
+    li x15, 11
+800000b0:	00b00793          	li	a5,11
+    li x16, 11
+800000b4:	00b00813          	li	a6,11
+    li x17, 11
+800000b8:	00b00893          	li	a7,11
+    li x18, 11
+800000bc:	00b00913          	li	s2,11
+    li x19, 11
+800000c0:	00b00993          	li	s3,11
 
-80000004 <loop>:
+800000c4 <loop>:
 
 loop:
     addi x1, x1, -1
-80000004:	fff08093          	addi	ra,ra,-1
+800000c4:	fff08093          	addi	ra,ra,-1
     bne x1, x0, loop
-80000008:	fe009ee3          	bnez	ra,80000004 <loop>
+800000c8:	fe009ee3          	bnez	ra,800000c4 <loop>
     li x2, 1
-8000000c:	00100113          	li	sp,1
+800000cc:	00100113          	li	sp,1
 
-80000010 <infinite_loop>:
+800000d0 <infinite_loop>:
 infinite_loop:
-80000010:	0000006f          	j	80000010 <infinite_loop>
+800000d0:	0000006f          	j	800000d0 <infinite_loop>
 
 Disassembly of section .osdebug:
 
-80000018 <_osdebug_start>:
+800000d8 <_osdebug_start>:
 	...
 
 Disassembly of section .bss:
 
-80002018 <sbss>:
+800020d8 <sbss>:
 	...
 
 Disassembly of section .riscv.attributes:
@@ -58,7 +152,7 @@ Disassembly of section .riscv.attributes:
 Disassembly of section .debug_line:
 
 00000000 <.debug_line>:
-   0:	0050                	addi	a2,sp,4
+   0:	0164                	addi	s1,sp,140
    2:	0000                	unimp
    4:	00240003          	lb	zero,2(s0)
    8:	0000                	unimp
@@ -81,17 +175,109 @@ Disassembly of section .debug_line:
   30:	0002                	c.slli64	zero
   32:	0000                	unimp
   34:	1580                	addi	s0,sp,736
-  36:	04090303          	lb	t1,64(s2)
+  36:	04090103          	lb	sp,64(s2)
   3a:	0100                	addi	s0,sp,128
   3c:	04090103          	lb	sp,64(s2)
   40:	0100                	addi	s0,sp,128
   42:	04090103          	lb	sp,64(s2)
   46:	0100                	addi	s0,sp,128
-  48:	04090203          	lb	tp,64(s2)
+  48:	04090103          	lb	sp,64(s2)
   4c:	0100                	addi	s0,sp,128
-  4e:	0409                	addi	s0,s0,2
-  50:	0000                	unimp
-  52:	0101                	addi	sp,sp,0
+  4e:	04090103          	lb	sp,64(s2)
+  52:	0100                	addi	s0,sp,128
+  54:	04090103          	lb	sp,64(s2)
+  58:	0100                	addi	s0,sp,128
+  5a:	04090103          	lb	sp,64(s2)
+  5e:	0100                	addi	s0,sp,128
+  60:	04090103          	lb	sp,64(s2)
+  64:	0100                	addi	s0,sp,128
+  66:	04090103          	lb	sp,64(s2)
+  6a:	0100                	addi	s0,sp,128
+  6c:	04090103          	lb	sp,64(s2)
+  70:	0100                	addi	s0,sp,128
+  72:	04090103          	lb	sp,64(s2)
+  76:	0100                	addi	s0,sp,128
+  78:	04090103          	lb	sp,64(s2)
+  7c:	0100                	addi	s0,sp,128
+  7e:	04090103          	lb	sp,64(s2)
+  82:	0100                	addi	s0,sp,128
+  84:	04090103          	lb	sp,64(s2)
+  88:	0100                	addi	s0,sp,128
+  8a:	04090103          	lb	sp,64(s2)
+  8e:	0100                	addi	s0,sp,128
+  90:	04090103          	lb	sp,64(s2)
+  94:	0100                	addi	s0,sp,128
+  96:	04090103          	lb	sp,64(s2)
+  9a:	0100                	addi	s0,sp,128
+  9c:	04090103          	lb	sp,64(s2)
+  a0:	0100                	addi	s0,sp,128
+  a2:	04090103          	lb	sp,64(s2)
+  a6:	0100                	addi	s0,sp,128
+  a8:	04090103          	lb	sp,64(s2)
+  ac:	0100                	addi	s0,sp,128
+  ae:	04090103          	lb	sp,64(s2)
+  b2:	0100                	addi	s0,sp,128
+  b4:	04090103          	lb	sp,64(s2)
+  b8:	0100                	addi	s0,sp,128
+  ba:	08090103          	lb	sp,128(s2)
+  be:	0100                	addi	s0,sp,128
+  c0:	04090103          	lb	sp,64(s2)
+  c4:	0100                	addi	s0,sp,128
+  c6:	08090103          	lb	sp,128(s2)
+  ca:	0100                	addi	s0,sp,128
+  cc:	04090103          	lb	sp,64(s2)
+  d0:	0100                	addi	s0,sp,128
+  d2:	04090103          	lb	sp,64(s2)
+  d6:	0100                	addi	s0,sp,128
+  d8:	04090103          	lb	sp,64(s2)
+  dc:	0100                	addi	s0,sp,128
+  de:	04090103          	lb	sp,64(s2)
+  e2:	0100                	addi	s0,sp,128
+  e4:	04090103          	lb	sp,64(s2)
+  e8:	0100                	addi	s0,sp,128
+  ea:	04090103          	lb	sp,64(s2)
+  ee:	0100                	addi	s0,sp,128
+  f0:	04090103          	lb	sp,64(s2)
+  f4:	0100                	addi	s0,sp,128
+  f6:	04090103          	lb	sp,64(s2)
+  fa:	0100                	addi	s0,sp,128
+  fc:	04090103          	lb	sp,64(s2)
+ 100:	0100                	addi	s0,sp,128
+ 102:	04090103          	lb	sp,64(s2)
+ 106:	0100                	addi	s0,sp,128
+ 108:	04090103          	lb	sp,64(s2)
+ 10c:	0100                	addi	s0,sp,128
+ 10e:	04090103          	lb	sp,64(s2)
+ 112:	0100                	addi	s0,sp,128
+ 114:	04090103          	lb	sp,64(s2)
+ 118:	0100                	addi	s0,sp,128
+ 11a:	04090103          	lb	sp,64(s2)
+ 11e:	0100                	addi	s0,sp,128
+ 120:	04090103          	lb	sp,64(s2)
+ 124:	0100                	addi	s0,sp,128
+ 126:	04090103          	lb	sp,64(s2)
+ 12a:	0100                	addi	s0,sp,128
+ 12c:	04090103          	lb	sp,64(s2)
+ 130:	0100                	addi	s0,sp,128
+ 132:	04090103          	lb	sp,64(s2)
+ 136:	0100                	addi	s0,sp,128
+ 138:	04090103          	lb	sp,64(s2)
+ 13c:	0100                	addi	s0,sp,128
+ 13e:	04090103          	lb	sp,64(s2)
+ 142:	0100                	addi	s0,sp,128
+ 144:	04090103          	lb	sp,64(s2)
+ 148:	0100                	addi	s0,sp,128
+ 14a:	04090303          	lb	t1,64(s2)
+ 14e:	0100                	addi	s0,sp,128
+ 150:	04090103          	lb	sp,64(s2)
+ 154:	0100                	addi	s0,sp,128
+ 156:	04090103          	lb	sp,64(s2)
+ 15a:	0100                	addi	s0,sp,128
+ 15c:	04090203          	lb	tp,64(s2)
+ 160:	0100                	addi	s0,sp,128
+ 162:	0409                	addi	s0,s0,2
+ 164:	0000                	unimp
+ 166:	0101                	addi	sp,sp,0
 
 Disassembly of section .debug_info:
 
@@ -106,7 +292,7 @@ Disassembly of section .debug_info:
    e:	0000                	unimp
   10:	0000                	unimp
   12:	8000                	0x8000
-  14:	0014                	0x14
+  14:	00d4                	addi	a3,sp,68
   16:	8000                	0x8000
   18:	0000                	unimp
   1a:	0000                	unimp
@@ -143,7 +329,7 @@ Disassembly of section .debug_aranges:
    e:	0000                	unimp
   10:	0000                	unimp
   12:	8000                	0x8000
-  14:	0014                	0x14
+  14:	00d4                	addi	a3,sp,68
 	...
 
 Disassembly of section .debug_str:

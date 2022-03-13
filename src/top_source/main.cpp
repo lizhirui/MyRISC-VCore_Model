@@ -155,11 +155,11 @@ static component::store_buffer store_buffer(STORE_BUFFER_SIZE, &memory);
 static component::checkpoint_buffer checkpoint_buffer(CHECKPOINT_BUFFER_SIZE);
 static component::branch_predictor branch_predictor;
 
-static pipeline::fetch fetch_stage(&memory, &fetch_decode_fifo, &checkpoint_buffer, &branch_predictor, 0x80000000);
+static pipeline::fetch fetch_stage(&memory, &fetch_decode_fifo, &checkpoint_buffer, &branch_predictor, &store_buffer, 0x80000000);
 static pipeline::decode decode_stage(&fetch_decode_fifo, &decode_rename_fifo);
 static pipeline::rename rename_stage(&decode_rename_fifo, &rename_readreg_port, &rat, &rob, &checkpoint_buffer);
 static pipeline::readreg readreg_stage(&rename_readreg_port, &readreg_issue_port, &phy_regfile, &checkpoint_buffer, &rat);
-static pipeline::issue issue_stage(&readreg_issue_port, issue_alu_fifo, issue_bru_fifo, issue_csr_fifo, issue_div_fifo, issue_lsu_fifo, issue_mul_fifo, &phy_regfile);
+static pipeline::issue issue_stage(&readreg_issue_port, issue_alu_fifo, issue_bru_fifo, issue_csr_fifo, issue_div_fifo, issue_lsu_fifo, issue_mul_fifo, &phy_regfile, &store_buffer);
 static pipeline::execute::alu *execute_alu_stage[ALU_UNIT_NUM];
 static pipeline::execute::bru *execute_bru_stage[BRU_UNIT_NUM];
 static pipeline::execute::csr *execute_csr_stage[CSR_UNIT_NUM];
@@ -169,6 +169,8 @@ static pipeline::execute::mul *execute_mul_stage[MUL_UNIT_NUM];
 static pipeline::wb wb_stage(alu_wb_port, bru_wb_port, csr_wb_port, div_wb_port, lsu_wb_port, mul_wb_port, &wb_commit_port, &phy_regfile, &checkpoint_buffer);
 static pipeline::commit commit_stage(&wb_commit_port, &rat, &rob, &csr_file, &phy_regfile, &checkpoint_buffer, &branch_predictor);
 
+static pipeline::decode_feedback_pack_t t_decode_feedback_pack;
+static pipeline::rename_feedback_pack_t t_rename_feedback_pack;
 static pipeline::issue_feedback_pack_t t_issue_feedback_pack;
 static pipeline::execute::bru_feedback_pack_t t_bru_feedback_pack;
 static pipeline::execute_feedback_pack_t t_execute_feedback_pack;
@@ -397,11 +399,12 @@ static void init()
 
     //std::ifstream binfile("../../../testprgenv/main/test.bin", std::ios::binary);
     //std::ifstream binfile("../../../testfile.bin", std::ios::binary);
-    std::ifstream binfile("../../../coremark.bin", std::ios::binary);
+    //std::ifstream binfile("../../../coremark_10.bin", std::ios::binary);
+    std::ifstream binfile("../../../dhrystone.bin", std::ios::binary);
 
     if(!binfile || !binfile.is_open())
     {
-        std::cout << "test.bin Open Failed!" << std::endl;
+        std::cout << "coremark.bin Open Failed!" << std::endl;
         exit(1);
     }
 
@@ -420,7 +423,7 @@ static void init()
         n += sizeof(buf);
     }
 
-    std::cout << "test.bin Read OK!Bytes(" << sizeof(buf) << "Byte-Block):" << n << std::endl;
+    std::cout << "coremark.bin Read OK!Bytes(" << sizeof(buf) << "Byte-Block):" << n << std::endl;
 
     for(auto i = 0;i < ALU_UNIT_NUM;i++)
     {
@@ -1048,9 +1051,9 @@ static void run()
 
         t_issue_feedback_pack = issue_stage.run(t_execute_feedback_pack, t_wb_feedback_pack, t_commit_feedback_pack);
         readreg_stage.run(t_issue_feedback_pack, t_execute_feedback_pack, t_wb_feedback_pack, t_commit_feedback_pack);
-        rename_stage.run(t_issue_feedback_pack, t_commit_feedback_pack);
-        decode_stage.run(t_commit_feedback_pack);
-        fetch_stage.run(t_bru_feedback_pack, t_commit_feedback_pack);
+        t_rename_feedback_pack = rename_stage.run(t_issue_feedback_pack, t_commit_feedback_pack);
+        t_decode_feedback_pack = decode_stage.run(t_commit_feedback_pack);
+        fetch_stage.run(t_decode_feedback_pack, t_rename_feedback_pack, t_bru_feedback_pack, t_commit_feedback_pack);
         rat.sync();
         rob.sync();
         phy_regfile.sync();

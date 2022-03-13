@@ -21,10 +21,14 @@ namespace pipeline
         this->busy = false;
     }
 
-    void rename::run(issue_feedback_pack_t issue_pack, commit_feedback_pack_t commit_feedback_pack)
+    rename_feedback_pack_t rename::run(issue_feedback_pack_t issue_pack, commit_feedback_pack_t commit_feedback_pack)
     {
         //rename_readreg_pack_t null_send_pack;
         bool stall = issue_pack.stall;
+
+        rename_feedback_pack_t feedback_pack;
+
+        feedback_pack.idle = decode_rename_fifo->is_empty();
         
         //memset(&null_send_pack, 0, sizeof(null_send_pack));
 
@@ -232,6 +236,8 @@ namespace pipeline
             busy = false;
             memset(&rev_pack, 0, sizeof(rev_pack));
         }
+
+        return feedback_pack;
     }
 
     /*void rename::run(issue_feedback_pack_t issue_pack, commit_feedback_pack_t commit_feedback_pack)

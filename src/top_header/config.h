@@ -4,7 +4,7 @@ const uint32_t FETCH_WIDTH = 4;
 const uint32_t DECODE_WIDTH = 4;
 const uint32_t RENAME_WIDTH = 8;
 const uint32_t READREG_WIDTH = RENAME_WIDTH;
-const uint32_t ISSUE_WIDTH = 4;
+const uint32_t ISSUE_WIDTH = 2;
 const uint32_t COMMIT_WIDTH = 4;
 
 const uint32_t PHY_REG_NUM = 512;

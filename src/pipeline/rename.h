@@ -12,6 +12,17 @@
 
 namespace pipeline
 {
+    typedef struct rename_feedback_pack_t : public if_print_t
+    {
+        bool idle;
+
+        virtual json get_json()
+        {
+            json t;
+            return t;
+        }
+    }rename_feedback_pack_t;
+
     class rename : public if_reset_t
     {
         private:
@@ -27,6 +38,6 @@ namespace pipeline
         public:
             rename(component::fifo<decode_rename_pack_t> *decode_rename_fifo, component::port<rename_readreg_pack_t> *rename_readreg_port, component::rat *rat, component::rob *rob, component::checkpoint_buffer *checkpoint_buffer);
             virtual void reset();
-            void run(issue_feedback_pack_t issue_pack, commit_feedback_pack_t commit_feedback_pack);
+            rename_feedback_pack_t run(issue_feedback_pack_t issue_pack, commit_feedback_pack_t commit_feedback_pack);
     };
 }

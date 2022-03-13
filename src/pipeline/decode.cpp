@@ -13,8 +13,12 @@ namespace pipeline
         this->decode_rename_fifo = decode_rename_fifo;
     }
 
-    void decode::run(commit_feedback_pack_t commit_feedback_pack)
+    decode_feedback_pack_t decode::run(commit_feedback_pack_t commit_feedback_pack)
     {
+        decode_feedback_pack_t feedback_pack;
+
+        feedback_pack.idle = this->fetch_decode_fifo->is_empty();
+
         if(!(commit_feedback_pack.enable && commit_feedback_pack.flush))
         {
             for(auto i = 0;i < DECODE_WIDTH;i++)
@@ -690,5 +694,7 @@ namespace pipeline
         {
             decode_rename_fifo->flush();
         }
+
+        return feedback_pack;
     }
 }

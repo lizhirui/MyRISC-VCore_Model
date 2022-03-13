@@ -7,12 +7,13 @@
 
 namespace pipeline
 {
-    fetch::fetch(component::memory *memory, component::fifo<fetch_decode_pack_t> *fetch_decode_fifo, component::checkpoint_buffer *checkpoint_buffer, component::branch_predictor *branch_predictor, uint32_t init_pc)
+    fetch::fetch(component::memory *memory, component::fifo<fetch_decode_pack_t> *fetch_decode_fifo, component::checkpoint_buffer *checkpoint_buffer, component::branch_predictor *branch_predictor, component::store_buffer *store_buffer, uint32_t init_pc)
     {
         this->memory = memory;
         this->fetch_decode_fifo = fetch_decode_fifo;
         this->checkpoint_buffer = checkpoint_buffer;
         this->branch_predictor = branch_predictor;
+        this->store_buffer = store_buffer;
         this->init_pc = init_pc;
         this->pc = init_pc;
         this->jump_wait = false;
@@ -24,7 +25,7 @@ namespace pipeline
         this->jump_wait = false;
     }
 
-    void fetch::run(pipeline::execute::bru_feedback_pack_t bru_feedback_pack, commit_feedback_pack_t commit_feedback_pack)
+    void fetch::run(decode_feedback_pack_t decode_feedback_pack, rename_feedback_pack_t rename_feedback_pack, pipeline::execute::bru_feedback_pack_t bru_feedback_pack, commit_feedback_pack_t commit_feedback_pack)
     {
         if(!(commit_feedback_pack.enable && commit_feedback_pack.flush))
         {
@@ -55,6 +56,12 @@ namespace pipeline
                         bool has_exception = !memory->check_align(cur_pc, 4) || !memory->check_boundary(cur_pc, 4);
                         uint32_t opcode = has_exception ? 0 : this->memory->read32(cur_pc);
                         bool jump = ((opcode & 0x7f) == 0x6f) || ((opcode & 0x7f) == 0x67) || ((opcode & 0x7f) == 0x63) || (opcode == 0x30200073);
+                        bool fence_i = ((opcode & 0x7f) == 0x0f) && (((opcode >> 12) & 0x07) == 0x01);
+
+                        if(fence_i && ((i != 0) || (!decode_feedback_pack.idle) || (!rename_feedback_pack.idle) || commit_feedback_pack.enable || (!store_buffer->is_empty())))
+                        {
+                            break;
+                        }
 
                         if(jump)
                         {
