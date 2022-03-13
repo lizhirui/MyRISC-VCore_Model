@@ -1,7 +1,7 @@
 #pragma once
 #include "common.h"
 #include "fifo.h"
-#include "memory.h"
+#include "bus.h"
 #include "../pipeline/commit.h"
 
 namespace component
@@ -43,7 +43,7 @@ namespace component
             
             std::queue<sync_request_t> sync_request_q;
 
-            memory *memory_if;
+            bus *bus_if;
 
             bool check_id_valid(uint32_t id)
             {
@@ -123,9 +123,9 @@ namespace component
             }
         
         public:
-            store_buffer(uint32_t size, memory *memory_if) : fifo<store_buffer_item_t>(size)
+            store_buffer(uint32_t size, bus *bus_if) : fifo<store_buffer_item_t>(size)
             {
-                this->memory_if = memory_if;
+                this->bus_if = bus_if;
             }
 
             virtual void reset()
@@ -175,9 +175,9 @@ namespace component
                 sync_request_q.push(item);
             }
 
-            uint32_t get_feedback_value(uint32_t addr, uint32_t size, uint32_t memory_value)
+            uint32_t get_feedback_value(uint32_t addr, uint32_t size, uint32_t bus_value)
             {
-                uint32_t result = memory_value;
+                uint32_t result = bus_value;
                 uint32_t cur_id;
                 
                 if(get_front_id(&cur_id))
@@ -277,15 +277,15 @@ namespace component
                             switch(item.size)
                             {
                                 case 1:
-                                    memory_if->write8_sync(item.addr, (uint8_t)item.data);
+                                    bus_if->write8_sync(item.addr, (uint8_t)item.data);
                                     break;
 
                                 case 2:
-                                    memory_if->write16_sync(item.addr, (uint16_t)item.data);
+                                    bus_if->write16_sync(item.addr, (uint16_t)item.data);
                                     break;
 
                                 case 4:
-                                    memory_if->write32_sync(item.addr, item.data);
+                                    bus_if->write32_sync(item.addr, item.data);
                                     break;
                             }
                         }

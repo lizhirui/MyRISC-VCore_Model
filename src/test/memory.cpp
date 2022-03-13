@@ -8,7 +8,7 @@ namespace test
     {
         void test()
         {
-            component::memory u_pack(0x80000000, 16);
+            /*component::memory u_pack(0x80000000, 16);
 
             u_pack.entry_test_mode();
             assert(!u_pack.get_error());
@@ -47,7 +47,7 @@ namespace test
             u_pack.clear_error();
             u_pack.read32(0x7ffffffc);
             assert(u_pack.get_error());
-            u_pack.clear_error();
+            u_pack.clear_error();*/
         }
     }
 }

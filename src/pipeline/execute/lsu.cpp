@@ -5,11 +5,11 @@ namespace pipeline
 {
     namespace execute
     {
-        lsu::lsu(component::fifo<issue_execute_pack_t> *issue_lsu_fifo, component::port<execute_wb_pack_t> *lsu_wb_port, component::memory *memory, component::store_buffer *store_buffer)
+        lsu::lsu(component::fifo<issue_execute_pack_t> *issue_lsu_fifo, component::port<execute_wb_pack_t> *lsu_wb_port, component::bus *bus, component::store_buffer *store_buffer)
         {
             this->issue_lsu_fifo = issue_lsu_fifo;
             this->lsu_wb_port = lsu_wb_port;
-            this->memory = memory;
+            this->bus = bus;
             this->store_buffer = store_buffer;
             this->busy = false;
         }
@@ -88,34 +88,34 @@ namespace pipeline
                     {
                         case lsu_op_t::lb:
                         case lsu_op_t::lbu:
-                            send_pack.has_exception = !memory->check_align(addr, 1) || !memory->check_boundary(addr, 1);
-                            send_pack.exception_id = !memory->check_align(addr, 1) ? riscv_exception_t::load_address_misaligned : riscv_exception_t::load_access_fault;
+                            send_pack.has_exception = !bus->check_align(addr, 1);
+                            send_pack.exception_id = !bus->check_align(addr, 1) ? riscv_exception_t::load_address_misaligned : riscv_exception_t::load_access_fault;
                             break;
 
                         case lsu_op_t::lh:
                         case lsu_op_t::lhu:
-                            send_pack.has_exception = !memory->check_align(addr, 2) || !memory->check_boundary(addr, 2);
-                            send_pack.exception_id = !memory->check_align(addr, 2) ? riscv_exception_t::load_address_misaligned : riscv_exception_t::load_access_fault;
+                            send_pack.has_exception = !bus->check_align(addr, 2);
+                            send_pack.exception_id = !bus->check_align(addr, 2) ? riscv_exception_t::load_address_misaligned : riscv_exception_t::load_access_fault;
                             break;
 
                         case lsu_op_t::lw:
-                            send_pack.has_exception = !memory->check_align(addr, 4) || !memory->check_boundary(addr, 4);
-                            send_pack.exception_id = !memory->check_align(addr, 4) ? riscv_exception_t::load_address_misaligned : riscv_exception_t::load_access_fault;
+                            send_pack.has_exception = !bus->check_align(addr, 4);
+                            send_pack.exception_id = !bus->check_align(addr, 4) ? riscv_exception_t::load_address_misaligned : riscv_exception_t::load_access_fault;
                             break;
 
                         case lsu_op_t::sb:
-                            send_pack.has_exception = !memory->check_align(addr, 1) || !memory->check_boundary(addr, 1);
-                            send_pack.exception_id = !memory->check_align(addr, 1) ? riscv_exception_t::store_amo_address_misaligned : riscv_exception_t::store_amo_access_fault;
+                            send_pack.has_exception = !bus->check_align(addr, 1);
+                            send_pack.exception_id = !bus->check_align(addr, 1) ? riscv_exception_t::store_amo_address_misaligned : riscv_exception_t::store_amo_access_fault;
                             break;
 
                         case lsu_op_t::sh:
-                            send_pack.has_exception = !memory->check_align(addr, 2) || !memory->check_boundary(addr, 2);
-                            send_pack.exception_id = !memory->check_align(addr, 2) ? riscv_exception_t::store_amo_address_misaligned : riscv_exception_t::store_amo_access_fault;
+                            send_pack.has_exception = !bus->check_align(addr, 2);
+                            send_pack.exception_id = !bus->check_align(addr, 2) ? riscv_exception_t::store_amo_address_misaligned : riscv_exception_t::store_amo_access_fault;
                             break;
 
                         case lsu_op_t::sw:
-                            send_pack.has_exception = !memory->check_align(addr, 4) || !memory->check_boundary(addr, 4);
-                            send_pack.exception_id = !memory->check_align(addr, 4) ? riscv_exception_t::store_amo_address_misaligned : riscv_exception_t::store_amo_access_fault;
+                            send_pack.has_exception = !bus->check_align(addr, 4);
+                            send_pack.exception_id = !bus->check_align(addr, 4) ? riscv_exception_t::store_amo_address_misaligned : riscv_exception_t::store_amo_access_fault;
                             break;
                     }
 
@@ -126,23 +126,23 @@ namespace pipeline
                         switch(rev_pack.sub_op.lsu_op)
                         {
                             case lsu_op_t::lb:
-                                send_pack.rd_value = sign_extend(store_buffer->get_feedback_value(addr, 1, memory->read8(addr)), 8);
+                                send_pack.rd_value = sign_extend(store_buffer->get_feedback_value(addr, 1, bus->read8(addr)), 8);
                                 break;
 
                             case lsu_op_t::lbu:
-                                send_pack.rd_value = store_buffer->get_feedback_value(addr, 1, memory->read8(addr));
+                                send_pack.rd_value = store_buffer->get_feedback_value(addr, 1, bus->read8(addr));
                                 break;
 
                             case lsu_op_t::lh:
-                                send_pack.rd_value = sign_extend(store_buffer->get_feedback_value(addr, 2, memory->read16(addr)), 16);
+                                send_pack.rd_value = sign_extend(store_buffer->get_feedback_value(addr, 2, bus->read16(addr)), 16);
                                 break;
 
                             case lsu_op_t::lhu:
-                                send_pack.rd_value = store_buffer->get_feedback_value(addr, 2, memory->read16(addr));
+                                send_pack.rd_value = store_buffer->get_feedback_value(addr, 2, bus->read16(addr));
                                 break;
 
                             case lsu_op_t::lw:
-                                send_pack.rd_value = store_buffer->get_feedback_value(addr, 4, memory->read32(addr));
+                                send_pack.rd_value = store_buffer->get_feedback_value(addr, 4, bus->read32(addr));
                                 break;
 
                             case lsu_op_t::sb:

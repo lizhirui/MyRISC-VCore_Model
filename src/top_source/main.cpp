@@ -4,6 +4,8 @@
 #include "../component/fifo.h"
 #include "../component/port.h"
 #include "../component/memory.h"
+#include "../component/slave/memory.h"
+#include "../component/bus.h"
 #include "../component/regfile.h"
 #include "../component/csrfile.h"
 #include "../component/csr_all.h"
@@ -146,16 +148,17 @@ static component::port<pipeline::execute_wb_pack_t> *mul_wb_port[MUL_UNIT_NUM];
 
 static component::port<pipeline::wb_commit_pack_t> wb_commit_port(default_wb_commit_pack);
 
-static component::memory memory(0x80000000, 1048576);
+//static component::memory memory(0x80000000, 1048576);
+static component::bus bus;
 static component::rat rat(PHY_REG_NUM, ARCH_REG_NUM);
 static component::rob rob(ROB_SIZE);
 static component::regfile<pipeline::phy_regfile_item_t> phy_regfile(PHY_REG_NUM);
 static component::csrfile csr_file;
-static component::store_buffer store_buffer(STORE_BUFFER_SIZE, &memory);
+static component::store_buffer store_buffer(STORE_BUFFER_SIZE, &bus);
 static component::checkpoint_buffer checkpoint_buffer(CHECKPOINT_BUFFER_SIZE);
 static component::branch_predictor branch_predictor;
 
-static pipeline::fetch fetch_stage(&memory, &fetch_decode_fifo, &checkpoint_buffer, &branch_predictor, &store_buffer, 0x80000000);
+static pipeline::fetch fetch_stage(&bus, &fetch_decode_fifo, &checkpoint_buffer, &branch_predictor, &store_buffer, 0x80000000);
 static pipeline::decode decode_stage(&fetch_decode_fifo, &decode_rename_fifo);
 static pipeline::rename rename_stage(&decode_rename_fifo, &rename_readreg_port, &rat, &rob, &checkpoint_buffer);
 static pipeline::readreg readreg_stage(&rename_readreg_port, &readreg_issue_port, &phy_regfile, &checkpoint_buffer, &rat);
@@ -347,7 +350,7 @@ static void reset()
     }
 
     wb_commit_port.reset();
-    memory.reset();
+    bus.reset();
     phy_regfile.reset();
     rat.init_start();
 
@@ -397,10 +400,12 @@ static void init()
 {
     telnet_init();
 
+    bus.map(0x80000000, 1048576, std::make_shared<component::slave::memory>());
+
     //std::ifstream binfile("../../../testprgenv/main/test.bin", std::ios::binary);
     //std::ifstream binfile("../../../testfile.bin", std::ios::binary);
-    //std::ifstream binfile("../../../coremark_10.bin", std::ios::binary);
-    std::ifstream binfile("../../../dhrystone.bin", std::ios::binary);
+    std::ifstream binfile("../../../coremark_10.bin", std::ios::binary);
+    //std::ifstream binfile("../../../dhrystone.bin", std::ios::binary);
 
     if(!binfile || !binfile.is_open())
     {
@@ -417,7 +422,7 @@ static void init()
 
         for(auto i = 0;i < sizeof(buf);i++)
         {
-            memory.write8(0x80000000 + ((uint32_t)n) + i, buf[i]);
+            bus.write8(0x80000000 + ((uint32_t)n) + i, buf[i]);
         }
 
         n += sizeof(buf);
@@ -507,7 +512,7 @@ static void init()
 
     for(auto i = 0;i < LSU_UNIT_NUM;i++)
     {
-        execute_lsu_stage[i] = new pipeline::execute::lsu(issue_lsu_fifo[i], lsu_wb_port[i], &memory, &store_buffer);
+        execute_lsu_stage[i] = new pipeline::execute::lsu(issue_lsu_fifo[i], lsu_wb_port[i], &bus, &store_buffer);
     }
 
     for(auto i = 0;i < MUL_UNIT_NUM;i++)
@@ -1059,7 +1064,7 @@ static void run()
         phy_regfile.sync();
         csr_file.sync();
         store_buffer.run(t_commit_feedback_pack);
-        memory.sync();
+        bus.sync();
         store_buffer.sync();
         checkpoint_buffer.sync();
         branch_predictor.sync();
@@ -1221,12 +1226,7 @@ static std::string socket_cmd_read_memory(std::vector<std::string> args)
 
     for(auto addr = address;addr < (address + size);addr++)
     {
-        if(!memory.check_boundary(addr, 1))
-        {
-            break;
-        }
-
-        result << "," << std::hex << (uint32_t)memory.read8(addr);
+        result << "," << std::hex << (uint32_t)bus.read8(addr);
     }
 
     return result.str();
@@ -1248,17 +1248,12 @@ static std::string socket_cmd_write_memory(std::vector<std::string> args)
 
     for(auto offset = 0;offset < (data_str.length() >> 1);offset++)
     {
-        if(!memory.check_boundary(address + offset, 1))
-        {
-            return "fail";
-        }
-
         std::stringstream hex_str(data_str.substr(offset << 1, 2));
         hex_str.unsetf(std::ios::dec);
         hex_str.setf(std::ios::hex);
         uint32_t value = 0;
         hex_str >> value;
-        memory.write8(address + offset, (uint8_t)value);
+        bus.write8(address + offset, (uint8_t)value);
     }
 
     return "ok";

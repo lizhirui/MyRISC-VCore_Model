@@ -1,17 +1,19 @@
-/*#pragma once
+#pragma once
 #include "common.h"
+#include "slave_base.h"
 
 namespace component
 {
-    class memory : public if_reset_t
+    typedef struct slave_info_t
+    {
+        uint32_t base;
+        uint32_t size;
+        std::shared_ptr<slave_base> slave;
+    }slave_info_t;
+
+    class bus : public if_reset_t
     {
         private:
-            uint8_t *mem;
-            uint32_t base;
-            uint32_t size;
-            bool test_mode;
-            bool has_error;
-
             enum class sync_request_type_t
             {
                 write8,
@@ -32,53 +34,44 @@ namespace component
             }sync_request_t;
 
             std::queue<sync_request_t> sync_request_q;
+            std::vector<slave_info_t> slave_info_list;
 
-        private:
-            bool check(uint32_t addr, uint32_t access_size)
+            int find_slave_info(uint32_t addr)
             {
-                if(!test_mode)
+                for(auto i = 0;i < slave_info_list.size();i++)
                 {
-                    assert(!(addr & (access_size - 1)));//align check
-                    assert(addr >= base);//boundary check
-                    assert((addr - base) < size);//boundary check
-                    assert((size - (addr - base)) >= access_size);//boundary check
-                }
-                else
-                {
-                    if(addr & (access_size - 1))
+                    if((addr >= slave_info_list[i].base) && (addr < (slave_info_list[i].base + slave_info_list[i].size)))
                     {
-                        has_error = true;
-                    }
-                    else if(!(addr >= base))
-                    {
-                        has_error = true;
-                    }
-                    else if(!((addr - base) < size))
-                    {
-                        has_error = true;
-                    }
-                    else if(!((size - (addr - base)) >= access_size))
-                    {
-                        has_error = true;
+                        return i;
                     }
                 }
 
-                return !has_error;
+                return -1;
+            }
+
+            bool check_addr_override(uint32_t base, uint32_t size)
+            {
+                for(auto i = 0;i < slave_info_list.size();i++)
+                {
+                    if(((base >= slave_info_list[i].base) && (base < (slave_info_list[i].base + slave_info_list[i].size))) || ((base < slave_info_list[i].base) && ((base + size) > slave_info_list[i].base)))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
 
         public:
-            memory(uint32_t base, uint32_t size)
+            void map(uint32_t base, uint32_t size, std::shared_ptr<slave_base> slave)
             {
-                mem = new uint8_t[size]();
-                this -> base = base;
-                this -> size = size;
-                test_mode = false;
-                has_error = false;
-            }
-
-            ~memory()
-            {
-                delete[] mem;
+                assert(!check_addr_override(base, size));
+                slave_info_t slave_info;
+                slave_info.base = base;
+                slave_info.size = size;
+                slave_info.slave = slave;
+                slave->init(size);
+                slave_info_list.push_back(slave_info);
             }
 
             virtual void reset()
@@ -90,33 +83,12 @@ namespace component
             {
                 return !(addr & (access_size - 1));
             }
-
-            bool check_boundary(uint32_t addr, uint32_t access_size)
-            {
-                return (addr >= base) && ((addr - base) < size) && ((size - (addr - base)) >= access_size);
-            }
-
-            void entry_test_mode()
-            {
-                test_mode = true;
-                has_error = false;
-            }
-
-            bool get_error()
-            {
-                return has_error;
-            }
-
-            void clear_error()
-            {
-                has_error = false;
-            }
-
+            
             void write8(uint32_t addr, uint8_t value)
             {
-                if(check(addr, 1))
+                if(auto slave_index = find_slave_info(addr);slave_index >= 0)
                 {
-                    mem[addr - this->base] = value;
+                    slave_info_list[slave_index].slave->write8(addr - slave_info_list[slave_index].base, value);
                 }
             }
 
@@ -132,9 +104,9 @@ namespace component
 
             void write16(uint32_t addr, uint16_t value)
             {
-                if(check(addr, 2))
+                if(auto slave_index = find_slave_info(addr);slave_index >= 0)
                 {
-                    *(uint16_t *)(mem + (addr - this->base)) = value;
+                    slave_info_list[slave_index].slave->write16(addr - slave_info_list[slave_index].base, value);
                 }
             }
 
@@ -150,9 +122,9 @@ namespace component
 
             void write32(uint32_t addr, uint32_t value)
             {
-                if(check(addr, 4))
+                if(auto slave_index = find_slave_info(addr);slave_index >= 0)
                 {
-                    *(uint32_t *)(mem + (addr - this->base)) = value;
+                    slave_info_list[slave_index].slave->write32(addr - slave_info_list[slave_index].base, value);
                 }
             }
 
@@ -168,31 +140,31 @@ namespace component
 
             uint8_t read8(uint32_t addr)
             {
-                if(check(addr, 1))
+                if(auto slave_index = find_slave_info(addr);slave_index >= 0)
                 {
-                    return mem[addr - this->base];
+                    return slave_info_list[slave_index].slave->read8(addr - slave_info_list[slave_index].base);
                 }
-
+                
                 return 0;
             }
 
             uint16_t read16(uint32_t addr)
             {
-                if(check(addr, 2))
+                if(auto slave_index = find_slave_info(addr);slave_index >= 0)
                 {
-                    return *(uint16_t *)(mem + (addr - this->base));
+                    return slave_info_list[slave_index].slave->read16(addr - slave_info_list[slave_index].base);
                 }
-
+                
                 return 0;
             }
 
             uint32_t read32(uint32_t addr)
             {
-                if(check(addr, 4))
+                if(auto slave_index = find_slave_info(addr);slave_index >= 0)
                 {
-                    return *(uint32_t *)(mem + (addr - this->base));
+                    return slave_info_list[slave_index].slave->read32(addr - slave_info_list[slave_index].base);
                 }
-
+                
                 return 0;
             }
 
@@ -222,4 +194,4 @@ namespace component
                 }
             }
     };
-}*/
+}

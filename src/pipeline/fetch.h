@@ -1,7 +1,7 @@
 #pragma once
 #include "common.h"
 #include "../component/fifo.h"
-#include "../component/memory.h"
+#include "../component/bus.h"
 #include "../component/checkpoint_buffer.h"
 #include "../component/branch_predictor.h"
 #include "../component/store_buffer.h"
@@ -16,7 +16,7 @@ namespace pipeline
     class fetch : public if_print_t, public if_reset_t
     {
         private:
-            component::memory *memory;
+            component::bus *bus;
             component::fifo<fetch_decode_pack_t> *fetch_decode_fifo;
             component::checkpoint_buffer *checkpoint_buffer;
             component::branch_predictor *branch_predictor;
@@ -26,7 +26,7 @@ namespace pipeline
             bool jump_wait;
 
         public:
-            fetch(component::memory *memory, component::fifo<fetch_decode_pack_t> *fetch_decode_fifo, component::checkpoint_buffer *checkpoint_buffer, component::branch_predictor *branch_predictor, component::store_buffer *store_buffer, uint32_t init_pc);
+            fetch(component::bus *bus, component::fifo<fetch_decode_pack_t> *fetch_decode_fifo, component::checkpoint_buffer *checkpoint_buffer, component::branch_predictor *branch_predictor, component::store_buffer *store_buffer, uint32_t init_pc);
             virtual void reset();
             void run(decode_feedback_pack_t decode_feedback_pack, rename_feedback_pack_t rename_feedback_pack, pipeline::execute::bru_feedback_pack_t bru_feedback_pack, commit_feedback_pack_t commit_feedback_pack);
             uint32_t get_pc();
