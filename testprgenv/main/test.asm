@@ -16,29 +16,30 @@ _start:
 80000008:	0012a023          	sw	ra,0(t0) # 20000000 <STACK_SIZE+0x1fffc000>
     la x2, exception_entry
 8000000c:	00000117          	auipc	sp,0x0
-80000010:	01c10113          	addi	sp,sp,28 # 80000028 <exception_entry>
+80000010:	01810113          	addi	sp,sp,24 # 80000024 <exception_entry>
     csrw mtvec, x2
 80000014:	30511073          	csrw	mtvec,sp
     li x6, 0x8
 80000018:	00800313          	li	t1,8
-    csrw mie, x6
-8000001c:	30431073          	csrw	mie,t1
-    csrsi mstatus, 0x8
-80000020:	30046073          	csrsi	mstatus,8
+    //csrw mie, x6
+    //csrsi mstatus, 0x8
+    csrr x2, 0x123
+8000001c:	12302173          	csrr	sp,0x123
 
-80000024 <loop>:
+80000020 <loop>:
 
 loop:
     j loop
-80000024:	0000006f          	j	80000024 <loop>
+80000020:	0000006f          	j	80000020 <loop>
 
-80000028 <exception_entry>:
+80000024 <exception_entry>:
 
 exception_entry:
-    li x1, 100
-80000028:	06400093          	li	ra,100
+    //li x1, 100
+    mv x1, x2
+80000024:	00010093          	mv	ra,sp
     mret
-8000002c:	30200073          	mret
+80000028:	30200073          	mret
 
 Disassembly of section .osdebug:
 
@@ -73,7 +74,7 @@ Disassembly of section .riscv.attributes:
 Disassembly of section .debug_line:
 
 00000000 <.debug_line>:
-   0:	0074                	addi	a3,sp,12
+   0:	006e                	c.slli	zero,0x1b
    2:	0000                	unimp
    4:	00240003          	lb	zero,2(s0)
    8:	0000                	unimp
@@ -106,19 +107,17 @@ Disassembly of section .debug_line:
   4c:	0100                	addi	s0,sp,128
   4e:	04090103          	lb	sp,64(s2)
   52:	0100                	addi	s0,sp,128
-  54:	04090103          	lb	sp,64(s2)
+  54:	04090303          	lb	t1,64(s2)
   58:	0100                	addi	s0,sp,128
-  5a:	04090103          	lb	sp,64(s2)
+  5a:	04090303          	lb	t1,64(s2)
   5e:	0100                	addi	s0,sp,128
-  60:	04090303          	lb	t1,64(s2)
+  60:	04090403          	lb	s0,64(s2)
   64:	0100                	addi	s0,sp,128
-  66:	04090303          	lb	t1,64(s2)
+  66:	04090103          	lb	sp,64(s2)
   6a:	0100                	addi	s0,sp,128
-  6c:	04090103          	lb	sp,64(s2)
-  70:	0100                	addi	s0,sp,128
-  72:	0409                	addi	s0,s0,2
-  74:	0000                	unimp
-  76:	0101                	addi	sp,sp,0
+  6c:	0409                	addi	s0,s0,2
+  6e:	0000                	unimp
+  70:	0101                	addi	sp,sp,0
 
 Disassembly of section .debug_info:
 
@@ -133,7 +132,7 @@ Disassembly of section .debug_info:
    e:	0000                	unimp
   10:	0000                	unimp
   12:	8000                	0x8000
-  14:	0030                	addi	a2,sp,8
+  14:	002c                	addi	a1,sp,8
   16:	8000                	0x8000
   18:	0000                	unimp
   1a:	0000                	unimp
@@ -170,7 +169,7 @@ Disassembly of section .debug_aranges:
    e:	0000                	unimp
   10:	0000                	unimp
   12:	8000                	0x8000
-  14:	0030                	addi	a2,sp,8
+  14:	002c                	addi	a1,sp,8
 	...
 
 Disassembly of section .debug_str:
