@@ -241,7 +241,7 @@ namespace pipeline
 				phy_regfile->write_sync(t_rob_item.new_phy_reg_id, default_phy_reg_item, false);
 			}
 
-			if(rob->get_prev_id(this->restore_rob_item_id, &this->restore_rob_item_id) && (this->restore_rob_item_id != this->rob_item_id))
+			if((this->restore_rob_item_id != this->rob_item_id) && rob->get_prev_id(this->restore_rob_item_id, &this->restore_rob_item_id))
 			{
 				feedback_pack.enable = true;
 				feedback_pack.flush = true;
@@ -272,7 +272,7 @@ namespace pipeline
 				phy_regfile->write_sync(t_rob_item.new_phy_reg_id, default_phy_reg_item, false);
 			}
 
-			if(rob->get_prev_id(this->restore_rob_item_id, &this->restore_rob_item_id) && (this->restore_rob_item_id != this->rob_item_id))
+			if((this->restore_rob_item_id != this->rob_item_id) && rob->get_prev_id(this->restore_rob_item_id, &this->restore_rob_item_id))
 			{
 				feedback_pack.enable = true;
 				feedback_pack.flush = true;

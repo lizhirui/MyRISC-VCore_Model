@@ -285,8 +285,11 @@ static void telnet_init()
     server_thread.detach();
 }
 
+static bool need_to_trigger = true;
+
 static void reset()
 {
+    need_to_trigger = true;
     fetch_decode_fifo.reset();
     decode_rename_fifo.reset();
     rename_readreg_port.reset();
@@ -410,10 +413,11 @@ static void init()
     bus.map(0x80000000, 1048576, std::make_shared<component::slave::memory>());
     bus.map(0x20000000, 0x10000, std::shared_ptr<component::slave::clint>(&clint));
 
-    std::ifstream binfile("../../../testprgenv/main/test.bin", std::ios::binary);
+    //std::ifstream binfile("../../../testprgenv/main/test.bin", std::ios::binary);
     //std::ifstream binfile("../../../testfile.bin", std::ios::binary);
     //std::ifstream binfile("../../../coremark_10.bin", std::ios::binary);
     //std::ifstream binfile("../../../dhrystone.bin", std::ios::binary);
+    std::ifstream binfile("../../../rt-thread/bsp/MyRISCVCore/MyRISCVCore/rtthread.bin", std::ios::binary);
 
     if(!binfile || !binfile.is_open())
     {
@@ -909,8 +913,6 @@ uint64_t get_cpu_clock_cycle()
     return cpu_clock_cycle;
 }
 
-static bool need_to_trigger = true;
-
 static void run()
 {
     //std::ofstream trace_file("no_branch.txt");
@@ -924,7 +926,7 @@ static void run()
 
     while(1)
     {
-        /*if((cpu_clock_cycle >= 232140) && need_to_trigger)
+        /*if((cpu_clock_cycle >= 72075) && need_to_trigger)
         {
             step_state = true;
             wait_commit = false;
