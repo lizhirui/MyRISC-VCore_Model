@@ -31,6 +31,16 @@ namespace component
 				this->value = init_value;
 			}
 
+			void load(uint32_t value)
+			{
+				this->value = value;
+			}
+
+			uint32_t get_value()
+			{
+				return this->value;
+			}
+
 			std::string get_name()
 			{
 				return this->name;

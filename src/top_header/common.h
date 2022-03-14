@@ -82,6 +82,22 @@ enum class riscv_exception_t
     store_amo_page_fault,
 };
 
+enum class riscv_interrupt_t
+{
+    user_software = 0,
+    supervisor_software,
+    reserved_software,
+    machine_software,
+    user_timer,
+    supervisor_timer,
+    reserved_timer,
+    machine_timer,
+    user_external,
+    supervisor_external,
+    reserved_external,
+    machine_external
+};
+
 inline bool is_align(uint32_t x, uint32_t access_size)
 {
     return !(x & (access_size - 1));

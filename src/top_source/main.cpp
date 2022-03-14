@@ -12,6 +12,8 @@
 #include "../component/store_buffer.h"
 #include "../component/checkpoint_buffer.h"
 #include "../component/branch_predictor.h"
+#include "../component/interrupt_interface.h"
+#include "../component/slave/clint.h"
 #include "../pipeline/fetch.h"
 #include "../pipeline/fetch_decode.h"
 #include "../pipeline/decode.h"
@@ -157,6 +159,8 @@ static component::csrfile csr_file;
 static component::store_buffer store_buffer(STORE_BUFFER_SIZE, &bus);
 static component::checkpoint_buffer checkpoint_buffer(CHECKPOINT_BUFFER_SIZE);
 static component::branch_predictor branch_predictor;
+static component::interrupt_interface interrupt_interface(&csr_file);
+static component::slave::clint clint(&interrupt_interface);
 
 static pipeline::fetch fetch_stage(&bus, &fetch_decode_fifo, &checkpoint_buffer, &branch_predictor, &store_buffer, 0x80000000);
 static pipeline::decode decode_stage(&fetch_decode_fifo, &decode_rename_fifo);
@@ -170,7 +174,7 @@ static pipeline::execute::div *execute_div_stage[DIV_UNIT_NUM];
 static pipeline::execute::lsu *execute_lsu_stage[LSU_UNIT_NUM];
 static pipeline::execute::mul *execute_mul_stage[MUL_UNIT_NUM];
 static pipeline::wb wb_stage(alu_wb_port, bru_wb_port, csr_wb_port, div_wb_port, lsu_wb_port, mul_wb_port, &wb_commit_port, &phy_regfile, &checkpoint_buffer);
-static pipeline::commit commit_stage(&wb_commit_port, &rat, &rob, &csr_file, &phy_regfile, &checkpoint_buffer, &branch_predictor);
+static pipeline::commit commit_stage(&wb_commit_port, &rat, &rob, &csr_file, &phy_regfile, &checkpoint_buffer, &branch_predictor, &interrupt_interface);
 
 static pipeline::decode_feedback_pack_t t_decode_feedback_pack;
 static pipeline::rename_feedback_pack_t t_rename_feedback_pack;
@@ -370,6 +374,9 @@ static void reset()
     store_buffer.reset();
     checkpoint_buffer.reset();
     branch_predictor.reset();
+    interrupt_interface.reset();
+    clint.reset();
+
     fetch_stage.reset();
     rename_stage.reset();
     issue_stage.reset();
@@ -401,10 +408,11 @@ static void init()
     telnet_init();
 
     bus.map(0x80000000, 1048576, std::make_shared<component::slave::memory>());
+    bus.map(0x20000000, 0x10000, std::shared_ptr<component::slave::clint>(&clint));
 
-    //std::ifstream binfile("../../../testprgenv/main/test.bin", std::ios::binary);
+    std::ifstream binfile("../../../testprgenv/main/test.bin", std::ios::binary);
     //std::ifstream binfile("../../../testfile.bin", std::ios::binary);
-    std::ifstream binfile("../../../coremark_10.bin", std::ios::binary);
+    //std::ifstream binfile("../../../coremark_10.bin", std::ios::binary);
     //std::ifstream binfile("../../../dhrystone.bin", std::ios::binary);
 
     if(!binfile || !binfile.is_open())
@@ -1059,6 +1067,8 @@ static void run()
         t_rename_feedback_pack = rename_stage.run(t_issue_feedback_pack, t_commit_feedback_pack);
         t_decode_feedback_pack = decode_stage.run(t_commit_feedback_pack);
         fetch_stage.run(t_decode_feedback_pack, t_rename_feedback_pack, t_bru_feedback_pack, t_commit_feedback_pack);
+        interrupt_interface.run();
+        clint.run();
         rat.sync();
         rob.sync();
         phy_regfile.sync();
@@ -1068,6 +1078,7 @@ static void run()
         store_buffer.sync();
         checkpoint_buffer.sync();
         branch_predictor.sync();
+        interrupt_interface.sync();
         cpu_clock_cycle++;
         csr_file.write_sys(CSR_MCYCLE, (uint32_t)(cpu_clock_cycle & 0xffffffffu));
         csr_file.write_sys(CSR_MCYCLEH, (uint32_t)(cpu_clock_cycle >> 32));

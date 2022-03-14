@@ -23,6 +23,10 @@ namespace component
         bool bru_op;
         bool bru_jump;
         uint32_t bru_next_pc;
+        bool is_mret;
+        bool is_csr;
+        uint32_t csr_addr;
+        uint32_t csr_value;
 
         virtual void print(std::string indent)
         {
@@ -59,6 +63,10 @@ namespace component
             ret["bru_op"] = bru_op;
             ret["bru_jump"] = bru_jump;
             ret["bru_next_pc"] = bru_next_pc;
+            ret["is_mret"] = is_mret;
+            ret["is_csr"] = is_csr;
+            ret["csr_addr"] = csr_addr;
+            ret["csr_value"] = csr_value;
             return ret;
         }
     }rob_item_t;

@@ -80,6 +80,11 @@ namespace component
                 _init();
             }
 
+            virtual void _reset()
+            {
+            
+            }
+
         public:
             slave_base()
             {
@@ -90,7 +95,7 @@ namespace component
 
             virtual void reset()
             {
-                
+                _reset();
             }
 
             bool check_align(uint32_t addr, uint32_t access_size)
