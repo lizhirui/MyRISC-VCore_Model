@@ -193,19 +193,25 @@ std::atomic<bool> program_stop = false;
 
 static asio::io_context tcp_charfifo_thread_ioc;
 static boost::lockfree::spsc_queue<char, boost::lockfree::capacity<1024>> charfifo_send_fifo;
+static boost::lockfree::spsc_queue<char, boost::lockfree::capacity<1024>> charfifo_rev_fifo;
 std::atomic<bool> charfifo_thread_stopped = false;
 std::atomic<bool> charfifo_recv_thread_stop = false;
 std::atomic<bool> charfifo_recv_thread_stopped = false;
 
 void tcp_charfifo_recv_thread_receive_entry(asio::ip::tcp::socket &soc)
 {
-    char buf = 0;
+    char buf[1024];
 
     while(!charfifo_recv_thread_stop)
     {
         try
         {
-            soc.receive(asio::buffer(&buf, sizeof(buf)));
+            auto length = soc.receive(asio::buffer(&buf, sizeof(buf)));
+
+            for(auto i = 0;i < length;i++)
+            {
+                while(!charfifo_rev_fifo.push(buf[i]));
+            }
         }
         catch(const std::exception &ex)
         {
@@ -415,9 +421,9 @@ static void init()
 
     //std::ifstream binfile("../../../testprgenv/main/test.bin", std::ios::binary);
     //std::ifstream binfile("../../../testfile.bin", std::ios::binary);
-    std::ifstream binfile("../../../coremark_10.bin", std::ios::binary);
+    //std::ifstream binfile("../../../coremark_10.bin", std::ios::binary);
     //std::ifstream binfile("../../../dhrystone.bin", std::ios::binary);
-    //std::ifstream binfile("../../../rt-thread/bsp/MyRISCVCore/MyRISCVCore/rtthread.bin", std::ios::binary);
+    std::ifstream binfile("../../../rt-thread/bsp/MyRISCVCore/MyRISCVCore/rtthread.bin", std::ios::binary);
 
     if(!binfile || !binfile.is_open())
     {
@@ -568,7 +574,7 @@ static void init()
     csr_file.map(CSR_MCAUSE, false, std::make_shared<component::csr::mcause>());
     csr_file.map(CSR_MTVAL, false, std::make_shared<component::csr::mtval>());
     csr_file.map(CSR_MIP, false, std::make_shared<component::csr::mip>());
-    csr_file.map(CSR_CHARFIFO, false, std::make_shared<component::csr::charfifo>(&charfifo_send_fifo));
+    csr_file.map(CSR_CHARFIFO, false, std::make_shared<component::csr::charfifo>(&charfifo_send_fifo, &charfifo_rev_fifo));
     csr_file.map(CSR_FINISH, false, std::make_shared<component::csr::finish>());
     csr_file.map(CSR_MCYCLE, false, std::make_shared<component::csr::mcycle>());
     csr_file.map(CSR_MINSTRET, false, std::make_shared<component::csr::minstret>());

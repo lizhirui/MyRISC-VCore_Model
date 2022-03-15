@@ -23,7 +23,8 @@ struct myriscvcore_uart_config
     rt_uint32_t baud_rate;
 };
 
-void send_char(char ch);
+void send_char(uint32_t ch);
+uint32_t rev_char();
 
 static const struct myriscvcore_uart_config uart_config[] = {{UARTDBG_BASE,115200}};
 static volatile struct myriscvcore_uart_device uart_device[get_array_length(uart_config)];
@@ -71,6 +72,14 @@ static int myriscvcore_putc(struct myriscvcore_uart_device *serial,char ch)
 
 static int myriscvcore_getc(struct myriscvcore_uart_device *serial)
 {
+    uint32_t ret = rev_char();
+
+    if(ret & 0x80000000)
+    {
+        send_char(0x80000000);
+        return ret & 0xff;
+    }
+
     return -1;
 }
 
@@ -87,10 +96,12 @@ static void uart_rx(void *param)
     {
         if(serial -> isr_enabled)
         {
-            /*if(!(serial -> uart_mem -> state & REG_STATE_RXEMPTY))
+            uint32_t ret = rev_char();
+
+            if(ret & 0x80000000)
             {
                 rt_hw_serial_isr((struct rt_serial_device *)serial,RT_SERIAL_EVENT_RX_IND);
-            }*/
+            }
         }
 
         rt_thread_mdelay(10);
@@ -99,14 +110,14 @@ static void uart_rx(void *param)
 
 void rt_hw_uart_start_rx_thread()
 {
-    /*int index;
+    int index;
 
     for(index = 0;index < get_array_length(uart_device);index++)
     {
         rt_thread_t th;
         RT_ASSERT((th = rt_thread_create("uartrx_dbg",uart_rx,(void *)&uart_device[index],8192,8,20)) != RT_NULL);
         RT_ASSERT(rt_thread_startup(th) == RT_EOK);
-    }*/
+    }
 }
 
 void rt_hw_uart_init(void)

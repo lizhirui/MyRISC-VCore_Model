@@ -9,7 +9,7 @@ void thread_a_entry(void *arg)
     for(i = 0;i < 10;i++)
     {
         rt_kprintf("[%d]Test rt__kprintf\n",i);
-        rt_thread_mdelay(1000);
+        rt_thread_mdelay(50);
     }
 }
 

@@ -56,7 +56,7 @@ namespace component
 				this->value = filter(value);
 			}
 
-			uint32_t read()
+			virtual uint32_t read()
 			{
 				return this->value;
 			}
