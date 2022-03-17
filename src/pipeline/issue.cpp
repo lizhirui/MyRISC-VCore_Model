@@ -683,6 +683,8 @@ namespace pipeline
             }
 
             issue_q.flush();
+            this->busy = false;
+            this->is_inst_waiting = false;
         }
 
         return feedback_pack;

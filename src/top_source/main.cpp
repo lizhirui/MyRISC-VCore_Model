@@ -210,6 +210,11 @@ void tcp_charfifo_recv_thread_receive_entry(asio::ip::tcp::socket &soc)
 
             for(auto i = 0;i < length;i++)
             {
+                if(buf[i] == '\r')
+                {
+                    continue;
+                }
+
                 while(!charfifo_rev_fifo.push(buf[i]));
             }
         }
@@ -421,9 +426,9 @@ static void init()
 
     //std::ifstream binfile("../../../testprgenv/main/test.bin", std::ios::binary);
     //std::ifstream binfile("../../../testfile.bin", std::ios::binary);
-    //std::ifstream binfile("../../../coremark_10.bin", std::ios::binary);
+    std::ifstream binfile("../../../coremark_10.bin", std::ios::binary);
     //std::ifstream binfile("../../../dhrystone.bin", std::ios::binary);
-    std::ifstream binfile("../../../rt-thread/bsp/MyRISCVCore/MyRISCVCore/rtthread.bin", std::ios::binary);
+    //std::ifstream binfile("../../../rt-thread/bsp/MyRISCVCore/MyRISCVCore/rtthread.bin", std::ios::binary);
 
     if(!binfile || !binfile.is_open())
     {
