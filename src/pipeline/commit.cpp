@@ -92,6 +92,11 @@ namespace pipeline
 								rob->set_committed(true);
 								rob->add_commit_num(1);
 
+								if(rob_item.csr_newvalue_valid)
+								{
+									csr_file->write_sync(rob_item.csr_addr, rob_item.csr_newvalue);
+								}
+
 								//branch handle
 								if(rob_item.bru_op)
 								{
@@ -217,6 +222,8 @@ namespace pipeline
 						rob_item.bru_jump = rev_pack.op_info[i].bru_jump;
 						rob_item.bru_next_pc = rev_pack.op_info[i].bru_next_pc;
 						rob_item.csr_value = rev_pack.op_info[i].rd_value;
+						rob_item.csr_newvalue = rev_pack.op_info[i].csr_newvalue;
+						rob_item.csr_newvalue_valid = rev_pack.op_info[i].csr_newvalue_valid;
 						rob->set_item_sync(rev_pack.op_info[i].rob_id, rob_item);
 
 						/*if(rev_pack.op_info[i].checkpoint_id_valid)

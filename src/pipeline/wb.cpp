@@ -103,6 +103,8 @@ namespace pipeline
                 send_pack.op_info[i].rd_value = rev_pack.rd_value;
 
                 send_pack.op_info[i].csr = rev_pack.csr;
+                send_pack.op_info[i].csr_newvalue = rev_pack.csr_newvalue;
+                send_pack.op_info[i].csr_newvalue_valid = rev_pack.csr_newvalue_valid;
                 send_pack.op_info[i].op = rev_pack.op;
                 send_pack.op_info[i].op_unit = rev_pack.op_unit;
                 memcpy(&send_pack.op_info[i].sub_op, &rev_pack.sub_op, sizeof(rev_pack.sub_op));

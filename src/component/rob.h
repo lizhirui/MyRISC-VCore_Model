@@ -27,6 +27,8 @@ namespace component
         bool is_csr;
         uint32_t csr_addr;
         uint32_t csr_value;
+        uint32_t csr_newvalue;
+        bool csr_newvalue_valid;
 
         virtual void print(std::string indent)
         {

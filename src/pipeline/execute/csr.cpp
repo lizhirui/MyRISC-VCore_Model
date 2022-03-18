@@ -10,17 +10,11 @@ namespace pipeline
             this->issue_csr_fifo = issue_csr_fifo;
             this->csr_wb_port = csr_wb_port;
             this->csr_file = csr_file;
-            this->cur_state = state_t::idle;
-            this->csr_value = 0;
-            this->csr_succ = true;
             memset(&this->rev_pack, 0, sizeof(this->rev_pack));
         }
 
         void csr::reset()
         {
-            this->cur_state = state_t::idle;
-            this->csr_value = 0;
-            this->csr_succ = true;
             memset(&this->rev_pack, 0, sizeof(this->rev_pack));
         }
 
@@ -28,6 +22,7 @@ namespace pipeline
         {
             execute_wb_pack_t send_pack;
             execute_feedback_channel_t feedback_pack;
+            uint32_t csr_value = 0;
 
             feedback_pack.enable = false;
 
@@ -35,66 +30,9 @@ namespace pipeline
 
             if(!(commit_feedback_pack.enable && commit_feedback_pack.flush))
             {
-                if(this->cur_state == state_t::idle)
+                if(!issue_csr_fifo->is_empty())
                 {
-                    if(!issue_csr_fifo->is_empty())
-                    {
-                        assert(issue_csr_fifo->pop(&this->rev_pack));
-
-                        if(this->rev_pack.enable)
-                        {
-                            if(this->rev_pack.valid)
-                            {
-                                this->csr_succ = csr_file->read(this->rev_pack.csr, &this->csr_value);
-                                this->cur_state = state_t::calculate;
-                            }
-                            else
-                            {
-                                send_pack.enable = rev_pack.enable;
-                                send_pack.value = rev_pack.value;
-                                send_pack.valid = rev_pack.valid;
-                                send_pack.rob_id = rev_pack.rob_id;
-                                send_pack.pc = rev_pack.pc;
-                                send_pack.imm = rev_pack.imm;
-                                send_pack.has_exception = rev_pack.has_exception;
-                                send_pack.exception_id = rev_pack.exception_id;
-                                send_pack.exception_value = rev_pack.exception_value;
-
-                                send_pack.predicted = rev_pack.predicted;
-                                send_pack.predicted_jump = rev_pack.predicted_jump;
-                                send_pack.predicted_next_pc = rev_pack.predicted_next_pc;
-                                send_pack.checkpoint_id_valid = rev_pack.checkpoint_id_valid;
-                                send_pack.checkpoint_id = rev_pack.checkpoint_id;
-
-                                send_pack.rs1 = rev_pack.rs1;
-                                send_pack.arg1_src = rev_pack.arg1_src;
-                                send_pack.rs1_need_map = rev_pack.rs1_need_map;
-                                send_pack.rs1_phy = rev_pack.rs1_phy;
-                                send_pack.src1_value = rev_pack.src1_value;
-                                send_pack.src1_loaded = rev_pack.src1_loaded;
-
-                                send_pack.rs2 = rev_pack.rs2;
-                                send_pack.arg2_src = rev_pack.arg2_src;
-                                send_pack.rs2_need_map = rev_pack.rs2_need_map;
-                                send_pack.rs2_phy = rev_pack.rs2_phy;
-                                send_pack.src2_value = rev_pack.src2_value;
-                                send_pack.src2_loaded = rev_pack.src2_loaded;
-
-                                send_pack.rd = rev_pack.rd;
-                                send_pack.rd_enable = rev_pack.rd_enable;
-                                send_pack.need_rename = rev_pack.need_rename;
-                                send_pack.rd_phy = rev_pack.rd_phy;
-
-                                send_pack.csr = rev_pack.csr;
-                                send_pack.op = rev_pack.op;
-                                send_pack.op_unit = rev_pack.op_unit;
-                                memcpy(&send_pack.sub_op, &rev_pack.sub_op, sizeof(rev_pack.sub_op));
-                            }
-                        }
-                    }
-                }
-                else
-                {
+                    assert(issue_csr_fifo->pop(&this->rev_pack));
                     send_pack.enable = rev_pack.enable;
                     send_pack.value = rev_pack.value;
                     send_pack.valid = rev_pack.valid;
@@ -129,56 +67,100 @@ namespace pipeline
                     send_pack.op_unit = rev_pack.op_unit;
                     memcpy(&send_pack.sub_op, &rev_pack.sub_op, sizeof(rev_pack.sub_op));
 
-                    if(!csr_succ)
+                    if(this->rev_pack.enable)
                     {
-                        send_pack.has_exception = true;
-                        send_pack.exception_id = riscv_exception_t::illegal_instruction;
-                        //send_pack.exception_value = rev_pack.value;
-                        send_pack.exception_value = 0;
-                    }
-                    else
-                    {
-                        send_pack.rd_value = csr_value;
-
-                        if(!((send_pack.arg1_src == arg_src_t::reg) && (!send_pack.rs1_need_map)))
+                        if(this->rev_pack.valid)
                         {
-                            switch(rev_pack.sub_op.csr_op)
-                            {
-                                case csr_op_t::csrrc:
-                                    csr_value = csr_value & ~(rev_pack.src1_value);
-                                    break;
-
-                                case csr_op_t::csrrs:
-                                    csr_value = csr_value | rev_pack.src1_value;
-                                    break;
-
-                                case csr_op_t::csrrw:
-                                    csr_value = rev_pack.src1_value;
-                                    break;
-                            }
-
-                            if(!csr_file->write_check(rev_pack.csr, csr_value))
+                            if(!csr_file->read(this->rev_pack.csr, &csr_value))
                             {
                                 send_pack.has_exception = true;
                                 send_pack.exception_id = riscv_exception_t::illegal_instruction;
-                                send_pack.exception_value = rev_pack.value;
+                                send_pack.exception_value = 0;
                             }
                             else
                             {
-                                csr_file->write_sync(rev_pack.csr, csr_value);
+                                send_pack.rd_value = csr_value;
+                                send_pack.csr_newvalue_valid = false;
+
+                                if(!((send_pack.arg1_src == arg_src_t::reg) && (!send_pack.rs1_need_map)))
+                                {
+                                    switch(rev_pack.sub_op.csr_op)
+                                    {
+                                        case csr_op_t::csrrc:
+                                            csr_value = csr_value & ~(rev_pack.src1_value);
+                                            break;
+
+                                        case csr_op_t::csrrs:
+                                            csr_value = csr_value | rev_pack.src1_value;
+                                            break;
+
+                                        case csr_op_t::csrrw:
+                                            csr_value = rev_pack.src1_value;
+                                            break;
+                                    }
+
+                                    if(!csr_file->write_check(rev_pack.csr, csr_value))
+                                    {
+                                        send_pack.has_exception = true;
+                                        send_pack.exception_id = riscv_exception_t::illegal_instruction;
+                                        send_pack.exception_value = rev_pack.value;
+                                    }
+                                    else
+                                    {
+                                        send_pack.csr_newvalue = csr_value;
+                                        send_pack.csr_newvalue_valid = true;
+                                    }
+                                }
                             }
                         }
-                    }
+                        else
+                        {
+                            send_pack.enable = rev_pack.enable;
+                            send_pack.value = rev_pack.value;
+                            send_pack.valid = rev_pack.valid;
+                            send_pack.rob_id = rev_pack.rob_id;
+                            send_pack.pc = rev_pack.pc;
+                            send_pack.imm = rev_pack.imm;
+                            send_pack.has_exception = rev_pack.has_exception;
+                            send_pack.exception_id = rev_pack.exception_id;
+                            send_pack.exception_value = rev_pack.exception_value;
 
-                    feedback_pack.enable = send_pack.enable && send_pack.valid && send_pack.rd_enable && send_pack.need_rename;
-                    feedback_pack.phy_id = send_pack.rd_phy;
-                    feedback_pack.value = send_pack.rd_value;
-                    cur_state = state_t::idle;
+                            send_pack.predicted = rev_pack.predicted;
+                            send_pack.predicted_jump = rev_pack.predicted_jump;
+                            send_pack.predicted_next_pc = rev_pack.predicted_next_pc;
+                            send_pack.checkpoint_id_valid = rev_pack.checkpoint_id_valid;
+                            send_pack.checkpoint_id = rev_pack.checkpoint_id;
+
+                            send_pack.rs1 = rev_pack.rs1;
+                            send_pack.arg1_src = rev_pack.arg1_src;
+                            send_pack.rs1_need_map = rev_pack.rs1_need_map;
+                            send_pack.rs1_phy = rev_pack.rs1_phy;
+                            send_pack.src1_value = rev_pack.src1_value;
+                            send_pack.src1_loaded = rev_pack.src1_loaded;
+
+                            send_pack.rs2 = rev_pack.rs2;
+                            send_pack.arg2_src = rev_pack.arg2_src;
+                            send_pack.rs2_need_map = rev_pack.rs2_need_map;
+                            send_pack.rs2_phy = rev_pack.rs2_phy;
+                            send_pack.src2_value = rev_pack.src2_value;
+                            send_pack.src2_loaded = rev_pack.src2_loaded;
+
+                            send_pack.rd = rev_pack.rd;
+                            send_pack.rd_enable = rev_pack.rd_enable;
+                            send_pack.need_rename = rev_pack.need_rename;
+                            send_pack.rd_phy = rev_pack.rd_phy;
+
+                            send_pack.csr = rev_pack.csr;
+                            send_pack.op = rev_pack.op;
+                            send_pack.op_unit = rev_pack.op_unit;
+                            memcpy(&send_pack.sub_op, &rev_pack.sub_op, sizeof(rev_pack.sub_op));
+                        }
+                    }
                 }
-            }
-            else
-            {
-                cur_state = state_t::idle;
+
+                feedback_pack.enable = send_pack.enable && send_pack.valid && send_pack.rd_enable && send_pack.need_rename;
+                feedback_pack.phy_id = send_pack.rd_phy;
+                feedback_pack.value = send_pack.rd_value;
             }
 
             csr_wb_port->set(send_pack);

@@ -47,6 +47,8 @@ namespace pipeline
         uint32_t rd_value;
 
         uint32_t csr;
+        uint32_t csr_newvalue;
+        bool csr_newvalue_valid;
         op_t op;
         op_unit_t op_unit;
         

@@ -18,16 +18,7 @@ namespace pipeline
                 component::fifo<issue_execute_pack_t> *issue_csr_fifo;
                 component::port<execute_wb_pack_t> *csr_wb_port;
                 component::csrfile *csr_file;
-
-                enum class state_t
-                {
-                    idle,
-                    calculate
-                };
-
-                state_t cur_state;
-                uint32_t csr_value;
-                bool csr_succ;
+                
                 issue_execute_pack_t rev_pack;
 
             public:

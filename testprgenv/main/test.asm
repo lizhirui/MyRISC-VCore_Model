@@ -21,8 +21,8 @@ _start:
 80000014:	30511073          	csrw	mtvec,sp
     li x6, 0x8
 80000018:	00800313          	li	t1,8
-    //csrw mie, x6
-    //csrsi mstatus, 0x8
+    /*csrw mie, x6
+    csrsi mstatus, 0x8*/
     csrr x2, 0x123
 8000001c:	12302173          	csrr	sp,0x123
 
