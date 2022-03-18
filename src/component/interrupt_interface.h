@@ -43,12 +43,12 @@ namespace component
                 mti_ack = false;
             }
 
-            bool get_cause(riscv_interrupt_t *cause, bool csr_feedback, uint32_t csr_addr, uint32_t csr_value)
+            bool get_cause(riscv_interrupt_t *cause)
             {
                 csr::mie mie;
                 csr::mstatus mstatus;
-                mie.load((csr_feedback && (csr_addr == CSR_MIE)) ? csr_value : csr_file->read_sys(CSR_MIE));
-                mstatus.load((csr_feedback && (csr_addr == CSR_MSTATUS)) ? csr_value : csr_file->read_sys(CSR_MSTATUS));
+                mie.load(csr_file->read_sys(CSR_MIE));
+                mstatus.load(csr_file->read_sys(CSR_MSTATUS));
 
                 if(!mstatus.get_mie())
                 {

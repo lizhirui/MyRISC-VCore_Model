@@ -48,7 +48,7 @@ namespace pipeline
 				auto first_id = this->rob_item_id;
 				this->rob_item = rob->get_item(this->rob_item_id);
 
-				if(interrupt_interface->get_cause(&interrupt_id, this->rob_item.is_csr, this->rob_item.csr_addr, this->rob_item.csr_value))
+				if(interrupt_interface->get_cause(&interrupt_id))
 				{
 					interrupt_pc = this->rob_item.pc;
 					assert(rob->get_tail_id(&this->restore_rob_item_id));
@@ -131,7 +131,7 @@ namespace pipeline
 											if(rob_item.old_phy_reg_id_valid)
 											{
 												rat->cp_release_map(cp, rob_item.old_phy_reg_id);
-												phy_regfile->cp_set_data_valid(cp, rob_item.old_phy_reg_id, false);
+												//phy_regfile->cp_set_data_valid(cp, rob_item.old_phy_reg_id, false);
 												//rat->cp_commit_map(cp, rob_item.new_phy_reg_id);
 											}
 
@@ -206,10 +206,7 @@ namespace pipeline
 					if(rev_pack.op_info[i].enable)
 					{
 						auto rob_item = rob->get_item(rev_pack.op_info[i].rob_id);
-						//rob_item.new_phy_reg_id = rev_pack.op_info[i].rd_phy;
 						rob_item.finish = true;
-						/*rob_item.pc = rev_pack.op_info[i].pc;
-						rob_item.inst_value = rev_pack.op_info[i].value;*/
 						rob_item.has_exception = rev_pack.op_info[i].has_exception;
 						rob_item.exception_id = rev_pack.op_info[i].exception_id;
 						rob_item.exception_value = rev_pack.op_info[i].exception_value;
@@ -221,17 +218,9 @@ namespace pipeline
 						rob_item.bru_op = rev_pack.op_info[i].op_unit == op_unit_t::bru;
 						rob_item.bru_jump = rev_pack.op_info[i].bru_jump;
 						rob_item.bru_next_pc = rev_pack.op_info[i].bru_next_pc;
-						rob_item.csr_value = rev_pack.op_info[i].rd_value;
 						rob_item.csr_newvalue = rev_pack.op_info[i].csr_newvalue;
 						rob_item.csr_newvalue_valid = rev_pack.op_info[i].csr_newvalue_valid;
 						rob->set_item_sync(rev_pack.op_info[i].rob_id, rob_item);
-
-						/*if(rev_pack.op_info[i].checkpoint_id_valid)
-						{
-							auto cp = checkpoint_buffer->get_item(rev_pack.op_info[i].checkpoint_id);
-							phy_regfile->save(cp);
-							checkpoint_buffer->set_item_sync(rev_pack.op_info[i].checkpoint_id, cp);
-						}*/
 					}
 				}
 			}
@@ -261,7 +250,7 @@ namespace pipeline
 				csr_file->write_sys_sync(CSR_MEPC, rob_item.pc);
 				csr_file->write_sys_sync(CSR_MTVAL, rob_item.exception_value);
 				csr_file->write_sys_sync(CSR_MCAUSE, static_cast<uint32_t>(rob_item.exception_id));
-				feedback_pack.exception_pc = (this->rob_item.is_csr && (this->rob_item.csr_addr == CSR_MTVEC)) ? this->rob_item.csr_value : csr_file->read_sys(CSR_MTVEC);
+				feedback_pack.exception_pc = csr_file->read_sys(CSR_MTVEC);
 				feedback_pack.flush = true;
 				cur_state = state_t::normal;
 				rob->set_committed(true);

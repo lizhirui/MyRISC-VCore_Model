@@ -24,9 +24,7 @@ namespace component
         bool bru_jump;
         uint32_t bru_next_pc;
         bool is_mret;
-        bool is_csr;
         uint32_t csr_addr;
-        uint32_t csr_value;
         uint32_t csr_newvalue;
         bool csr_newvalue_valid;
 
@@ -66,9 +64,9 @@ namespace component
             ret["bru_jump"] = bru_jump;
             ret["bru_next_pc"] = bru_next_pc;
             ret["is_mret"] = is_mret;
-            ret["is_csr"] = is_csr;
             ret["csr_addr"] = csr_addr;
-            ret["csr_value"] = csr_value;
+            ret["csr_newvalue"] = csr_newvalue;
+            ret["csr_newvalue_valid"] = csr_newvalue_valid;
             return ret;
         }
     }rob_item_t;

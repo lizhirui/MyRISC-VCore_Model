@@ -149,7 +149,6 @@ namespace pipeline
                                 rob_item[i].exception_id = rev_pack.exception_id;
                                 rob_item[i].exception_value = rev_pack.exception_value;
                                 rob_item[i].is_mret = rev_pack.op == op_t::mret;
-                                rob_item[i].is_csr = rev_pack.op_unit == op_unit_t::csr;
                                 rob_item[i].csr_addr = rev_pack.csr;
                                 //write to rob
                                 assert(rob->get_new_id(&send_pack.op_info[i].rob_id));
