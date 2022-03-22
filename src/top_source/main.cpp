@@ -166,7 +166,7 @@ static pipeline::fetch fetch_stage(&bus, &fetch_decode_fifo, &checkpoint_buffer,
 static pipeline::decode decode_stage(&fetch_decode_fifo, &decode_rename_fifo);
 static pipeline::rename rename_stage(&decode_rename_fifo, &rename_readreg_port, &rat, &rob, &checkpoint_buffer);
 static pipeline::readreg readreg_stage(&rename_readreg_port, &readreg_issue_port, &phy_regfile, &checkpoint_buffer, &rat);
-static pipeline::issue issue_stage(&readreg_issue_port, issue_alu_fifo, issue_bru_fifo, issue_csr_fifo, issue_div_fifo, issue_lsu_fifo, issue_mul_fifo, &phy_regfile, &store_buffer);
+static pipeline::issue issue_stage(&readreg_issue_port, issue_alu_fifo, issue_bru_fifo, issue_csr_fifo, issue_div_fifo, issue_lsu_fifo, issue_mul_fifo, &phy_regfile, &store_buffer, &bus);
 static pipeline::execute::alu *execute_alu_stage[ALU_UNIT_NUM];
 static pipeline::execute::bru *execute_bru_stage[BRU_UNIT_NUM];
 static pipeline::execute::csr *execute_csr_stage[CSR_UNIT_NUM];
@@ -426,7 +426,7 @@ static void init()
 
     //std::ifstream binfile("../../../testprgenv/main/test.bin", std::ios::binary);
     //std::ifstream binfile("../../../testfile.bin", std::ios::binary);
-    //std::ifstream binfile("../../../coremark_10.bin", std::ios::binary);
+    //std::ifstream binfile("../../../coremark.bin", std::ios::binary);
     //std::ifstream binfile("../../../dhrystone.bin", std::ios::binary);
     std::ifstream binfile("../../../rt-thread/bsp/MyRISCVCore/MyRISCVCore/rtthread.bin", std::ios::binary);
 
@@ -455,32 +455,32 @@ static void init()
 
     for(auto i = 0;i < ALU_UNIT_NUM;i++)
     {
-        issue_alu_fifo[i] = new component::fifo<pipeline::issue_execute_pack_t>(16);
+        issue_alu_fifo[i] = new component::fifo<pipeline::issue_execute_pack_t>(1);
     }
     
     for(auto i = 0;i < BRU_UNIT_NUM;i++)
     {
-        issue_bru_fifo[i] = new component::fifo<pipeline::issue_execute_pack_t>(16);
+        issue_bru_fifo[i] = new component::fifo<pipeline::issue_execute_pack_t>(1);
     }
  
     for(auto i = 0;i < CSR_UNIT_NUM;i++)
     {
-        issue_csr_fifo[i] = new component::fifo<pipeline::issue_execute_pack_t>(16);
+        issue_csr_fifo[i] = new component::fifo<pipeline::issue_execute_pack_t>(1);
     }
 
     for(auto i = 0;i < DIV_UNIT_NUM;i++)
     {
-        issue_div_fifo[i] = new component::fifo<pipeline::issue_execute_pack_t>(16);
+        issue_div_fifo[i] = new component::fifo<pipeline::issue_execute_pack_t>(1);
     }
 
     for(auto i = 0;i < LSU_UNIT_NUM;i++)
     {
-        issue_lsu_fifo[i] = new component::fifo<pipeline::issue_execute_pack_t>(16);
+        issue_lsu_fifo[i] = new component::fifo<pipeline::issue_execute_pack_t>(1);
     }
 
     for(auto i = 0;i < MUL_UNIT_NUM;i++)
     {
-        issue_mul_fifo[i] = new component::fifo<pipeline::issue_execute_pack_t>(16);
+        issue_mul_fifo[i] = new component::fifo<pipeline::issue_execute_pack_t>(1);
     }
 
     for(auto i = 0;i < ALU_UNIT_NUM;i++)
@@ -937,7 +937,7 @@ static void run()
 
     while(1)
     {
-        /*if((cpu_clock_cycle >= 72075) && need_to_trigger)
+        /*if((cpu_clock_cycle >= 20595) && need_to_trigger)
         {
             step_state = true;
             wait_commit = false;

@@ -45,6 +45,8 @@ namespace pipeline
         uint32_t csr;
         op_t op;
         op_unit_t op_unit;
+
+        uint32_t lsu_addr;
         
         union
         {

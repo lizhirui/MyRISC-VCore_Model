@@ -23,6 +23,8 @@ namespace pipeline
 
                 bool busy;
                 issue_execute_pack_t hold_rev_pack;
+                /*uint32_t lsu_addr;
+                issue_execute_pack_t lsu_rev_pack;*/
 
             public:
                 lsu(component::fifo<issue_execute_pack_t> *issue_lsu_fifo, component::port<execute_wb_pack_t> *lsu_wb_port, component::bus *bus, component::store_buffer *store_buffer);

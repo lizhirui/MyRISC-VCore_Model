@@ -3,7 +3,7 @@
 
 namespace pipeline
 {
-    issue::issue(component::port<readreg_issue_pack_t> *readreg_issue_port, component::fifo<issue_execute_pack_t> **issue_alu_fifo, component::fifo<issue_execute_pack_t> **issue_bru_fifo, component::fifo<issue_execute_pack_t> **issue_csr_fifo, component::fifo<issue_execute_pack_t> **issue_div_fifo, component::fifo<issue_execute_pack_t> **issue_lsu_fifo, component::fifo<issue_execute_pack_t> **issue_mul_fifo, component::regfile<phy_regfile_item_t> *phy_regfile, component::store_buffer *store_buffer) : issue_q(component::issue_queue<issue_queue_item_t>(ISSUE_QUEUE_SIZE))
+    issue::issue(component::port<readreg_issue_pack_t> *readreg_issue_port, component::fifo<issue_execute_pack_t> **issue_alu_fifo, component::fifo<issue_execute_pack_t> **issue_bru_fifo, component::fifo<issue_execute_pack_t> **issue_csr_fifo, component::fifo<issue_execute_pack_t> **issue_div_fifo, component::fifo<issue_execute_pack_t> **issue_lsu_fifo, component::fifo<issue_execute_pack_t> **issue_mul_fifo, component::regfile<phy_regfile_item_t> *phy_regfile, component::store_buffer *store_buffer, component::bus *bus) : issue_q(component::issue_queue<issue_queue_item_t>(ISSUE_QUEUE_SIZE))
     {
         this->readreg_issue_port = readreg_issue_port;
         this->issue_alu_fifo = issue_alu_fifo;
@@ -14,6 +14,7 @@ namespace pipeline
         this->issue_mul_fifo = issue_mul_fifo;
         this->phy_regfile = phy_regfile;
         this->store_buffer = store_buffer;
+        this->bus = bus;
         this->is_inst_waiting = false;
         this->inst_waiting_rob_id = 0;
     }
@@ -371,6 +372,48 @@ namespace pipeline
                         send_pack.op = items[i].op;
                         send_pack.op_unit = items[i].op_unit;
                         memcpy(&send_pack.sub_op, &items[i].sub_op, sizeof(items[i].sub_op));
+
+                        if(items[i].valid && items[i].op_unit == op_unit_t::lsu)
+                        {
+                            auto addr = send_pack.src1_value + send_pack.imm;
+                            send_pack.lsu_addr = addr;
+                            send_pack.exception_value = addr;
+                    
+                            switch(items[i].sub_op.lsu_op)
+                            {
+                                case lsu_op_t::lb:
+                                case lsu_op_t::lbu:
+                                    send_pack.has_exception = !bus->check_align(addr, 1);
+                                    send_pack.exception_id = !bus->check_align(addr, 1) ? riscv_exception_t::load_address_misaligned : riscv_exception_t::load_access_fault;
+                                    break;
+
+                                case lsu_op_t::lh:
+                                case lsu_op_t::lhu:
+                                    send_pack.has_exception = !bus->check_align(addr, 2);
+                                    send_pack.exception_id = !bus->check_align(addr, 2) ? riscv_exception_t::load_address_misaligned : riscv_exception_t::load_access_fault;
+                                    break;
+
+                                case lsu_op_t::lw:
+                                    send_pack.has_exception = !bus->check_align(addr, 4);
+                                    send_pack.exception_id = !bus->check_align(addr, 4) ? riscv_exception_t::load_address_misaligned : riscv_exception_t::load_access_fault;
+                                    break;
+
+                                case lsu_op_t::sb:
+                                    send_pack.has_exception = !bus->check_align(addr, 1);
+                                    send_pack.exception_id = !bus->check_align(addr, 1) ? riscv_exception_t::store_amo_address_misaligned : riscv_exception_t::store_amo_access_fault;
+                                    break;
+
+                                case lsu_op_t::sh:
+                                    send_pack.has_exception = !bus->check_align(addr, 2);
+                                    send_pack.exception_id = !bus->check_align(addr, 2) ? riscv_exception_t::store_amo_address_misaligned : riscv_exception_t::store_amo_access_fault;
+                                    break;
+
+                                case lsu_op_t::sw:
+                                    send_pack.has_exception = !bus->check_align(addr, 4);
+                                    send_pack.exception_id = !bus->check_align(addr, 4) ? riscv_exception_t::store_amo_address_misaligned : riscv_exception_t::store_amo_access_fault;
+                                    break;
+                            }
+                        }
                     
                         //ready to dispatch
                         uint32_t *unit_index = NULL;

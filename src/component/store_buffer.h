@@ -260,6 +260,8 @@ namespace component
                             wstage = found_stage;
                         }
                     }
+
+                    clear_queue(sync_request_q);
                 }
                 else
                 {
