@@ -150,8 +150,8 @@ namespace component
                 uint32_t pc_p2 = (pc >> 2) & GSHARE_PC_P2_ADDR_MASK;
                 uint32_t cpht_addr = ((gshare_global_history ^ pc_p1) << GSHARE_PC_P2_ADDR_WIDTH) | pc_p2;
                 
-                //if(cpht[cpht_addr] <= 1)//gshare
-                if(false)
+                if(cpht[cpht_addr] <= 1)//gshare
+                //if(false)
                 {
                     if(hit && (cpht[cpht_addr] > 0))
                     {
