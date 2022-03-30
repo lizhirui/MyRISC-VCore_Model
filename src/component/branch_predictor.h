@@ -181,7 +181,6 @@ namespace component
                 uint32_t pc_p1 = (pc >> (2 + GSHARE_PC_P2_ADDR_WIDTH)) & GSHARE_PC_P1_ADDR_MASK;
                 uint32_t pc_p2 = (pc >> 2) & GSHARE_PC_P2_ADDR_MASK;
                 uint32_t cpht_addr = ((gshare_global_history ^ pc_p1) << GSHARE_PC_P2_ADDR_WIDTH) | pc_p2;
-                return false;
                 return cpht[cpht_addr] <= 1;
             }
 
@@ -409,7 +408,7 @@ namespace component
                     case 0x63://beq bne blt bge bltu bgeu
                         need_jump_prediction = true;
                         //instruction_next_pc_valid = local_get_prediction(pc);
-                        instruction_next_pc_valid = cpht_get_prediction(pc) ? local_get_prediction(pc) : gshare_get_prediction(pc);
+                        instruction_next_pc_valid = !cpht_get_prediction(pc) ? local_get_prediction(pc) : gshare_get_prediction(pc);
                         //instruction_next_pc_valid = s_get_prediction(pc);
                         instruction_next_pc = instruction_next_pc_valid ? (pc + sign_extend(imm_b, 13)) : (pc + 4);
                         /*instruction_next_pc_valid = false;
