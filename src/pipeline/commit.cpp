@@ -120,6 +120,7 @@ namespace pipeline
 											branch_hit_add();
 											branch_predictor->update_prediction(rob_item.pc, rob_item.inst_value, rob_item.bru_jump, rob_item.bru_next_pc, true);
 											checkpoint_buffer->pop_sync();
+											break;
 											//nothing to do
 										}
 										else if(rob_item.checkpoint_id_valid)
