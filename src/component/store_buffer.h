@@ -199,7 +199,7 @@ namespace component
                         else if((cur_item.addr < addr) && ((cur_item.addr + cur_item.size) > addr))
                         {
                             uint32_t bit_offset = (addr - cur_item.addr) << 3;
-                            uint32_t bit_length = std::min(size, cur_item.addr + cur_item.size - addr);
+                            uint32_t bit_length = std::min(size, cur_item.addr + cur_item.size - addr) << 3;
                             uint32_t bit_mask = (bit_length == 32) ? 0xffffffffu : ((1 << bit_length) - 1);
                             result &= ~bit_mask;
                             result |= (cur_item.data >> bit_offset) & bit_mask;
