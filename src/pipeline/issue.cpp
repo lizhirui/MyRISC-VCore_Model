@@ -602,6 +602,9 @@ namespace pipeline
                 t_item.rob_id = cur_op.rob_id;
                 t_item.pc = cur_op.pc;
                 t_item.imm = cur_op.imm;
+                t_item.has_exception = cur_op.has_exception;
+                t_item.exception_id = cur_op.exception_id;
+                t_item.exception_value = cur_op.exception_value;
 
                 t_item.predicted = cur_op.predicted;
                 t_item.predicted_jump = cur_op.predicted_jump;

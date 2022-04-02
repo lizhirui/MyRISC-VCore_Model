@@ -6,6 +6,7 @@ _start:
     sw x1, 0(x5)
     la x2, exception_entry
     csrw mtvec, x2
+    c.li x5, 1
     li x6, 0x8
     /*csrw mie, x6
     csrsi mstatus, 0x8*/

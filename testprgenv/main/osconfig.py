@@ -32,7 +32,7 @@ if PLATFORM == 'gcc':
     OBJDUMP = PREFIX + 'objdump'
     OBJCPY  = PREFIX + 'objcopy'
 
-    DEVICE  = ' -mcmodel=medany -march=rv32im -mabi=ilp32'
+    DEVICE  = ' -mcmodel=medany -march=rv32imc -mabi=ilp32'
     CFLAGS  = DEVICE + ' -fvar-tracking -ffreestanding -fno-common -ffunction-sections -fdata-sections -fstrict-volatile-bitfields '
     AFLAGS  = ' -c' + DEVICE + ' -x assembler-with-cpp'
     LFLAGS  = DEVICE + ' -nostartfiles -Wl,--gc-sections,-Map=test.map,-cref,-u,_start -T linker.ld -lc -lm '
