@@ -45,8 +45,24 @@ namespace pipeline
         
         if(!(commit_feedback_pack.enable && commit_feedback_pack.flush))
         {
+            bool inst_waiting_ok = false;
+
+            for(auto i = 0;i < COMMIT_WIDTH;i++)
+            {
+                if(commit_feedback_pack.enable && commit_feedback_pack.committed_rob_id_valid[i] && (commit_feedback_pack.committed_rob_id[i] == inst_waiting_rob_id))
+                {
+                    inst_waiting_ok = true;
+                    break;
+                }
+            }
+
+            if(issue_q.is_empty() && ((!is_inst_waiting) || inst_waiting_ok))
+            {
+                is_inst_waiting = false;
+            }
+
             //handle output
-            if(!issue_q.is_empty() && ((!is_inst_waiting) || (commit_feedback_pack.next_handle_rob_id_valid && (commit_feedback_pack.next_handle_rob_id == inst_waiting_rob_id))))
+            if(!issue_q.is_empty() && ((!is_inst_waiting) || inst_waiting_ok))
             {
                 issue_queue_item_t items[ISSUE_WIDTH];
                 memset(&items, 0, sizeof(items));
@@ -106,7 +122,7 @@ namespace pipeline
                 {
                     items[i] = this->issue_q.get_item(id);
 
-                    if((items[i].op_unit == op_unit_t::csr) && (i != 0))
+                    if(((items[i].op_unit == op_unit_t::csr) || (items[i].op == op_t::mret)) && (i != 0))
                     {
                         break;
                     }
@@ -257,22 +273,27 @@ namespace pipeline
                 //generate output to execute stage
                 for(uint32_t i = 0; i < ISSUE_WIDTH;i++)
                 {
+                    if(i >= item_id_list.size())
+                    {
+                        break;
+                    }
+
                     if(items[i].enable)
                     {
-                        //csr instruction must be executed after all instructions that is before it has been commited
-                        if(items[i].op_unit == op_unit_t::csr)
+                        //csr and mret instruction must be executed after all instructions that is before it has been commited
+                        if((items[i].op_unit == op_unit_t::csr) || (items[i].op == op_t::mret))
                         {
                             assert(commit_feedback_pack.enable);
 
-                            if(commit_feedback_pack.next_handle_rob_id != items[i].rob_id)
+                            /*if(commit_feedback_pack.next_handle_rob_id != items[i].rob_id)
                             {
                                 break;
-                            }
+                            }*/
 
                             this->is_inst_waiting = true;
                             this->inst_waiting_rob_id = items[i].rob_id;
                         }
-                        else if(items[i].op == op_t::mret)
+                        /*else if(items[i].op == op_t::mret)
                         {
                             assert(commit_feedback_pack.enable);
 
@@ -280,7 +301,7 @@ namespace pipeline
                             {
                                 break;
                             }
-                        }
+                        }*/
 
                         bool src1_feedback = false;
                         uint32_t src1_feedback_value = 0;

@@ -426,8 +426,8 @@ static void init()
 
     //std::ifstream binfile("../../../testprgenv/main/test.bin", std::ios::binary);
     //std::ifstream binfile("../../../testfile.bin", std::ios::binary);
-    std::ifstream binfile("../../../coremark_10.bin", std::ios::binary);
-    //std::ifstream binfile("../../../dhrystone.bin", std::ios::binary);
+    //std::ifstream binfile("../../../coremark_10.bin", std::ios::binary);
+    std::ifstream binfile("../../../dhrystone.bin", std::ios::binary);
     //std::ifstream binfile("../../../rt-thread/bsp/MyRISCVCore/MyRISCVCore/rtthread.bin", std::ios::binary);
 
     if(!binfile || !binfile.is_open())
@@ -944,7 +944,7 @@ static void run()
             need_to_trigger = false;
         }*/
 
-        /*if((committed_instruction_num >= 1368700) && need_to_trigger)
+        /*if((committed_instruction_num >= 16590) && need_to_trigger)
         {
             step_state = true;
             wait_commit = false;
