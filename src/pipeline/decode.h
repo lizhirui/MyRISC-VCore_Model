@@ -18,14 +18,16 @@ namespace pipeline
         }
     }decode_feedback_pack_t;
 
-    class decode
+    class decode : public if_reset_t
     {
         private:
             component::fifo<fetch_decode_pack_t> *fetch_decode_fifo;
             component::fifo<decode_rename_pack_t> *decode_rename_fifo;
+            trace::trace_database tdb;
 
         public:
             decode(component::fifo<fetch_decode_pack_t> *fetch_decode_fifo, component::fifo<decode_rename_pack_t> *decode_rename_fifo);
+            virtual void reset();
             decode_feedback_pack_t run(commit_feedback_pack_t commit_feedback_pack);
     };
 }

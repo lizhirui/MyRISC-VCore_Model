@@ -24,11 +24,12 @@ namespace pipeline
             uint32_t init_pc;
             uint32_t pc;
             bool jump_wait;
+            trace::trace_database tdb;
 
         public:
             fetch(component::bus *bus, component::fifo<fetch_decode_pack_t> *fetch_decode_fifo, component::checkpoint_buffer *checkpoint_buffer, component::branch_predictor *branch_predictor, component::store_buffer *store_buffer, uint32_t init_pc);
             virtual void reset();
-            void run(decode_feedback_pack_t decode_feedback_pack, rename_feedback_pack_t rename_feedback_pack, pipeline::execute::bru_feedback_pack_t bru_feedback_pack, commit_feedback_pack_t commit_feedback_pack);
+            void run(decode_feedback_pack_t decode_feedback_pack, rename_feedback_pack_t rename_feedback_pack, commit_feedback_pack_t commit_feedback_pack);
             uint32_t get_pc();
             virtual void print(std::string indent);
             virtual json get_json();

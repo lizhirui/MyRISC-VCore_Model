@@ -1,0 +1,106 @@
+        
+        for(auto i = 0;i < EXECUTE_UNIT_NUM;i++)
+        {
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_phyf_id", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::output, "wb_phyf_data", 0, i);
+        }
+
+        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_phyf_we", 0, 0);
+        
+        
+        for(auto i = 0;i < EXECUTE_UNIT_NUM;i++)
+        {
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "execute_wb_port_data_out.enable", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::input, "execute_wb_port_data_out.value", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "execute_wb_port_data_out.valid", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "execute_wb_port_data_out.rob_id", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::input, "execute_wb_port_data_out.pc", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::input, "execute_wb_port_data_out.imm", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "execute_wb_port_data_out.has_exception", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::input, "execute_wb_port_data_out.exception_id", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::input, "execute_wb_port_data_out.exception_value", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "execute_wb_port_data_out.predicted", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "execute_wb_port_data_out.predicted_jump", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::input, "execute_wb_port_data_out.predicted_next_pc", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "execute_wb_port_data_out.checkpoint_id_valid", 0, i);
+            this->tdb.update_signal<uint16_t>(trace::domain_t::input, "execute_wb_port_data_out.checkpoint_id", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "execute_wb_port_data_out.bru_jump", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::input, "execute_wb_port_data_out.bru_next_pc", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "execute_wb_port_data_out.rs1", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "execute_wb_port_data_out.arg1_src", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "execute_wb_port_data_out.rs1_need_map", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "execute_wb_port_data_out.rs1_phy", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::input, "execute_wb_port_data_out.src1_value", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "execute_wb_port_data_out.src1_loaded", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "execute_wb_port_data_out.rs2", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "execute_wb_port_data_out.arg2_src", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "execute_wb_port_data_out.rs2_need_map", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "execute_wb_port_data_out.rs2_phy", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::input, "execute_wb_port_data_out.src2_value", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "execute_wb_port_data_out.src2_loaded", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "execute_wb_port_data_out.rd", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "execute_wb_port_data_out.rd_enable", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "execute_wb_port_data_out.need_rename", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "execute_wb_port_data_out.rd_phy", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::input, "execute_wb_port_data_out.rd_value", 0, i);
+            this->tdb.update_signal<uint16_t>(trace::domain_t::input, "execute_wb_port_data_out.csr", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::input, "execute_wb_port_data_out.csr_newvalue", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "execute_wb_port_data_out.csr_newvalue_valid", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "execute_wb_port_data_out.op", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "execute_wb_port_data_out.op_unit", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "execute_wb_port_data_out.sub_op", 0, i);
+    
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_commit_port_data_in.enable", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::output, "wb_commit_port_data_in.value", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_commit_port_data_in.valid", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_commit_port_data_in.rob_id", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::output, "wb_commit_port_data_in.pc", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::output, "wb_commit_port_data_in.imm", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_commit_port_data_in.has_exception", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::output, "wb_commit_port_data_in.exception_id", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::output, "wb_commit_port_data_in.exception_value", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_commit_port_data_in.predicted", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_commit_port_data_in.predicted_jump", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::output, "wb_commit_port_data_in.predicted_next_pc", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_commit_port_data_in.checkpoint_id_valid", 0, i);
+            this->tdb.update_signal<uint16_t>(trace::domain_t::output, "wb_commit_port_data_in.checkpoint_id", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_commit_port_data_in.bru_jump", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::output, "wb_commit_port_data_in.bru_next_pc", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_commit_port_data_in.rs1", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_commit_port_data_in.arg1_src", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_commit_port_data_in.rs1_need_map", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_commit_port_data_in.rs1_phy", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::output, "wb_commit_port_data_in.src1_value", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_commit_port_data_in.src1_loaded", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_commit_port_data_in.rs2", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_commit_port_data_in.arg2_src", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_commit_port_data_in.rs2_need_map", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_commit_port_data_in.rs2_phy", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::output, "wb_commit_port_data_in.src2_value", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_commit_port_data_in.src2_loaded", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_commit_port_data_in.rd", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_commit_port_data_in.rd_enable", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_commit_port_data_in.need_rename", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_commit_port_data_in.rd_phy", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::output, "wb_commit_port_data_in.rd_value", 0, i);
+            this->tdb.update_signal<uint16_t>(trace::domain_t::output, "wb_commit_port_data_in.csr", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::output, "wb_commit_port_data_in.csr_newvalue", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_commit_port_data_in.csr_newvalue_valid", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_commit_port_data_in.op", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_commit_port_data_in.op_unit", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_commit_port_data_in.sub_op", 0, i);
+        }
+
+        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_commit_port_we", 0, 0);
+        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_commit_port_flush", 0, 0);
+    
+        
+        for(auto i = 0;i < EXECUTE_UNIT_NUM;i++)
+        {
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_feedback_pack.enable", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_feedback_pack.phy_id", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::output, "wb_feedback_pack.value", 0, i);
+        }
+
+        this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_feedback_pack.enable", 0, 0);
+        this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_feedback_pack.flush", 0, 0);

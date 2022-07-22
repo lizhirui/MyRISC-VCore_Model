@@ -42,7 +42,7 @@ namespace pipeline
         }
     }wb_feedback_pack_t;
 
-    class wb
+    class wb : public if_reset_t
     {
         private:
             component::port<execute_wb_pack_t> **alu_wb_port;
@@ -58,10 +58,12 @@ namespace pipeline
 
             component::regfile<phy_regfile_item_t> *phy_regfile;
             component::checkpoint_buffer *checkpoint_buffer;
+            trace::trace_database tdb;
 
         public:
             wb(component::port<execute_wb_pack_t> **alu_wb_port, component::port<execute_wb_pack_t> **bru_wb_port, component::port<execute_wb_pack_t> **csr_wb_port, component::port<execute_wb_pack_t> **div_wb_port, component::port<execute_wb_pack_t> **lsu_wb_port, component::port<execute_wb_pack_t> **mul_wb_port, component::port<wb_commit_pack_t> *wb_commit_port, component::regfile<phy_regfile_item_t> *phy_regfile, component::checkpoint_buffer *checkpoint_buffer);
             void init();
+            virtual void reset();
             wb_feedback_pack_t run(commit_feedback_pack_t commit_feedback_pack);
     };
 }

@@ -30,6 +30,8 @@
 #include <json.hpp>
 #include <boost/lockfree/spsc_queue.hpp>
 
+#include <trace/trace.h>
+
 using json = nlohmann::json;
 
 #undef assert
@@ -61,6 +63,7 @@ using int64_t = std::int64_t;
 #define outhex(x) std::setiosflags(std::ios::uppercase) << std::hex << (x) << std::dec
 #define outbool(x) std::boolalpha << (x)
 #define outenum(x) magic_enum::enum_name(x)
+#define div_round_up(n,d) (((n) + (d) - 1) / (d))
 
 enum class riscv_exception_t
 {

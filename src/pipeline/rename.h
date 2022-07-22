@@ -34,6 +34,7 @@ namespace pipeline
             bool busy;
 
             decode_rename_pack_t rev_pack;
+            trace::trace_database tdb;
 
         public:
             rename(component::fifo<decode_rename_pack_t> *decode_rename_fifo, component::port<rename_readreg_pack_t> *rename_readreg_port, component::rat *rat, component::rob *rob, component::checkpoint_buffer *checkpoint_buffer);

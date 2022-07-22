@@ -76,3 +76,37 @@ const uint32_t NORMAL_TARGET_CACHE_SIZE = 1U << NORMAL_TARGET_CACHE_ADDR_WIDTH;
 const uint32_t NORMAL_PC_P1_ADDR_MASK = (1U << NORMAL_PC_P1_ADDR_WIDTH) - 1U;
 const uint32_t NORMAL_PC_P2_ADDR_MASK = (1U << NORMAL_PC_P2_ADDR_WIDTH) - 1U;
 const uint32_t NORMAL_GLOBAL_HISTORY_MASK = (1U << NORMAL_GLOBAL_HISTORY_WIDTH) - 1U;
+
+const std::string TRACE_DIR = R"(D:\program\project\MyRISC-VCore\model\MyRISC-VCore_Model_CMake\trace\coremark_10\)";
+
+#define TRACE_ENABLE
+
+#ifdef TRACE_ENABLE
+    const bool TRACE_FETCH = true;
+    const bool TRACE_DECODE = true;
+    const bool TRACE_RENAME = true;
+    const bool TRACE_READREG = true;
+    const bool TRACE_ISSUE = true;
+    const bool TRACE_EXECUTE_ALU = true;
+    const bool TRACE_EXECUTE_BRU = true;
+    const bool TRACE_EXECUTE_CSR = true;
+    const bool TRACE_EXECUTE_DIV = true;
+    const bool TRACE_EXECUTE_LSU = true;
+    const bool TRACE_EXECUTE_MUL = true;
+    const bool TRACE_WB = true;
+    const bool TRACE_COMMIT = true;
+#else
+    const bool TRACE_FETCH = false;
+    const bool TRACE_DECODE = false;
+    const bool TRACE_RENAME = false;
+    const bool TRACE_READREG = false;
+    const bool TRACE_ISSUE = false;
+    const bool TRACE_EXECUTE_ALU = false;
+    const bool TRACE_EXECUTE_BRU = false;
+    const bool TRACE_EXECUTE_CSR = false;
+    const bool TRACE_EXECUTE_DIV = false;
+    const bool TRACE_EXECUTE_LSU = false;
+    const bool TRACE_EXECUTE_MUL = false;
+    const bool TRACE_WB = false;
+    const bool TRACE_COMMIT = false;
+#endif

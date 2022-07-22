@@ -7,14 +7,141 @@
 
 namespace pipeline
 {
-    decode::decode(component::fifo<fetch_decode_pack_t> *fetch_decode_fifo, component::fifo<decode_rename_pack_t> *decode_rename_fifo)
+    decode::decode(component::fifo<fetch_decode_pack_t> *fetch_decode_fifo, component::fifo<decode_rename_pack_t> *decode_rename_fifo) : tdb(TRACE_DECODE)
     {
         this->fetch_decode_fifo = fetch_decode_fifo;
         this->decode_rename_fifo = decode_rename_fifo;
     }
 
+    void decode::reset()
+    {
+        this->tdb.create(TRACE_DIR + "decode.tdb");
+        this->tdb.mark_signal(trace::domain_t::output, "decode_csrf_decode_rename_fifo_full_add", sizeof(uint8_t), 1);
+
+        this->tdb.mark_signal(trace::domain_t::input, "fetch_decode_fifo_data_out.enable", sizeof(uint8_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::input, "fetch_decode_fifo_data_out.value", sizeof(uint32_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::input, "fetch_decode_fifo_data_out.pc", sizeof(uint32_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::input, "fetch_decode_fifo_data_out.has_exception", sizeof(uint8_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::input, "fetch_decode_fifo_data_out.exception_id", sizeof(uint32_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::input, "fetch_decode_fifo_data_out.exception_value", sizeof(uint32_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::input, "fetch_decode_fifo_data_out.predicted", sizeof(uint8_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::input, "fetch_decode_fifo_data_out.predicted_jump", sizeof(uint8_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::input, "fetch_decode_fifo_data_out.predicted_next_pc", sizeof(uint32_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::input, "fetch_decode_fifo_data_out.checkpoint_id_valid", sizeof(uint8_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::input, "fetch_decode_fifo_data_out.checkpoint_id", sizeof(uint16_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::input, "fetch_decode_fifo_data_out_valid", sizeof(uint8_t), 1);
+        this->tdb.mark_signal(trace::domain_t::output, "fetch_decode_fifo_data_pop_valid", sizeof(uint8_t), 1);
+        this->tdb.mark_signal(trace::domain_t::output, "fetch_decode_fifo_pop", sizeof(uint8_t), 1);
+
+        this->tdb.mark_signal(trace::domain_t::input, "decode_rename_fifo_data_in_enable", sizeof(uint8_t), 1);
+        this->tdb.mark_signal(trace::domain_t::output, "decode_rename_fifo_data_in.enable", sizeof(uint8_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::output, "decode_rename_fifo_data_in.value", sizeof(uint32_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::output, "decode_rename_fifo_data_in.valid", sizeof(uint8_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::output, "decode_rename_fifo_data_in.pc", sizeof(uint32_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::output, "decode_rename_fifo_data_in.imm", sizeof(uint32_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::output, "decode_rename_fifo_data_in.has_exception", sizeof(uint8_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::output, "decode_rename_fifo_data_in.exception_id", sizeof(uint32_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::output, "decode_rename_fifo_data_in.exception_value", sizeof(uint32_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::output, "decode_rename_fifo_data_in.predicted", sizeof(uint8_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::output, "decode_rename_fifo_data_in.predicted_jump", sizeof(uint8_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::output, "decode_rename_fifo_data_in.predicted_next_pc", sizeof(uint32_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::output, "decode_rename_fifo_data_in.checkpoint_id_valid", sizeof(uint8_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::output, "decode_rename_fifo_data_in.checkpoint_id", sizeof(uint16_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::output, "decode_rename_fifo_data_in.rs1", sizeof(uint8_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::output, "decode_rename_fifo_data_in.arg1_src", sizeof(uint8_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::output, "decode_rename_fifo_data_in.rs1_need_map", sizeof(uint8_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::output, "decode_rename_fifo_data_in.rs2", sizeof(uint8_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::output, "decode_rename_fifo_data_in.arg2_src", sizeof(uint8_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::output, "decode_rename_fifo_data_in.rs2_need_map", sizeof(uint8_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::output, "decode_rename_fifo_data_in.rd", sizeof(uint8_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::output, "decode_rename_fifo_data_in.rd_enable", sizeof(uint8_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::output, "decode_rename_fifo_data_in.need_rename", sizeof(uint8_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::output, "decode_rename_fifo_data_in.csr", sizeof(uint16_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::output, "decode_rename_fifo_data_in.op", sizeof(uint8_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::output, "decode_rename_fifo_data_in.op_unit", sizeof(uint8_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::output, "decode_rename_fifo_data_in.sub_op", sizeof(uint8_t), DECODE_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::output, "decode_rename_fifo_data_in_valid", sizeof(uint8_t), 1);
+        this->tdb.mark_signal(trace::domain_t::output, "decode_rename_fifo_push", sizeof(uint8_t), 1);
+        this->tdb.mark_signal(trace::domain_t::output, "decode_rename_fifo_flush", sizeof(uint8_t), 1);
+
+        this->tdb.mark_signal(trace::domain_t::output, "decode_feedback_pack.idle", sizeof(uint8_t), 1);
+        this->tdb.mark_signal(trace::domain_t::input, "commit_feedback_pack.enable", sizeof(uint8_t), 1);
+        this->tdb.mark_signal(trace::domain_t::input, "commit_feedback_pack.flush", sizeof(uint8_t), 1);
+
+        this->tdb.write_metainfo();
+        this->tdb.trace_on();
+        this->tdb.capture_status();
+        this->tdb.write_row();
+    }
+
     decode_feedback_pack_t decode::run(commit_feedback_pack_t commit_feedback_pack)
     {
+        this->tdb.capture_input();
+
+        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_csrf_decode_rename_fifo_full_add", 0, 0);
+
+        for(auto i = 0;i < DECODE_WIDTH;i++)
+        {
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_decode_fifo_data_out.enable", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::input, "fetch_decode_fifo_data_out.value", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::input, "fetch_decode_fifo_data_out.pc", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_decode_fifo_data_out.has_exception", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::input, "fetch_decode_fifo_data_out.exception_id", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::input, "fetch_decode_fifo_data_out.exception_value", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_decode_fifo_data_out.predicted", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_decode_fifo_data_out.predicted_jump", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::input, "fetch_decode_fifo_data_out.predicted_next_pc", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_decode_fifo_data_out.checkpoint_id_valid", 0, i);
+            this->tdb.update_signal<uint16_t>(trace::domain_t::input, "fetch_decode_fifo_data_out.checkpoint_id", 0, i);
+        }
+
+        this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_decode_fifo_data_out_valid", 0, 0);
+        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_decode_fifo_data_pop_valid", 0, 0);
+        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_decode_fifo_pop", 0, 0);
+
+        this->tdb.update_signal<uint8_t>(trace::domain_t::input, "decode_rename_fifo_data_in_enable", 0, 0);
+
+        for(auto i = 0;i < DECODE_WIDTH;i++)
+        {
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.enable", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::output, "decode_rename_fifo_data_in.value", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.valid", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::output, "decode_rename_fifo_data_in.pc", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::output, "decode_rename_fifo_data_in.imm", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.has_exception", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::output, "decode_rename_fifo_data_in.exception_id", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::output, "decode_rename_fifo_data_in.exception_value", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.predicted", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.predicted_jump", 0, i);
+            this->tdb.update_signal<uint32_t>(trace::domain_t::output, "decode_rename_fifo_data_in.predicted_next_pc", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.checkpoint_id_valid", 0, i);
+            this->tdb.update_signal<uint16_t>(trace::domain_t::output, "decode_rename_fifo_data_in.checkpoint_id", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.rs1", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.arg1_src", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.rs1_need_map", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.rs2", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.arg2_src", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.rs2_need_map", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.rd", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.rd_enable", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.need_rename", 0, i);
+            this->tdb.update_signal<uint16_t>(trace::domain_t::output, "decode_rename_fifo_data_in.csr", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.op", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.op_unit", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.sub_op", 0, i);
+        }
+
+        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in_valid", 0, 0);
+        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_push", 0, 0);
+        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_flush", 0, 0);
+
+        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_feedback_pack.idle", 0, 0);
+        this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_feedback_pack.enable", 0, 0);
+        this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_feedback_pack.flush", 0, 0);
+
+        this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_feedback_pack.enable", commit_feedback_pack.enable, 0);
+        this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_feedback_pack.flush", commit_feedback_pack.flush, 0);
+
         decode_feedback_pack_t feedback_pack;
 
         feedback_pack.idle = this->fetch_decode_fifo->is_empty();
@@ -23,12 +150,30 @@ namespace pipeline
         {
             for(auto i = 0;i < DECODE_WIDTH;i++)
             {
+                this->tdb.update_signal_bit<uint8_t>(trace::domain_t::input, "fetch_decode_fifo_data_out_valid", !this->fetch_decode_fifo->is_empty(), i, 0);
+                this->tdb.update_signal_bit<uint8_t>(trace::domain_t::input, "decode_rename_fifo_data_in_enable", !this->decode_rename_fifo->is_full(), i, 0);
+
                 if(!this->fetch_decode_fifo->is_empty() && !this->decode_rename_fifo->is_full())
                 {
                     fetch_decode_pack_t rev_pack;
                     decode_rename_pack_t send_pack;
                     std::memset(&send_pack, 0, sizeof(send_pack));
                     this->fetch_decode_fifo->pop(&rev_pack);
+
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_decode_fifo_data_out.enable", rev_pack.enable, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "fetch_decode_fifo_data_out.value", rev_pack.value, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "fetch_decode_fifo_data_out.pc", rev_pack.pc, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_decode_fifo_data_out.has_exception", rev_pack.has_exception, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "fetch_decode_fifo_data_out.exception_id", (uint32_t)rev_pack.exception_id, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "fetch_decode_fifo_data_out.exception_value", rev_pack.exception_value, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_decode_fifo_data_out.predicted", rev_pack.predicted, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_decode_fifo_data_out.predicted_jump", rev_pack.predicted_jump, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "fetch_decode_fifo_data_out.predicted_next_pc", rev_pack.predicted_next_pc, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_decode_fifo_data_out.checkpoint_id_valid", rev_pack.checkpoint_id_valid, i);
+                    this->tdb.update_signal<uint16_t>(trace::domain_t::input, "fetch_decode_fifo_data_out.checkpoint_id", rev_pack.checkpoint_id, i);
+
+                    this->tdb.update_signal_bit<uint8_t>(trace::domain_t::output, "fetch_decode_fifo_data_pop_valid", 1, i, 0);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_decode_fifo_pop", 1, 0);               
 
                     if(rev_pack.enable)
                     {
@@ -683,18 +828,55 @@ namespace pipeline
                     }
 
                     decode_rename_fifo->push(send_pack);
+
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.enable", send_pack.enable, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "decode_rename_fifo_data_in.value", send_pack.value, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.valid", send_pack.valid, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "decode_rename_fifo_data_in.pc", send_pack.pc, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "decode_rename_fifo_data_in.imm", send_pack.imm, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.has_exception", send_pack.has_exception, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "decode_rename_fifo_data_in.exception_id", (uint32_t)send_pack.exception_id, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "decode_rename_fifo_data_in.exception_value", send_pack.exception_value, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.predicted", send_pack.predicted, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.predicted_jump", send_pack.predicted_jump, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "decode_rename_fifo_data_in.predicted_next_pc", send_pack.predicted_next_pc, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.checkpoint_id_valid", send_pack.checkpoint_id_valid, i);
+                    this->tdb.update_signal<uint16_t>(trace::domain_t::output, "decode_rename_fifo_data_in.checkpoint_id", send_pack.checkpoint_id, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.rs1", send_pack.rs1, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.arg1_src", (uint8_t)send_pack.arg1_src, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.rs1_need_map", send_pack.rs1_need_map, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.rs2", send_pack.rs2, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.arg2_src", (uint8_t)send_pack.arg2_src, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.rs2_need_map", send_pack.rs2_need_map, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.rd", send_pack.rd, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.rd_enable", send_pack.rd_enable, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.need_rename", send_pack.need_rename, i);
+                    this->tdb.update_signal<uint16_t>(trace::domain_t::output, "decode_rename_fifo_data_in.csr", send_pack.csr, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.op", (uint8_t)send_pack.op, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.op_unit", (uint8_t)send_pack.op_unit, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in.sub_op", *(uint8_t *)&send_pack.sub_op, i);
+                    this->tdb.update_signal_bit<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_in_valid", 1, i, 0);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_push", 1, 0);
+
                 }
-                else if(this->decode_rename_fifo->is_full())
+                else if(!this->fetch_decode_fifo->is_empty() && this->decode_rename_fifo->is_full())
                 {
                     decode_rename_fifo_full_add();
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_csrf_decode_rename_fifo_full_add", 1, 0);
                 }
             }
         }
         else
         {
             decode_rename_fifo->flush();
+            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_decode_fifo_data_out_valid", (1U << std::min(this->fetch_decode_fifo->get_size(), DECODE_WIDTH)) - 1U, 0);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_flush", 1, 0);
         }
 
+        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_feedback_pack.idle", feedback_pack.idle, 0);
+
+        this->tdb.capture_output_status();
+        this->tdb.write_row();
         return feedback_pack;
     }
 }

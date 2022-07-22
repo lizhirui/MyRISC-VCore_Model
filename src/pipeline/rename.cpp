@@ -6,7 +6,7 @@
 
 namespace pipeline
 {
-    rename::rename(component::fifo<decode_rename_pack_t> *decode_rename_fifo, component::port<rename_readreg_pack_t> *rename_readreg_port, component::rat *rat, component::rob *rob, component::checkpoint_buffer *checkpoint_buffer)
+    rename::rename(component::fifo<decode_rename_pack_t> *decode_rename_fifo, component::port<rename_readreg_pack_t> *rename_readreg_port, component::rat *rat, component::rob *rob, component::checkpoint_buffer *checkpoint_buffer) : tdb(TRACE_RENAME)
     {
         this->decode_rename_fifo = decode_rename_fifo;
         this->rename_readreg_port = rename_readreg_port;

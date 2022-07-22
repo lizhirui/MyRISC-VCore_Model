@@ -179,7 +179,6 @@ static pipeline::commit commit_stage(&wb_commit_port, &rat, &rob, &csr_file, &ph
 static pipeline::decode_feedback_pack_t t_decode_feedback_pack;
 static pipeline::rename_feedback_pack_t t_rename_feedback_pack;
 static pipeline::issue_feedback_pack_t t_issue_feedback_pack;
-static pipeline::execute::bru_feedback_pack_t t_bru_feedback_pack;
 static pipeline::execute_feedback_pack_t t_execute_feedback_pack;
 static pipeline::wb_feedback_pack_t t_wb_feedback_pack;
 static pipeline::commit_feedback_pack_t t_commit_feedback_pack;
@@ -309,21 +308,25 @@ static void reset()
     for(auto i = 0;i < ALU_UNIT_NUM;i++)
     {
         issue_alu_fifo[i]->reset();
+        execute_alu_stage[i]->reset();
     }
 
     for(auto i = 0;i < BRU_UNIT_NUM;i++)
     {
         issue_bru_fifo[i]->reset();
+        execute_bru_stage[i]->reset();
     }
 
     for(auto i = 0;i < CSR_UNIT_NUM;i++)
     {
         issue_csr_fifo[i]->reset();
+        execute_csr_stage[i]->reset();
     }
 
     for(auto i = 0;i < DIV_UNIT_NUM;i++)
     {
         issue_div_fifo[i]->reset();
+        execute_div_stage[i]->reset();
     }
 
     for(auto i = 0;i < LSU_UNIT_NUM;i++)
@@ -335,6 +338,7 @@ static void reset()
     for(auto i = 0;i < MUL_UNIT_NUM;i++)
     {
         issue_mul_fifo[i]->reset();
+        execute_mul_stage[i]->reset();
     }
 
     for(auto i = 0;i < ALU_UNIT_NUM;i++)
@@ -392,14 +396,11 @@ static void reset()
     clint.reset();
 
     fetch_stage.reset();
+    decode_stage.reset();
     rename_stage.reset();
+    readreg_stage.reset();
     issue_stage.reset();
-
-    for(auto i = 0;i < CSR_UNIT_NUM;i++)
-    {
-        execute_csr_stage[i]->reset();
-    }
-
+    wb_stage.reset();
     commit_stage.reset();
     cpu_clock_cycle = 0;
     committed_instruction_num = 0;
@@ -426,8 +427,8 @@ static void init()
 
     //std::ifstream binfile("../../../testprgenv/main/test.bin", std::ios::binary);
     //std::ifstream binfile("../../../testfile.bin", std::ios::binary);
-    //std::ifstream binfile("../../../coremark_10.bin", std::ios::binary);
-    std::ifstream binfile("../../../dhrystone.bin", std::ios::binary);
+    std::ifstream binfile("../../../coremark_10.bin", std::ios::binary);
+    //std::ifstream binfile("../../../dhrystone.bin", std::ios::binary);
     //std::ifstream binfile("../../../rt-thread/bsp/MyRISCVCore/MyRISCVCore/rtthread.bin", std::ios::binary);
 
     if(!binfile || !binfile.is_open())
@@ -515,32 +516,32 @@ static void init()
 
     for(auto i = 0;i < ALU_UNIT_NUM;i++)
     {
-        execute_alu_stage[i] = new pipeline::execute::alu(issue_alu_fifo[i], alu_wb_port[i]);
+        execute_alu_stage[i] = new pipeline::execute::alu(i, issue_alu_fifo[i], alu_wb_port[i]);
     }
 
     for(auto i = 0;i < BRU_UNIT_NUM;i++)
     {
-        execute_bru_stage[i] = new pipeline::execute::bru(issue_bru_fifo[i], bru_wb_port[i], &csr_file, &branch_predictor, &checkpoint_buffer);
+        execute_bru_stage[i] = new pipeline::execute::bru(i, issue_bru_fifo[i], bru_wb_port[i], &csr_file, &branch_predictor, &checkpoint_buffer);
     }
 
     for(auto i = 0;i < CSR_UNIT_NUM;i++)
     {
-        execute_csr_stage[i] = new pipeline::execute::csr(issue_csr_fifo[i], csr_wb_port[i], &csr_file);
+        execute_csr_stage[i] = new pipeline::execute::csr(i, issue_csr_fifo[i], csr_wb_port[i], &csr_file);
     }
 
     for(auto i = 0;i < DIV_UNIT_NUM;i++)
     {
-        execute_div_stage[i] = new pipeline::execute::div(issue_div_fifo[i], div_wb_port[i]);
+        execute_div_stage[i] = new pipeline::execute::div(i, issue_div_fifo[i], div_wb_port[i]);
     }
 
     for(auto i = 0;i < LSU_UNIT_NUM;i++)
     {
-        execute_lsu_stage[i] = new pipeline::execute::lsu(issue_lsu_fifo[i], lsu_wb_port[i], &bus, &store_buffer);
+        execute_lsu_stage[i] = new pipeline::execute::lsu(i, issue_lsu_fifo[i], lsu_wb_port[i], &bus, &store_buffer);
     }
 
     for(auto i = 0;i < MUL_UNIT_NUM;i++)
     {
-        execute_mul_stage[i] = new pipeline::execute::mul(issue_mul_fifo[i], mul_wb_port[i]);
+        execute_mul_stage[i] = new pipeline::execute::mul(i, issue_mul_fifo[i], mul_wb_port[i]);
     }
 
     //this will cause system crash due to struct header information cleared when get_json is called 
@@ -960,6 +961,7 @@ static void run()
             }
 
             pause_state = true;
+            trace::trace_database::flush_all_tdb();
 
             if(gui_mode)
             {
@@ -1051,8 +1053,7 @@ static void run()
 
         for(auto i = 0;i < BRU_UNIT_NUM;i++)
         {
-            t_bru_feedback_pack = execute_bru_stage[i]->run(t_commit_feedback_pack);
-            t_execute_feedback_pack.channel[execute_feedback_channel++] = t_bru_feedback_pack.execute_feedback_channel;
+            t_execute_feedback_pack.channel[execute_feedback_channel++] = execute_bru_stage[i]->run(t_commit_feedback_pack);;
         }
 
         for(auto i = 0;i < CSR_UNIT_NUM;i++)
@@ -1079,7 +1080,7 @@ static void run()
         readreg_stage.run(t_issue_feedback_pack, t_execute_feedback_pack, t_wb_feedback_pack, t_commit_feedback_pack);
         t_rename_feedback_pack = rename_stage.run(t_issue_feedback_pack, t_commit_feedback_pack);
         t_decode_feedback_pack = decode_stage.run(t_commit_feedback_pack);
-        fetch_stage.run(t_decode_feedback_pack, t_rename_feedback_pack, t_bru_feedback_pack, t_commit_feedback_pack);
+        fetch_stage.run(t_decode_feedback_pack, t_rename_feedback_pack, t_commit_feedback_pack);
         interrupt_interface.run();
         clint.run();
         rat.sync();
@@ -1457,7 +1458,6 @@ static std::string socket_cmd_get_pipeline_status(std::vector<std::string> args)
     ret["wb_commit"] = wb_commit_port.get_json();
 
     ret["issue_feedback_pack"] = t_issue_feedback_pack.get_json();
-    ret["bru_feedback_pack"] = t_bru_feedback_pack.get_json();
     ret["wb_feedback_pack"] = t_wb_feedback_pack.get_json();
     ret["commit_feedback_pack"] = t_commit_feedback_pack.get_json();
     ret["rob"] = rob.get_json();
