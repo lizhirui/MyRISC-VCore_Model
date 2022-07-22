@@ -23,12 +23,7 @@ out_buf = ""
 
 for line in lines:
     try:
-        if "mark_signal_bitmap" in line:
-            line = cur_tab - split_tab + line
-            line = line.replace("mark_signal_bitmap", "update_signal_bitmap_all")
-            ori_str = re.search(r"[0-9A-Za-z_]+, [0-9A-Za-z_]+", line).group()
-            line = line.replace(ori_str, "0, 0")
-        elif len(line.strip()) == 0:
+        if len(line.strip()) == 0:
             line = cur_tab[len(split_tab):] + line
         else:
             count_text = ""
@@ -52,9 +47,14 @@ for line in lines:
                 cur_count_text = count_text
 
             line = cur_tab[len(split_tab):] + line
-            type_str = re.search(r"sizeof\(([0-9A-Za-z_]+)\)", line).group(1)
-            line = line.replace("mark_signal", "update_signal<" + type_str + ">")
-            ori_str = re.search(r"sizeof\([0-9A-Za-z_]+\), [^,\n]+\);", line).group()
+
+            if "mark_signal_bitmap" in line:
+                line = line.replace("mark_signal_bitmap", "update_signal_bitmap_all")
+                ori_str = re.search(r"[0-9A-Za-z_]+, [^,\n]+\);", line).group()
+            else:
+                type_str = re.search(r"sizeof\(([0-9A-Za-z_]+)\)", line).group(1)
+                line = line.replace("mark_signal", "update_signal<" + type_str + ">")
+                ori_str = re.search(r"sizeof\([0-9A-Za-z_]+\), [^,\n]+\);", line).group()
 
             if count_text == "":
                 line = line.replace(ori_str, "0, 0);")
