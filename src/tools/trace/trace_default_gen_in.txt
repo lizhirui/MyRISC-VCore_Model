@@ -4,8 +4,6 @@
         this->tdb.mark_signal(trace::domain_t::output, "rename_cpbuf_data.global_history", sizeof(uint16_t), RENAME_WIDTH);
         this->tdb.mark_signal(trace::domain_t::output, "rename_cpbuf_data.local_history", sizeof(uint16_t), RENAME_WIDTH);
         this->tdb.mark_signal(trace::domain_t::output, "rename_cpbuf_we", sizeof(uint8_t), 1);
-        this->tdb.mark_signal_bitmap(trace::domain_t::input, "cpbuf_rename_data.rat_phy_map_table_valid", PHY_REG_NUM, RENAME_WIDTH);
-        this->tdb.mark_signal_bitmap(trace::domain_t::input, "cpbuf_rename_data.rat_phy_map_table_visible", PHY_REG_NUM, RENAME_WIDTH);
         this->tdb.mark_signal(trace::domain_t::input, "cpbuf_rename_data.global_history", sizeof(uint16_t), RENAME_WIDTH);
         this->tdb.mark_signal(trace::domain_t::input, "cpbuf_rename_data.local_history", sizeof(uint16_t), RENAME_WIDTH);
 
@@ -116,6 +114,6 @@
         this->tdb.mark_signal(trace::domain_t::output, "rename_readreg_port_flush", sizeof(uint8_t), 1);
 
         this->tdb.mark_signal(trace::domain_t::output, "rename_feedback_pack.idle", sizeof(uint8_t), 1);
-        this->tdb.mark_signal(trace::domain_t::output, "issue_feedback_pack.stall", sizeof(uint8_t), 1);
+        this->tdb.mark_signal(trace::domain_t::input, "issue_feedback_pack.stall", sizeof(uint8_t), 1);
         this->tdb.mark_signal(trace::domain_t::input, "commit_feedback_pack.enable", sizeof(uint8_t), 1);
         this->tdb.mark_signal(trace::domain_t::input, "commit_feedback_pack.flush", sizeof(uint8_t), 1);

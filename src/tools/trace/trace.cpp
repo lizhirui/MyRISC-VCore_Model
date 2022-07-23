@@ -394,7 +394,6 @@ namespace trace
             assert(!bind_list[name]);
             auto const &item = fieldinfo_list[fieldid_map[name]];
             assert(index < item.element_num);
-            assert(item.element_size == sizeof(T));
             assert(bit_index < item.element_bitsize);
             uint32_t group_index = bit_index / (sizeof(uint8_t) * 8);
             uint32_t group_bit_index = bit_index % (sizeof(uint8_t) * 8);

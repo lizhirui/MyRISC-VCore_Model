@@ -20,9 +20,8 @@ namespace pipeline
     {
         this->busy = false;
         this->tdb.create(TRACE_DIR + "rename.tdb");
-        this->tdb.bind_signal(trace::domain_t::status, "busy", &this->busy, sizeof(uint8_t), 1);
 
-        this->tdb.mark_signal(trace::domain_t::output, "rename_cpbuf_id", sizeof(uint8_t), RENAME_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::output, "rename_cpbuf_id", sizeof(uint16_t), RENAME_WIDTH);
         this->tdb.mark_signal_bitmap(trace::domain_t::output, "rename_cpbuf_data.rat_phy_map_table_valid", PHY_REG_NUM, RENAME_WIDTH);
         this->tdb.mark_signal_bitmap(trace::domain_t::output, "rename_cpbuf_data.rat_phy_map_table_visible", PHY_REG_NUM, RENAME_WIDTH);
         this->tdb.mark_signal(trace::domain_t::output, "rename_cpbuf_data.global_history", sizeof(uint16_t), RENAME_WIDTH);
@@ -41,8 +40,8 @@ namespace pipeline
         this->tdb.mark_signal_bitmap(trace::domain_t::input, "rat_rename_map_table_valid", PHY_REG_NUM, 1);
         this->tdb.mark_signal_bitmap(trace::domain_t::input, "rat_rename_map_table_visible", PHY_REG_NUM, 1);
 
-        this->tdb.mark_signal(trace::domain_t::output, "rename_rat_read_arch_id", sizeof(uint8_t), RENAME_WIDTH * 2);
-        this->tdb.mark_signal(trace::domain_t::input, "rat_rename_read_phy_id", sizeof(uint8_t), RENAME_WIDTH * 2);
+        this->tdb.mark_signal(trace::domain_t::output, "rename_rat_read_arch_id", sizeof(uint8_t), RENAME_WIDTH * 3);
+        this->tdb.mark_signal(trace::domain_t::input, "rat_rename_read_phy_id", sizeof(uint8_t), RENAME_WIDTH * 3);
 
         this->tdb.mark_signal(trace::domain_t::input, "rob_rename_new_id", sizeof(uint8_t), RENAME_WIDTH);
         this->tdb.mark_signal(trace::domain_t::input, "rob_rename_new_id_valid", sizeof(uint8_t), 1);
@@ -59,8 +58,8 @@ namespace pipeline
         this->tdb.mark_signal(trace::domain_t::output, "rename_rob_data.predicted", sizeof(uint8_t), RENAME_WIDTH);
         this->tdb.mark_signal(trace::domain_t::output, "rename_rob_data.predicted_jump", sizeof(uint8_t), RENAME_WIDTH);
         this->tdb.mark_signal(trace::domain_t::output, "rename_rob_data.predicted_next_pc", sizeof(uint32_t), RENAME_WIDTH);
-        this->tdb.mark_signal(trace::domain_t::output, "rename_rob_data.checkpoint_id_valid", sizeof(uint32_t), RENAME_WIDTH);
-        this->tdb.mark_signal(trace::domain_t::output, "rename_rob_data.checkpoint_id", sizeof(uint8_t), RENAME_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::output, "rename_rob_data.checkpoint_id_valid", sizeof(uint8_t), RENAME_WIDTH);
+        this->tdb.mark_signal(trace::domain_t::output, "rename_rob_data.checkpoint_id", sizeof(uint16_t), RENAME_WIDTH);
         this->tdb.mark_signal(trace::domain_t::output, "rename_rob_data.bru_op", sizeof(uint8_t), RENAME_WIDTH);
         this->tdb.mark_signal(trace::domain_t::output, "rename_rob_data.bru_jump", sizeof(uint8_t), RENAME_WIDTH);
         this->tdb.mark_signal(trace::domain_t::output, "rename_rob_data.bru_next_pc", sizeof(uint32_t), RENAME_WIDTH);
@@ -154,7 +153,7 @@ namespace pipeline
 
         for(auto i = 0;i < RENAME_WIDTH;i++)
         {
-            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_cpbuf_id", 0, i);
+            this->tdb.update_signal<uint16_t>(trace::domain_t::output, "rename_cpbuf_id", 0, i);
             this->tdb.update_signal_bitmap_all(trace::domain_t::output, "rename_cpbuf_data.rat_phy_map_table_valid", 0, i);
             this->tdb.update_signal_bitmap_all(trace::domain_t::output, "rename_cpbuf_data.rat_phy_map_table_visible", 0, i);
             this->tdb.update_signal<uint16_t>(trace::domain_t::output, "rename_cpbuf_data.global_history", 0, i);
@@ -219,8 +218,8 @@ namespace pipeline
             this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rob_data.predicted", 0, i);
             this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rob_data.predicted_jump", 0, i);
             this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rename_rob_data.predicted_next_pc", 0, i);
-            this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rename_rob_data.checkpoint_id_valid", 0, i);
-            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rob_data.checkpoint_id", 0, i);
+            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rob_data.checkpoint_id_valid", 0, i);
+            this->tdb.update_signal<uint16_t>(trace::domain_t::output, "rename_rob_data.checkpoint_id", 0, i);
             this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rob_data.bru_op", 0, i);
             this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rob_data.bru_jump", 0, i);
             this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rename_rob_data.bru_next_pc", 0, i);
@@ -324,7 +323,15 @@ namespace pipeline
         rename_feedback_pack_t feedback_pack;
 
         feedback_pack.idle = decode_rename_fifo->is_empty();
+        this->tdb.update_signal<uint8_t>(trace::domain_t::input, "decode_rename_fifo_data_out_valid", (1U << std::min(decode_rename_fifo->get_size(), RENAME_WIDTH)) - 1U, 0);
         
+        {
+            component::checkpoint_t t_cp;
+            rat->save(t_cp);
+            this->tdb.update_signal_bitmap(trace::domain_t::input, "rat_rename_map_table_valid", &t_cp.rat_phy_map_table_valid, 0);
+            this->tdb.update_signal_bitmap(trace::domain_t::input, "rat_rename_map_table_visible", &t_cp.rat_phy_map_table_visible, 0);
+        }
+
         //memset(&null_send_pack, 0, sizeof(null_send_pack));
 
         if(!(commit_feedback_pack.enable && commit_feedback_pack.flush))
@@ -345,10 +352,6 @@ namespace pipeline
                 component::checkpoint_t global_cp;
                 rat->save(global_cp);
 
-                this->tdb.update_signal_bitmap(trace::domain_t::input, "rat_rename_map_table_valid", &global_cp.rat_phy_map_table_valid, 0);
-                this->tdb.update_signal_bitmap(trace::domain_t::input, "rat_rename_map_table_visible", &global_cp.rat_phy_map_table_visible, 0);
-
-                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "decode_rename_fifo_data_out_valid", (1U << decode_rename_fifo->get_size()) - 1U, 0);
                 this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_pop", 1, 0);
 
                 //generate base send_pack
@@ -374,8 +377,8 @@ namespace pipeline
 
                             for(uint32_t j = 0;j < cnt;j++)
                             {
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rat_rename_new_phy_id", new_phy_reg_id[i], i);
-                                this->tdb.update_signal_bit<uint8_t>(trace::domain_t::input, "rat_rename_new_phy_id_valid", 1, i, 0);
+                                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rat_rename_new_phy_id", new_phy_reg_id[j], j);
+                                this->tdb.update_signal_bit<uint8_t>(trace::domain_t::input, "rat_rename_new_phy_id_valid", 1, j, 0);
                             }
                         }
 
@@ -448,6 +451,10 @@ namespace pipeline
                                     {
                                         rob_item[i].old_phy_reg_id_valid = true;
                                         assert(rat->get_phy_id(rev_pack.rd, &rob_item[i].old_phy_reg_id));
+
+                                        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rat_read_arch_id", rev_pack.rd, i * 3 + 2);
+                                        this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rat_rename_read_phy_id", rob_item[i].old_phy_reg_id, i * 3 + 2);
+
                                         send_pack.op_info[i].rd_phy = new_phy_reg_id[used_phy_reg_cnt++];
                                         rat->set_map_sync(rev_pack.rd, send_pack.op_info[i].rd_phy);
 
@@ -514,8 +521,8 @@ namespace pipeline
                                 this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rob_data.predicted", rob_item[i].predicted, i);
                                 this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rob_data.predicted_jump", rob_item[i].predicted_jump, i);
                                 this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rename_rob_data.predicted_next_pc", rob_item[i].predicted_next_pc, i);
-                                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rename_rob_data.checkpoint_id_valid", rob_item[i].checkpoint_id_valid, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rob_data.checkpoint_id", rob_item[i].checkpoint_id, i);
+                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rob_data.checkpoint_id_valid", rob_item[i].checkpoint_id_valid, i);
+                                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "rename_rob_data.checkpoint_id", rob_item[i].checkpoint_id, i);
                                 this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rob_data.bru_op", rob_item[i].bru_op, i);
                                 this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rob_data.bru_jump", rob_item[i].bru_jump, i);
                                 this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rename_rob_data.bru_next_pc", rob_item[i].bru_next_pc, i);
@@ -530,15 +537,15 @@ namespace pipeline
                                 if(rev_pack.rs1_need_map)
                                 {
                                     assert(rat->get_phy_id(rev_pack.rs1, &send_pack.op_info[i].rs1_phy));
-                                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rat_read_arch_id", rev_pack.rs1, i * 2);
-                                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rat_rename_read_phy_id", send_pack.op_info[i].rs1_phy, i * 2);
+                                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rat_read_arch_id", rev_pack.rs1, i * 3);
+                                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rat_rename_read_phy_id", send_pack.op_info[i].rs1_phy, i * 3);
                                 }
 
                                 if(rev_pack.rs2_need_map)
                                 {
                                     assert(rat->get_phy_id(rev_pack.rs2, &send_pack.op_info[i].rs2_phy));
-                                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rat_read_arch_id", rev_pack.rs2, i * 2 + 1);
-                                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rat_rename_read_phy_id", send_pack.op_info[i].rs2_phy, i * 2 + 1);
+                                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rat_read_arch_id", rev_pack.rs2, i * 3 + 1);
+                                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rat_rename_read_phy_id", send_pack.op_info[i].rs2_phy, i * 3 + 1);
                                 }
 
                                 //source registers feedback
@@ -570,12 +577,12 @@ namespace pipeline
                                     cp.local_history = origin_cp.local_history;
                                     checkpoint_buffer->set_item_sync(rev_pack.checkpoint_id, cp);
 
-                                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_cpbuf_id", rev_pack.checkpoint_id, i);
+                                    this->tdb.update_signal<uint16_t>(trace::domain_t::output, "rename_cpbuf_id", rev_pack.checkpoint_id, i);
                                     this->tdb.update_signal_bitmap(trace::domain_t::output, "rename_cpbuf_data.rat_phy_map_table_valid", &cp.rat_phy_map_table_valid, i);
                                     this->tdb.update_signal_bitmap(trace::domain_t::output, "rename_cpbuf_data.rat_phy_map_table_visible", &cp.rat_phy_map_table_visible, i);
                                     this->tdb.update_signal<uint16_t>(trace::domain_t::output, "rename_cpbuf_data.global_history", cp.global_history, i);
                                     this->tdb.update_signal<uint16_t>(trace::domain_t::output, "rename_cpbuf_data.local_history", cp.local_history, i);
-                                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_cpbuf_we", 1, 0);
+                                    this->tdb.update_signal_bit<uint8_t>(trace::domain_t::output, "rename_cpbuf_we", 1, i, 0);
                                     this->tdb.update_signal<uint16_t>(trace::domain_t::input, "cpbuf_rename_data.global_history", origin_cp.global_history, i);
                                     this->tdb.update_signal<uint16_t>(trace::domain_t::input, "cpbuf_rename_data.local_history", origin_cp.local_history, i);
                                 }

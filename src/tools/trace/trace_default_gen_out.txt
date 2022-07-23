@@ -12,8 +12,6 @@
         
         for(auto i = 0;i < RENAME_WIDTH;i++)
         {
-            this->tdb.update_signal_bitmap_all(trace::domain_t::input, "cpbuf_rename_data.rat_phy_map_table_valid", 0, i);
-            this->tdb.update_signal_bitmap_all(trace::domain_t::input, "cpbuf_rename_data.rat_phy_map_table_visible", 0, i);
             this->tdb.update_signal<uint16_t>(trace::domain_t::input, "cpbuf_rename_data.global_history", 0, i);
             this->tdb.update_signal<uint16_t>(trace::domain_t::input, "cpbuf_rename_data.local_history", 0, i);
     
@@ -159,6 +157,6 @@
         this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_readreg_port_flush", 0, 0);
 
         this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_feedback_pack.idle", 0, 0);
-        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "issue_feedback_pack.stall", 0, 0);
+        this->tdb.update_signal<uint8_t>(trace::domain_t::input, "issue_feedback_pack.stall", 0, 0);
         this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_feedback_pack.enable", 0, 0);
         this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_feedback_pack.flush", 0, 0);
