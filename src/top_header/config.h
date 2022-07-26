@@ -84,7 +84,7 @@ const std::string TRACE_DIR = R"(D:\program\project\MyRISC-VCore\model\MyRISC-VC
 #ifdef TRACE_ENABLE
     const bool TRACE_FETCH = false;
     const bool TRACE_DECODE = false;
-    const bool TRACE_RENAME = true;
+    const bool TRACE_RENAME = false;
     const bool TRACE_READREG = false;
     const bool TRACE_ISSUE = false;
     const bool TRACE_EXECUTE_ALU = false;
@@ -94,7 +94,7 @@ const std::string TRACE_DIR = R"(D:\program\project\MyRISC-VCore\model\MyRISC-VC
     const bool TRACE_EXECUTE_LSU = false;
     const bool TRACE_EXECUTE_MUL = false;
     const bool TRACE_WB = false;
-    const bool TRACE_COMMIT = false;
+    const bool TRACE_COMMIT = true;
 #else
     const bool TRACE_FETCH = false;
     const bool TRACE_DECODE = false;

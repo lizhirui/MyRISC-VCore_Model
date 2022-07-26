@@ -75,6 +75,7 @@ namespace pipeline
 
             uint32_t interrupt_pc;
             riscv_interrupt_t interrupt_id;
+            trace::trace_database tdb;
 
         public:
             commit(component::port<wb_commit_pack_t> *wb_commit_port, component::rat *rat, component::rob *rob, component::csrfile *csr_file, component::regfile<phy_regfile_item_t> *phy_regfile, component::checkpoint_buffer *checkpoint_buffer, component::branch_predictor *branch_predictor, component::interrupt_interface *interrupt_interface);
