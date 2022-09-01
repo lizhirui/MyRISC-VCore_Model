@@ -938,12 +938,12 @@ static void run()
 
     while(1)
     {
-        /*if((cpu_clock_cycle >= 20595) && need_to_trigger)
+        if((cpu_clock_cycle >= 186400) && need_to_trigger)
         {
             step_state = true;
             wait_commit = false;
             need_to_trigger = false;
-        }*/
+        }
 
         /*if((committed_instruction_num >= 16590) && need_to_trigger)
         {

@@ -248,6 +248,8 @@ namespace pipeline
             uint32_t div_index = 0;
             uint32_t lsu_index = 0;
             uint32_t mul_index = 0;
+
+            trace::trace_database tdb;
                
         public:
             issue(component::port<readreg_issue_pack_t> *readreg_issue_port, component::fifo<issue_execute_pack_t> **issue_alu_fifo, component::fifo<issue_execute_pack_t> **issue_bru_fifo, component::fifo<issue_execute_pack_t> **issue_csr_fifo, component::fifo<issue_execute_pack_t> **issue_div_fifo, component::fifo<issue_execute_pack_t> **issue_lsu_fifo, component::fifo<issue_execute_pack_t> **issue_mul_fifo, component::regfile<phy_regfile_item_t> *phy_regfile, component::store_buffer *store_buffer, component::bus *bus);
