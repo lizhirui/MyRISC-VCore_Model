@@ -1453,6 +1453,12 @@ namespace pipeline
                 this->busy = true;
                 this->last_index = 0;//from item 0
             }
+
+            for(auto i = 0;i < READREG_WIDTH;i++)
+            {
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "issue_phyf_id", rev_pack.op_info[i].rs1_phy, i * 2);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "issue_phyf_id", rev_pack.op_info[i].rs2_phy, i * 2 + 1);
+            }
         
             auto finish = true;
         
@@ -1514,9 +1520,6 @@ namespace pipeline
                 t_item.op = cur_op.op;
                 t_item.op_unit = cur_op.op_unit;
                 memcpy(&t_item.sub_op, &cur_op.sub_op, sizeof(t_item.sub_op));
-
-                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "issue_phyf_id", t_item.rs1_phy, this->last_index * 2);
-                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "issue_phyf_id", t_item.rs2_phy, this->last_index * 2 + 1);
 
                 if(!t_item.src1_loaded && t_item.rs1_need_map && phy_regfile->read_data_valid(t_item.rs1_phy))
                 {
