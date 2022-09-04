@@ -1,3 +1,5 @@
-this->tdb.update_signal<uint16_t>(trace::domain_t::output, "call_target_cache_write_addr", 0, 0);
-                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "call_target_cache_write_data", 0, 0);
-                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "call_target_cache_we", 0, 0);
+this->tdb.update_signal<uint8_t>(trace::domain_t::output, "ras_csrf_ras_full_add", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "bp_ras_addr", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "bp_ras_push", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "bp_ras_pop", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "ras_bp_addr", 0, 0);

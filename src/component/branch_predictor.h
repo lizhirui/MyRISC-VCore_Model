@@ -332,6 +332,8 @@ namespace component
                     gshare_pht[i] = 0x00;
                 }
 
+                main_ras.reset();
+
                 this->tdb.create(TRACE_DIR + "branch_predictor.tdb");
                 this->tdb.mark_signal(trace::domain_t::input, "fetch_bp_pc", sizeof(uint32_t), 1);
                 this->tdb.mark_signal(trace::domain_t::input, "fetch_bp_instruction", sizeof(uint32_t), 1);
@@ -536,10 +538,14 @@ namespace component
                 this->tdb.update_signal<uint32_t>(trace::domain_t::output, "bp_ras_addr", 0, 0);
                 this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bp_ras_push", 0, 0);
                 this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bp_ras_pop", 0, 0);
+
+                main_ras.trace_pre();
             }
 
             void trace_post()
             {
+                main_ras.trace_post();
+
                 this->tdb.update_signal<uint16_t>(trace::domain_t::output, "gshare_global_history_next", gshare_global_history, 0);
                 this->tdb.update_signal<uint16_t>(trace::domain_t::output, "call_global_history_next", call_global_history, 0);
                 this->tdb.update_signal<uint16_t>(trace::domain_t::output, "normal_global_history_next", normal_global_history, 0);

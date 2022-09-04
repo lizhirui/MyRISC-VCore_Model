@@ -1,3 +1,5 @@
-this->tdb.mark_signal(trace::domain_t::output, "call_target_cache_write_addr", sizeof(uint16_t), 1);
-                this->tdb.mark_signal(trace::domain_t::output, "call_target_cache_write_data", sizeof(uint32_t), 1);
-                this->tdb.mark_signal(trace::domain_t::output, "call_target_cache_we", sizeof(uint8_t), 1);
+this->tdb.mark_signal(trace::domain_t::output, "ras_csrf_ras_full_add", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "bp_ras_addr", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "bp_ras_push", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "bp_ras_pop", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "ras_bp_addr", sizeof(uint32_t), 1);

@@ -15,6 +15,8 @@ namespace component
         private:
             uint32_t last_addr = 0;
 
+            trace::trace_database tdb;
+
             ras_item_t get_item(uint32_t item_id)
             {
                 return this->buffer[item_id];
@@ -47,9 +49,53 @@ namespace component
             }
 
         public:
-            ras(uint32_t size) : component::stack<ras_item_t>(size)
+            ras(uint32_t size) : component::stack<ras_item_t>(size), tdb(TRACE_RAS)
             {
-            
+                
+            }
+
+            virtual void reset()
+            {
+                last_addr = 0;
+                component::stack<ras_item_t>::reset();
+
+                this->tdb.create(TRACE_DIR + "ras.tdb");
+                this->tdb.mark_signal(trace::domain_t::output, "ras_csrf_ras_full_add", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "bp_ras_addr", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "bp_ras_push", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "bp_ras_pop", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "ras_bp_addr", sizeof(uint32_t), 1);
+                this->tdb.write_metainfo();
+                this->tdb.trace_on();
+                this->tdb.capture_status();
+                this->tdb.write_row();
+            }
+
+            void trace_pre()
+            {
+                this->tdb.capture_input();
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "ras_csrf_ras_full_add", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "bp_ras_addr", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "bp_ras_push", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "bp_ras_pop", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "ras_bp_addr", 0, 0);
+
+                ras_item_t t_item;
+
+                if(get_top(&t_item))
+                {
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "ras_bp_addr", t_item.addr, 0);
+                }
+                else
+                {
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "ras_bp_addr", last_addr, 0);
+                }
+            }
+
+            void trace_post()
+            {
+                this->tdb.capture_output_status();
+                this->tdb.write_row();
             }
 
             void push_addr(uint32_t addr)
@@ -71,6 +117,7 @@ namespace component
                     if(is_full())
                     {
                         ras_full_add();
+                        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "ras_csrf_ras_full_add", 1, 0);
                         throw_push(t_item);
                     }
                     else
@@ -78,11 +125,16 @@ namespace component
                         push(t_item);
                     }
                 }
+
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "bp_ras_addr", addr, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "bp_ras_push", 1, 0);
             }
 
             uint32_t pop_addr()
             {
                 ras_item_t t_item;
+
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "bp_ras_pop", 1, 0);
 
                 if(get_top(&t_item))
                 {
