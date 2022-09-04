@@ -42,7 +42,9 @@ namespace component
             {
                 uint32_t pc_p1 = (pc >> (2 + GSHARE_PC_P2_ADDR_WIDTH)) & GSHARE_PC_P1_ADDR_MASK;
                 uint32_t pc_p2 = (pc >> 2) & GSHARE_PC_P2_ADDR_MASK;
-                uint32_t pht_addr = ((gshare_global_history ^ pc_p1) << GSHARE_PC_P2_ADDR_WIDTH) | pc_p2;
+                //uint32_t pht_addr = ((gshare_global_history ^ pc_p1) << GSHARE_PC_P2_ADDR_WIDTH) | pc_p2;
+                uint32_t pht_addr = gshare_global_history ^ pc_p1;
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "gshare_pht_out", gshare_pht[pht_addr], 0);
                 return gshare_pht[pht_addr] >= 2;
             }
 
@@ -50,7 +52,8 @@ namespace component
             {
                 uint32_t pc_p1 = (pc >> (2 + GSHARE_PC_P2_ADDR_WIDTH)) & GSHARE_PC_P1_ADDR_MASK;
                 uint32_t pc_p2 = (pc >> 2) & GSHARE_PC_P2_ADDR_MASK;
-                uint32_t pht_addr = ((gshare_global_history_retired ^ pc_p1) << GSHARE_PC_P2_ADDR_WIDTH) | pc_p2;
+                //uint32_t pht_addr = ((gshare_global_history_retired ^ pc_p1) << GSHARE_PC_P2_ADDR_WIDTH) | pc_p2;
+                uint32_t pht_addr = gshare_global_history_retired ^ pc_p1;
                 /*uint32_t true_next_state[] = {0x01, 0x03, 0x03, 0x03};
                 uint32_t false_next_state[] = {0x00, 0x00, 0x00, 0x02};*/
 
@@ -61,6 +64,7 @@ namespace component
                     if(gshare_pht[pht_addr] < 3)
                     {
                         gshare_pht[pht_addr]++;
+                        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "gshare_pht_we", 1, 0);
                     }
                     //gshare_pht[pht_addr] = true_next_state[gshare_pht[pht_addr] & 0x03];
                 }
@@ -69,11 +73,14 @@ namespace component
                     if(gshare_pht[pht_addr] > 0)
                     {
                         gshare_pht[pht_addr]--;
+                        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "gshare_pht_we", 1, 0);
                     }
                     //gshare_pht[pht_addr] = false_next_state[gshare_pht[pht_addr] & 0x03];
                 }
 
                 gshare_global_history_update(jump, hit);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "gshare_pht_write_addr", pht_addr, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "gshare_pht_write_data", gshare_pht[pht_addr], 0);
             }
 
             uint32_t local_bht[LOCAL_BHT_SIZE];
@@ -85,7 +92,8 @@ namespace component
                 uint32_t pc_p1 = (pc >> (2 + LOCAL_PC_P2_ADDR_WIDTH)) & LOCAL_PC_P1_ADDR_MASK;
                 uint32_t pc_p2 = (pc >> 2) & LOCAL_PC_P2_ADDR_MASK;
                 uint32_t bht_value = local_bht_retired[pc_p1];
-                uint32_t pht_addr = ((bht_value ^ pc_p1) << LOCAL_PC_P2_ADDR_WIDTH) | pc_p2;     
+                //uint32_t pht_addr = ((bht_value ^ pc_p1) << LOCAL_PC_P2_ADDR_WIDTH) | pc_p2;     
+                uint32_t pht_addr = bht_value ^ pc_p1;
 
                 local_bht_retired[pc_p1] = ((local_bht_retired[pc_p1] << 1) & LOCAL_BHT_WIDTH_MASK) | (jump ? 1 : 0);
                 
@@ -94,6 +102,7 @@ namespace component
                     if(local_pht[pht_addr] < 3)
                     {
                         local_pht[pht_addr]++;
+                        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "local_pht_we", 1, 0);
                     }
                 }
                 else
@@ -101,13 +110,21 @@ namespace component
                     if(local_pht[pht_addr] > 0)
                     {
                         local_pht[pht_addr]--;
+                        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "local_pht_we", 1, 0);
                     }
                 }
 
                 if(!hit)
                 {
                     local_bht[pc_p1] = local_bht_retired[pc_p1];
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "local_bht_feedback_commit_valid", 1, 0);
                 }
+
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "local_bht_feedback_commit", local_bht_retired[pc_p1], 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "local_bht_feedback_commit_p1", pc_p1, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "local_bht_write_addr", pc_p1, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "local_pht_write_addr", pht_addr, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "local_pht_write_data", local_pht[pht_addr], 0);
             }
 
             uint32_t local_get_bht_value(uint32_t pc)
@@ -124,7 +141,11 @@ namespace component
                 if(!hit)
                 {
                     local_bht[pc_p1] = local_history_bru;
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "local_bht_feedback_bru_valid", 1, 0);
                 }
+
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "local_bht_feedback_bru", local_history_bru, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "local_bht_feedback_bru_p1", pc_p1, 0);
             }
 
             void local_update_prediction_guess(uint32_t pc, bool jump)
@@ -138,7 +159,9 @@ namespace component
                 uint32_t pc_p1 = (pc >> (2 + LOCAL_PC_P2_ADDR_WIDTH)) & LOCAL_PC_P1_ADDR_MASK;
                 uint32_t pc_p2 = (pc >> 2) & LOCAL_PC_P2_ADDR_MASK;
                 uint32_t bht_value = local_bht[pc_p1];
-                uint32_t pht_addr = ((bht_value ^ pc_p1) << LOCAL_PC_P2_ADDR_WIDTH) | pc_p2;
+                //uint32_t pht_addr = ((bht_value ^ pc_p1) << LOCAL_PC_P2_ADDR_WIDTH) | pc_p2;
+                uint32_t pht_addr = bht_value ^ pc_p1;
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "local_pht_out", local_pht[pht_addr], 0);
                 return local_pht[pht_addr] >= 2;
             }
 
@@ -148,7 +171,8 @@ namespace component
             {
                 uint32_t pc_p1 = (pc >> (2 + GSHARE_PC_P2_ADDR_WIDTH)) & GSHARE_PC_P1_ADDR_MASK;
                 uint32_t pc_p2 = (pc >> 2) & GSHARE_PC_P2_ADDR_MASK;
-                uint32_t cpht_addr = ((gshare_global_history ^ pc_p1) << GSHARE_PC_P2_ADDR_WIDTH) | pc_p2;
+                //uint32_t cpht_addr = ((gshare_global_history ^ pc_p1) << GSHARE_PC_P2_ADDR_WIDTH) | pc_p2;
+                uint32_t cpht_addr = gshare_global_history ^ pc_p1;
                 
                 if(cpht[cpht_addr] <= 1)//gshare
                 //if(false)
@@ -156,10 +180,12 @@ namespace component
                     if(hit && (cpht[cpht_addr] > 0))
                     {
                         cpht[cpht_addr]--;
+                        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "cpht_we", 1, 0);
                     }
                     else if(!hit)
                     {
                         cpht[cpht_addr]++;
+                        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "cpht_we", 1, 0);
                     }
                 }
                 else//local
@@ -167,12 +193,17 @@ namespace component
                     if(hit && (cpht[cpht_addr] < 3))
                     {
                         cpht[cpht_addr]++;
+                        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "cpht_we", 1, 0);
                     }
                     else if(!hit)
                     {
                         cpht[cpht_addr]--;
+                        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "cpht_we", 1, 0);
                     }
                 }
+
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "cpht_write_addr", cpht_addr, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "cpht_write_data", cpht[cpht_addr], 0);
             }
 
             //gshare only when return value is true
@@ -180,7 +211,9 @@ namespace component
             {
                 uint32_t pc_p1 = (pc >> (2 + GSHARE_PC_P2_ADDR_WIDTH)) & GSHARE_PC_P1_ADDR_MASK;
                 uint32_t pc_p2 = (pc >> 2) & GSHARE_PC_P2_ADDR_MASK;
-                uint32_t cpht_addr = ((gshare_global_history ^ pc_p1) << GSHARE_PC_P2_ADDR_WIDTH) | pc_p2;
+                //uint32_t cpht_addr = ((gshare_global_history ^ pc_p1) << GSHARE_PC_P2_ADDR_WIDTH) | pc_p2;
+                uint32_t cpht_addr = gshare_global_history ^ pc_p1;
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "cpht_out", cpht[cpht_addr], 0);
                 return cpht[cpht_addr] <= 1;
             }
 
@@ -198,16 +231,21 @@ namespace component
             {
                 uint32_t pc_p1 = (pc >> (2 + CALL_PC_P2_ADDR_WIDTH)) & CALL_PC_P1_ADDR_MASK;
                 uint32_t pc_p2 = (pc >> 2) & CALL_PC_P2_ADDR_MASK;
-                uint32_t target_cache_addr = ((call_global_history ^ pc_p1) << CALL_PC_P2_ADDR_WIDTH) | pc_p2; 
+                //uint32_t target_cache_addr = ((call_global_history ^ pc_p1) << CALL_PC_P2_ADDR_WIDTH) | pc_p2; 
+                uint32_t target_cache_addr = call_global_history ^ pc_p1;
                 call_target_cache[target_cache_addr] = target;
                 call_global_history_update(jump);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "call_target_cache_write_addr", target_cache_addr, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "call_target_cache_write_data", target, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "call_target_cache_we", 1, 0);
             }
 
             uint32_t call_get_prediction(uint32_t pc)
             {
                 uint32_t pc_p1 = (pc >> (2 + CALL_PC_P2_ADDR_WIDTH)) & CALL_PC_P1_ADDR_MASK;
                 uint32_t pc_p2 = (pc >> 2) & CALL_PC_P2_ADDR_MASK;
-                uint32_t target_cache_addr = ((call_global_history ^ pc_p1) << CALL_PC_P2_ADDR_WIDTH) | pc_p2;
+                //uint32_t target_cache_addr = ((call_global_history ^ pc_p1) << CALL_PC_P2_ADDR_WIDTH) | pc_p2;
+                uint32_t target_cache_addr = call_global_history ^ pc_p1;
                 return call_target_cache[target_cache_addr];
             }
 
@@ -217,22 +255,28 @@ namespace component
             void normal_global_history_update(bool jump)
             {
                 normal_global_history = ((normal_global_history << 1) & NORMAL_GLOBAL_HISTORY_MASK) | (jump ? 1 : 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "normal_global_history_next", normal_global_history, 0);
             }
 
             void normal_update_prediction(uint32_t pc, bool jump, uint32_t target)
             {
                 uint32_t pc_p1 = (pc >> (2 + NORMAL_PC_P2_ADDR_WIDTH)) & NORMAL_PC_P1_ADDR_MASK;
                 uint32_t pc_p2 = (pc >> 2) & NORMAL_PC_P2_ADDR_MASK;
-                uint32_t target_cache_addr = ((normal_global_history ^ pc_p1) << NORMAL_PC_P2_ADDR_WIDTH) | pc_p2; 
+                //uint32_t target_cache_addr = ((normal_global_history ^ pc_p1) << NORMAL_PC_P2_ADDR_WIDTH) | pc_p2; 
+                uint32_t target_cache_addr = normal_global_history ^ pc_p1; 
                 normal_target_cache[target_cache_addr] = target;
                 normal_global_history_update(jump);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "normal_target_cache_write_addr", target_cache_addr, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "normal_target_cache_write_data", target, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "normal_target_cache_we", 1, 0);
             }
 
             uint32_t normal_get_prediction(uint32_t pc)
             {
                 uint32_t pc_p1 = (pc >> (2 + NORMAL_PC_P2_ADDR_WIDTH)) & NORMAL_PC_P1_ADDR_MASK;
                 uint32_t pc_p2 = (pc >> 2) & NORMAL_PC_P2_ADDR_MASK;
-                uint32_t target_cache_addr = ((normal_global_history ^ pc_p1) << NORMAL_PC_P2_ADDR_WIDTH) | pc_p2;
+                //uint32_t target_cache_addr = ((normal_global_history ^ pc_p1) << NORMAL_PC_P2_ADDR_WIDTH) | pc_p2;
+                uint32_t target_cache_addr = normal_global_history ^ pc_p1;
                 return normal_target_cache[target_cache_addr];
             }
 
@@ -253,9 +297,10 @@ namespace component
 
             std::queue<sync_request_t> sync_request_q;
             //std::ofstream trace_file;
+            trace::trace_database tdb;
 
         public:
-            branch_predictor() : main_ras(RAS_SIZE)//, trace_file("jump_trace.txt")
+            branch_predictor() : main_ras(RAS_SIZE), tdb(TRACE_BRANCH_PREDICTOR)//, trace_file("jump_trace.txt")
             {
                 gshare_global_history = 0;
                 memset(gshare_pht, 0, sizeof(gshare_pht));
@@ -286,12 +331,229 @@ namespace component
                 {
                     gshare_pht[i] = 0x00;
                 }
+
+                this->tdb.create(TRACE_DIR + "branch_predictor.tdb");
+                this->tdb.mark_signal(trace::domain_t::input, "fetch_bp_pc", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "fetch_bp_instruction", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "fetch_bp_valid", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "fetch_bp_update_pc", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "fetch_bp_update_instruction", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "fetch_bp_update_jump", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "fetch_bp_update_next_pc", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "fetch_bp_update_valid", sizeof(uint8_t), 1);
+                this->tdb.mark_signal_bitmap(trace::domain_t::input, "exbru_bp_cp.rat_phy_map_table_valid", PHY_REG_NUM, 1);
+                this->tdb.mark_signal_bitmap(trace::domain_t::input, "exbru_bp_cp.rat_phy_map_table_visible", PHY_REG_NUM, 1);
+                this->tdb.mark_signal(trace::domain_t::input, "exbru_bp_cp.global_history", sizeof(uint16_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "exbru_bp_cp.local_history", sizeof(uint16_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "exbru_bp_pc", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "exbru_bp_instruction", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "exbru_bp_jump", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "exbru_bp_next_pc", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "exbru_bp_hit", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "exbru_bp_valid", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_bp_pc", sizeof(uint32_t), COMMIT_WIDTH);
+		        this->tdb.mark_signal(trace::domain_t::input, "commit_bp_instruction", sizeof(uint32_t), COMMIT_WIDTH);
+		        this->tdb.mark_signal(trace::domain_t::input, "commit_bp_jump", sizeof(uint8_t), 1);
+		        this->tdb.mark_signal(trace::domain_t::input, "commit_bp_next_pc", sizeof(uint32_t), COMMIT_WIDTH);
+		        this->tdb.mark_signal(trace::domain_t::input, "commit_bp_hit", sizeof(uint8_t), 1);
+		        this->tdb.mark_signal(trace::domain_t::input, "commit_bp_valid", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "bp_fetch_jump", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "bp_fetch_next_pc", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "bp_fetch_valid", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "bp_fetch_global_history", sizeof(uint16_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "bp_fetch_local_history", sizeof(uint16_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "fetch_opcode", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "fetch_rd", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "fetch_rs1", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "fetch_imm_b", sizeof(uint16_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "fetch_imm_j", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "fetch_rd_is_link", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "fetch_rs1_is_link", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "fetch_is_branch", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "fetch_is_call", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "fetch_is_normal_jump", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "fetch_is_jal", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "fetch_is_jalr", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "gshare_jump", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "gshare_next_pc", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "local_jump", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "local_next_pc", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "call_next_pc", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "normal_next_pc", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "exbru_is_branch", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "commit_opcode", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "commit_rd", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "commit_rs1", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "commit_rd_is_link", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "commit_rs1_is_link", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "commit_is_branch", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "commit_is_call", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "commit_is_normal_jump", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "commit_index", sizeof(uint8_t), 1);
+                this->tdb.bind_signal(trace::domain_t::status, "gshare_global_history", &gshare_global_history, sizeof(uint16_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "gshare_global_history_next", sizeof(uint16_t), 1);
+                this->tdb.bind_signal(trace::domain_t::status, "gshare_global_history_retired", &gshare_global_history_retired, sizeof(uint16_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "gshare_global_history_feedback", sizeof(uint16_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "gshare_pht_write_addr", sizeof(uint16_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "gshare_pht_write_data", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "gshare_pht_we", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "local_bht_feedback_commit", sizeof(uint16_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "local_bht_feedback_commit_p1", sizeof(uint16_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "local_bht_feedback_commit_valid", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "local_bht_feedback_bru", sizeof(uint16_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "local_bht_feedback_bru_p1", sizeof(uint16_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "local_bht_feedback_bru_valid", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "local_bht_write_addr", sizeof(uint16_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "local_pht_write_addr", sizeof(uint16_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "local_pht_write_data", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "local_pht_we", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "cpht_write_addr", sizeof(uint16_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "cpht_write_data", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "cpht_we", sizeof(uint8_t), 1);
+                this->tdb.bind_signal(trace::domain_t::status, "call_global_history", &call_global_history, sizeof(uint16_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "call_global_history_next", sizeof(uint16_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "call_target_cache_write_addr", sizeof(uint16_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "call_target_cache_write_data", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "call_target_cache_we", sizeof(uint8_t), 1);
+                this->tdb.bind_signal(trace::domain_t::status, "normal_global_history", &normal_global_history, sizeof(uint16_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "normal_global_history_next", sizeof(uint16_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "normal_target_cache_write_addr", sizeof(uint16_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "normal_target_cache_write_data", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "normal_target_cache_we", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "gshare_pht_out", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "local_pht_out", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "cpht_out", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "ras_bp_addr", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "bp_ras_addr", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "bp_ras_push", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "bp_ras_pop", sizeof(uint8_t), 1);
+                this->tdb.write_metainfo();
+                this->tdb.trace_on();
+                this->tdb.capture_status();
+                this->tdb.write_row();
+            }
+
+            void trace_pre()
+            {
+                this->tdb.capture_input();
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "fetch_bp_pc", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "fetch_bp_instruction", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_bp_valid", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "fetch_bp_update_pc", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "fetch_bp_update_instruction", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_bp_update_jump", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "fetch_bp_update_next_pc", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_bp_update_valid", 0, 0);
+                this->tdb.update_signal_bitmap_all(trace::domain_t::input, "exbru_bp_cp.rat_phy_map_table_valid", 0, 0);
+                this->tdb.update_signal_bitmap_all(trace::domain_t::input, "exbru_bp_cp.rat_phy_map_table_visible", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::input, "exbru_bp_cp.global_history", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::input, "exbru_bp_cp.local_history", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "exbru_bp_pc", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "exbru_bp_instruction", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "exbru_bp_jump", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "exbru_bp_next_pc", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "exbru_bp_hit", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "exbru_bp_valid", 0, 0);
+                
+                for(auto i = 0;i < COMMIT_WIDTH;i++)
+                {
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "commit_bp_pc", 0, i);
+    		        this->tdb.update_signal<uint32_t>(trace::domain_t::input, "commit_bp_instruction", 0, i);
+                }
+
+		        this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_bp_jump", 0, 0);
+                
+                for(auto i = 0;i < COMMIT_WIDTH;i++)
+                {
+    		        this->tdb.update_signal<uint32_t>(trace::domain_t::input, "commit_bp_next_pc", 0, i);
+                }
+
+		        this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_bp_hit", 0, 0);
+		        this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_bp_valid", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bp_fetch_jump", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "bp_fetch_next_pc", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bp_fetch_valid", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "bp_fetch_global_history", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "bp_fetch_local_history", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_opcode", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_rd", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_rs1", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "fetch_imm_b", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "fetch_imm_j", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_rd_is_link", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_rs1_is_link", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_is_branch", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_is_call", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_is_normal_jump", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_is_jal", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_is_jalr", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "gshare_jump", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "gshare_next_pc", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "local_jump", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "local_next_pc", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "call_next_pc", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "normal_next_pc", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "exbru_is_branch", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_opcode", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_rd", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_rs1", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_rd_is_link", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_rs1_is_link", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_is_branch", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_is_call", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_is_normal_jump", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_index", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "gshare_global_history_next", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "gshare_global_history_feedback", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "gshare_pht_write_addr", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "gshare_pht_write_data", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "gshare_pht_we", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "local_bht_feedback_commit", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "local_bht_feedback_commit_p1", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "local_bht_feedback_commit_valid", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "local_bht_feedback_bru", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "local_bht_feedback_bru_p1", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "local_bht_feedback_bru_valid", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "local_bht_write_addr", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "local_pht_write_addr", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "local_pht_write_data", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "local_pht_we", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "cpht_write_addr", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "cpht_write_data", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "cpht_we", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "call_global_history_next", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "call_target_cache_write_addr", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "call_target_cache_write_data", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "call_target_cache_we", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "normal_global_history_next", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "normal_target_cache_write_addr", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "normal_target_cache_write_data", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "normal_target_cache_we", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "gshare_pht_out", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "local_pht_out", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "cpht_out", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "ras_bp_addr", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "bp_ras_addr", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bp_ras_push", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bp_ras_pop", 0, 0);
+            }
+
+            void trace_post()
+            {
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "gshare_global_history_next", gshare_global_history, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "call_global_history_next", call_global_history, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "normal_global_history_next", normal_global_history, 0);
+                this->tdb.capture_output_status();
+                this->tdb.write_row();
             }
 
             void save(checkpoint_t &cp, uint32_t pc)
             {
                 cp.global_history = gshare_global_history;
                 cp.local_history = local_get_bht_value(pc);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "gshare_global_history_feedback", gshare_global_history, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "bp_fetch_global_history", cp.global_history, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "bp_fetch_local_history", cp.local_history, 0);
             }
 
             uint32_t s_state = 0;
@@ -345,6 +607,7 @@ namespace component
                 switch(opcode)
                 {
                     case 0x6f://jal
+                        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_is_jal", 1, 0);
                         need_jump_prediction = false;
                         instruction_next_pc_valid = true;
                         instruction_next_pc = pc + sign_extend(imm_j, 21);
@@ -352,11 +615,14 @@ namespace component
                         if(rd_is_link)
                         {
                             main_ras.push_addr(pc + 4);
+                            this->tdb.update_signal<uint32_t>(trace::domain_t::output, "bp_ras_addr", pc + 4, 0);
+                            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bp_ras_push", 1, 0);
                         }
 
                         break;
 
                     case 0x67://jalr
+                        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_is_jalr", 1, 0);
                         need_jump_prediction = false;
                         instruction_next_pc_valid = false;
 
@@ -369,14 +635,22 @@ namespace component
                                     //push
                                     instruction_next_pc_valid = true;
                                     instruction_next_pc = call_get_prediction(pc);
+                                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_is_call", 1, 0);
+                                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "call_next_pc", instruction_next_pc, 0);
                                     main_ras.push_addr(pc + 4);
+                                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "bp_ras_addr", pc + 4, 0);
+                                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bp_ras_push", 1, 0);
                                 }
                                 else
                                 {
                                     //pop, then push for coroutine context switch
                                     instruction_next_pc_valid = true;
                                     instruction_next_pc = main_ras.pop_addr();
+                                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "ras_bp_addr", instruction_next_pc, 0);
+                                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bp_ras_pop", 1, 0);
                                     main_ras.push_addr(pc + 4);
+                                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "bp_ras_addr", pc + 4, 0);
+                                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bp_ras_push", 1, 0);
                                 }
                             }
                             else
@@ -384,7 +658,11 @@ namespace component
                                 //push
                                 instruction_next_pc_valid = true;
                                 instruction_next_pc = call_get_prediction(pc);
+                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_is_call", 1, 0);
+                                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "call_next_pc", instruction_next_pc, 0);
                                 main_ras.push_addr(pc + 4);
+                                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "bp_ras_addr", pc + 4, 0);
+                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bp_ras_push", 1, 0);
                             }
                         }
                         else
@@ -394,23 +672,32 @@ namespace component
                                 //pop
                                 instruction_next_pc_valid = true;
                                 instruction_next_pc = main_ras.pop_addr();
+                                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "ras_bp_addr", instruction_next_pc, 0);
+                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bp_ras_pop", 1, 0);
                             }
                             else
                             {
                                 //none
                                 instruction_next_pc_valid = true;
                                 instruction_next_pc = normal_get_prediction(pc);
+                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_is_normal_jump", 1, 0);
+                                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "normal_next_pc", instruction_next_pc, 0);
                             }
                         }
                         
                         break;
 
                     case 0x63://beq bne blt bge bltu bgeu
+                        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_is_branch", 1, 0);
                         need_jump_prediction = true;
                         //instruction_next_pc_valid = local_get_prediction(pc);
                         instruction_next_pc_valid = !cpht_get_prediction(pc) ? local_get_prediction(pc) : gshare_get_prediction(pc);
                         //instruction_next_pc_valid = s_get_prediction(pc);
                         instruction_next_pc = instruction_next_pc_valid ? (pc + sign_extend(imm_b, 13)) : (pc + 4);
+                        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "gshare_jump", gshare_get_prediction(pc), 0);
+                        this->tdb.update_signal<uint32_t>(trace::domain_t::output, "gshare_next_pc", instruction_next_pc, 0);
+                        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "local_jump", local_get_prediction(pc), 0);
+                        this->tdb.update_signal<uint32_t>(trace::domain_t::output, "local_next_pc", instruction_next_pc, 0);
                         /*instruction_next_pc_valid = false;
                         instruction_next_pc = pc + sign_extend(imm_b, 13);*/
 
@@ -451,6 +738,19 @@ namespace component
                     *next_pc = instruction_next_pc;
                 }
 
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "fetch_bp_pc", pc, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "fetch_bp_instruction", instruction, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_bp_valid", 1, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bp_fetch_jump", *jump, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "bp_fetch_next_pc", *next_pc, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bp_fetch_valid", 1, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_opcode", opcode, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_rd", rd, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_rs1", rs1, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "fetch_imm_b", imm_b, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "fetch_imm_j", imm_j, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_rd_is_link", rd_is_link, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_rs1_is_link", rs1_is_link, 0);
                 return true;
             }
 
@@ -469,6 +769,12 @@ namespace component
                     gshare_global_history_update_guess(jump);
                     local_update_prediction_guess(pc, jump);
                 }
+
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "fetch_bp_update_pc", pc, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "fetch_bp_update_instruction", instruction, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_bp_update_jump", jump, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "fetch_bp_update_next_pc", next_pc, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_bp_update_valid", 1, 0);
             }
 
             void update_prediction_bru_guess(checkpoint_t &cp, uint32_t pc, uint32_t instruction, bool jump, uint32_t next_pc, bool hit)
@@ -483,12 +789,24 @@ namespace component
                 //condition branch instruction
                 if(opcode == 0x63)
                 {
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "exbru_is_branch", 1, 0);
                     gshare_global_history_update_bru_fix(cp, jump, hit);
                     local_update_prediction_bru_fix(cp, pc, jump, hit);
                 }
+
+                this->tdb.update_signal_bitmap(trace::domain_t::input, "exbru_bp_cp.rat_phy_map_table_valid", cp.rat_phy_map_table_valid, 0);
+                this->tdb.update_signal_bitmap(trace::domain_t::input, "exbru_bp_cp.rat_phy_map_table_visible", cp.rat_phy_map_table_visible, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::input, "exbru_bp_cp.global_history", cp.global_history, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::input, "exbru_bp_cp.local_history", cp.local_history, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "exbru_bp_pc", pc, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "exbru_bp_instruction", instruction, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "exbru_bp_jump", jump, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "exbru_bp_next_pc", next_pc, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "exbru_bp_hit", hit, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "exbru_bp_valid", 1, 0);
             }
 
-            void update_prediction(uint32_t pc, uint32_t instruction, bool jump, uint32_t next_pc, bool hit)
+            void update_prediction(uint32_t pc, uint32_t instruction, bool jump, uint32_t next_pc, bool hit, int commit_index = 0)
             {
                 auto op_data = instruction;
                 auto opcode = op_data & 0x7f;
@@ -500,6 +818,7 @@ namespace component
                 //condition branch instruction
                 if(opcode == 0x63)
                 {
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_is_branch", 1, 0);
                     gshare_update_prediction(pc, jump, hit);
                     local_update_prediction(pc, jump, hit);
                     cpht_update_prediction(pc, hit);
@@ -514,6 +833,7 @@ namespace component
                             {
                                 //push
                                 call_update_prediction(pc, jump, next_pc);
+                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_is_call", 1, 0);
                             }
                             else
                             {
@@ -524,6 +844,7 @@ namespace component
                         {
                             //push
                             call_update_prediction(pc, jump, next_pc);
+                            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_is_call", 1, 0);
                         }
                     }
                     else
@@ -536,9 +857,23 @@ namespace component
                         {
                             //none
                             normal_update_prediction(pc, jump, next_pc);
+                            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_is_normal_jump", 1, 0);
                         }
                     }
                 }
+
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "commit_bp_pc", pc, commit_index);
+    		    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "commit_bp_instruction", instruction, commit_index);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_bp_jump", jump << commit_index, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "commit_bp_next_pc", next_pc, commit_index);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_bp_hit", hit << commit_index, 0);
+		        this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_bp_valid", 1 << commit_index, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_opcode", opcode, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_rd", rd, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_rs1", rs1, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_rd_is_link", rd_is_link, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_rs1_is_link", rs1_is_link, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_index", commit_index, 0);
             }
 
             void update_prediction_sync(uint32_t pc, uint32_t instruction, bool jump, uint32_t next_pc, bool hit)

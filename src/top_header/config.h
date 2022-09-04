@@ -38,20 +38,22 @@ const uint32_t MUL_UNIT_NUM = 2;
 const uint32_t EXECUTE_UNIT_NUM = ALU_UNIT_NUM + BRU_UNIT_NUM + CSR_UNIT_NUM + DIV_UNIT_NUM + LSU_UNIT_NUM + MUL_UNIT_NUM;
 
 const uint32_t GSHARE_PC_P1_ADDR_WIDTH = 12;
-const uint32_t GSHARE_PC_P2_ADDR_WIDTH = 6;
+const uint32_t GSHARE_PC_P2_ADDR_WIDTH = 0;
 const uint32_t GSHARE_GLOBAL_HISTORY_WIDTH = GSHARE_PC_P1_ADDR_WIDTH;
-const uint32_t GSHARE_PHT_ADDR_WIDTH = GSHARE_PC_P1_ADDR_WIDTH + GSHARE_PC_P2_ADDR_WIDTH;
+//const uint32_t GSHARE_PHT_ADDR_WIDTH = GSHARE_PC_P1_ADDR_WIDTH + GSHARE_PC_P2_ADDR_WIDTH;
+const uint32_t GSHARE_PHT_ADDR_WIDTH = GSHARE_PC_P1_ADDR_WIDTH;
 const uint32_t GSHARE_PHT_SIZE = 1U << GSHARE_PHT_ADDR_WIDTH;
 const uint32_t GSHARE_PC_P1_ADDR_MASK = (1U << GSHARE_PC_P1_ADDR_WIDTH) - 1U;
 const uint32_t GSHARE_PC_P2_ADDR_MASK = (1U << GSHARE_PC_P2_ADDR_WIDTH) - 1U;
 const uint32_t GSHARE_GLOBAL_HISTORY_MASK = (1U << GSHARE_GLOBAL_HISTORY_WIDTH) - 1U;
 
 const uint32_t LOCAL_PC_P1_ADDR_WIDTH = 12;
-const uint32_t LOCAL_PC_P2_ADDR_WIDTH = 6;
+const uint32_t LOCAL_PC_P2_ADDR_WIDTH = 0;
 const uint32_t LOCAL_BHT_ADDR_WIDTH = LOCAL_PC_P1_ADDR_WIDTH;
 const uint32_t LOCAL_BHT_SIZE = 1U << LOCAL_BHT_ADDR_WIDTH;
 const uint32_t LOCAL_BHT_WIDTH = LOCAL_PC_P1_ADDR_WIDTH;
-const uint32_t LOCAL_PHT_ADDR_WIDTH = LOCAL_PC_P1_ADDR_WIDTH + LOCAL_PC_P2_ADDR_WIDTH;
+//const uint32_t LOCAL_PHT_ADDR_WIDTH = LOCAL_PC_P1_ADDR_WIDTH + LOCAL_PC_P2_ADDR_WIDTH;
+const uint32_t LOCAL_PHT_ADDR_WIDTH = LOCAL_PC_P1_ADDR_WIDTH;
 const uint32_t LOCAL_PHT_SIZE = 1U << LOCAL_PHT_ADDR_WIDTH;
 const uint32_t LOCAL_PC_P1_ADDR_MASK = (1U << LOCAL_PC_P1_ADDR_WIDTH) - 1U;
 const uint32_t LOCAL_PC_P2_ADDR_MASK = (1U << LOCAL_PC_P2_ADDR_WIDTH) - 1U;
@@ -60,18 +62,20 @@ const uint32_t LOCAL_BHT_WIDTH_MASK = (1U << LOCAL_BHT_WIDTH) - 1U;
 const uint32_t RAS_SIZE = 256;
 
 const uint32_t CALL_PC_P1_ADDR_WIDTH = 12;
-const uint32_t CALL_PC_P2_ADDR_WIDTH = 6;
+const uint32_t CALL_PC_P2_ADDR_WIDTH = 0;
 const uint32_t CALL_GLOBAL_HISTORY_WIDTH = CALL_PC_P1_ADDR_WIDTH;
-const uint32_t CALL_TARGET_CACHE_ADDR_WIDTH = CALL_PC_P1_ADDR_WIDTH + CALL_PC_P2_ADDR_WIDTH;
+//const uint32_t CALL_TARGET_CACHE_ADDR_WIDTH = CALL_PC_P1_ADDR_WIDTH + CALL_PC_P2_ADDR_WIDTH;
+const uint32_t CALL_TARGET_CACHE_ADDR_WIDTH = CALL_PC_P1_ADDR_WIDTH;
 const uint32_t CALL_TARGET_CACHE_SIZE = 1U << CALL_TARGET_CACHE_ADDR_WIDTH;
 const uint32_t CALL_PC_P1_ADDR_MASK = (1U << CALL_PC_P1_ADDR_WIDTH) - 1U;
 const uint32_t CALL_PC_P2_ADDR_MASK = (1U << CALL_PC_P2_ADDR_WIDTH) - 1U;
 const uint32_t CALL_GLOBAL_HISTORY_MASK = (1U << CALL_GLOBAL_HISTORY_WIDTH) - 1U;
 
 const uint32_t NORMAL_PC_P1_ADDR_WIDTH = 12;
-const uint32_t NORMAL_PC_P2_ADDR_WIDTH = 6;
+const uint32_t NORMAL_PC_P2_ADDR_WIDTH = 0;
 const uint32_t NORMAL_GLOBAL_HISTORY_WIDTH = NORMAL_PC_P1_ADDR_WIDTH;
-const uint32_t NORMAL_TARGET_CACHE_ADDR_WIDTH = NORMAL_PC_P1_ADDR_WIDTH + NORMAL_PC_P2_ADDR_WIDTH;
+//const uint32_t NORMAL_TARGET_CACHE_ADDR_WIDTH = NORMAL_PC_P1_ADDR_WIDTH + NORMAL_PC_P2_ADDR_WIDTH;
+const uint32_t NORMAL_TARGET_CACHE_ADDR_WIDTH = NORMAL_PC_P1_ADDR_WIDTH;
 const uint32_t NORMAL_TARGET_CACHE_SIZE = 1U << NORMAL_TARGET_CACHE_ADDR_WIDTH;
 const uint32_t NORMAL_PC_P1_ADDR_MASK = (1U << NORMAL_PC_P1_ADDR_WIDTH) - 1U;
 const uint32_t NORMAL_PC_P2_ADDR_MASK = (1U << NORMAL_PC_P2_ADDR_WIDTH) - 1U;
@@ -82,19 +86,20 @@ const std::string TRACE_DIR = R"(D:\program\project\MyRISC-VCore\model\MyRISC-VC
 #define TRACE_ENABLE
 
 #ifdef TRACE_ENABLE
-    const bool TRACE_FETCH = true;
-    const bool TRACE_DECODE = true;
-    const bool TRACE_RENAME = true;
-    const bool TRACE_READREG = true;
-    const bool TRACE_ISSUE = true;
-    const bool TRACE_EXECUTE_ALU = true;
-    const bool TRACE_EXECUTE_BRU = true;
-    const bool TRACE_EXECUTE_CSR = true;
-    const bool TRACE_EXECUTE_DIV = true;
-    const bool TRACE_EXECUTE_LSU = true;
-    const bool TRACE_EXECUTE_MUL = true;
-    const bool TRACE_WB = true;
-    const bool TRACE_COMMIT = true;
+    const bool TRACE_FETCH = false;
+    const bool TRACE_DECODE = false;
+    const bool TRACE_RENAME = false;
+    const bool TRACE_READREG = false;
+    const bool TRACE_ISSUE = false;
+    const bool TRACE_EXECUTE_ALU = false;
+    const bool TRACE_EXECUTE_BRU = false;
+    const bool TRACE_EXECUTE_CSR = false;
+    const bool TRACE_EXECUTE_DIV = false;
+    const bool TRACE_EXECUTE_LSU = false;
+    const bool TRACE_EXECUTE_MUL = false;
+    const bool TRACE_WB = false;
+    const bool TRACE_COMMIT = false;
+    const bool TRACE_BRANCH_PREDICTOR = true;
 #else
     const bool TRACE_FETCH = false;
     const bool TRACE_DECODE = false;
@@ -109,4 +114,5 @@ const std::string TRACE_DIR = R"(D:\program\project\MyRISC-VCore\model\MyRISC-VC
     const bool TRACE_EXECUTE_MUL = false;
     const bool TRACE_WB = false;
     const bool TRACE_COMMIT = false;
+    const bool TRACE_BRANCH_PREDICTOR = false;
 #endif

@@ -925,6 +925,16 @@ uint64_t get_cpu_clock_cycle()
     return cpu_clock_cycle;
 }
 
+static void trace_pre()
+{
+    branch_predictor.trace_pre();
+}
+
+static void trace_post()
+{
+    branch_predictor.trace_post();
+}
+
 static void run()
 {
     //std::ofstream trace_file("no_branch.txt");
@@ -938,7 +948,7 @@ static void run()
 
     while(1)
     {
-        /*if((cpu_clock_cycle >= 186400) && need_to_trigger)
+        /*if((cpu_clock_cycle >= 180) && need_to_trigger)
         {
             step_state = true;
             wait_commit = false;
@@ -1041,6 +1051,7 @@ static void run()
         }
 
         rob.set_committed(false);
+        trace_pre();
         t_commit_feedback_pack = commit_stage.run();
         t_wb_feedback_pack = wb_stage.run(t_commit_feedback_pack);
 
@@ -1125,6 +1136,7 @@ static void run()
         csr_file.write_sys(CSR_RASH, (uint32_t)(ras_full >> 32));
         csr_file.write_sys(CSR_FNF, (uint32_t)(fetch_not_full & 0xffffffffu));
         csr_file.write_sys(CSR_FNFH, (uint32_t)(fetch_not_full >> 32));
+        trace_post();
 
         //integrity check
         /*for(auto i = 1;i < ARCH_REG_NUM;i++)

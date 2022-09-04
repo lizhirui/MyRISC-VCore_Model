@@ -47,6 +47,9 @@ for line in lines:
                 cur_count_text = count_text
 
             line = cur_tab[len(split_tab):] + line
+            
+            if "bind_signal" in line:
+                continue
 
             if "mark_signal_bitmap" in line:
                 line = line.replace("mark_signal_bitmap", "update_signal_bitmap_all")

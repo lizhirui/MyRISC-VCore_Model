@@ -685,7 +685,7 @@ namespace pipeline
 										{
 											branch_hit_add();
 											this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_csrf_branch_hit_add", 1, 0);
-											branch_predictor->update_prediction(rob_item.pc, rob_item.inst_value, rob_item.bru_jump, rob_item.bru_next_pc, true);
+											branch_predictor->update_prediction(rob_item.pc, rob_item.inst_value, rob_item.bru_jump, rob_item.bru_next_pc, true, i);
     										this->tdb.update_signal_bit<uint8_t>(trace::domain_t::output, "commit_bp_hit", 1, i, 0);		
 											checkpoint_buffer->pop_sync();
 											this->tdb.update_signal_bit<uint8_t>(trace::domain_t::output, "commit_cpbuf_pop", 1, i, 0);
@@ -696,7 +696,7 @@ namespace pipeline
 										{
 											branch_miss_add();
 											this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_csrf_branch_miss_add", 1, 0);
-											branch_predictor->update_prediction(rob_item.pc, rob_item.inst_value, rob_item.bru_jump, rob_item.bru_next_pc, false);
+											branch_predictor->update_prediction(rob_item.pc, rob_item.inst_value, rob_item.bru_jump, rob_item.bru_next_pc, false, i);
 											auto cp = checkpoint_buffer->get_item(rob_item.checkpoint_id);
 											this->tdb.update_signal<uint16_t>(trace::domain_t::output, "commit_cpbuf_id", rob_item.checkpoint_id, i);
     										this->tdb.update_signal_bitmap(trace::domain_t::input, "cpbuf_commit_data.rat_phy_map_table_valid", &cp.rat_phy_map_table_valid, i);
