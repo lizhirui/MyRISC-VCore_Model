@@ -190,7 +190,7 @@ namespace pipeline
         this->tdb.update_signal_bitmap_all(trace::domain_t::input, "rat_rename_map_table_visible", 0, 0);
 
         
-        for(auto i = 0;i < RENAME_WIDTH * 2;i++)
+        for(auto i = 0;i < RENAME_WIDTH * 3;i++)
         {
             this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rat_read_arch_id", 0, i);
             this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rat_rename_read_phy_id", 0, i);
@@ -455,6 +455,9 @@ namespace pipeline
                                         this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rat_read_arch_id", rev_pack.rd, i * 3 + 2);
                                         this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rat_rename_read_phy_id", rob_item[i].old_phy_reg_id, i * 3 + 2);
 
+                                        rat->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rat_read_arch_id", rev_pack.rd, i * 3 + 2);
+                                        rat->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rat_rename_read_phy_id", rob_item[i].old_phy_reg_id, i * 3 + 2);
+
                                         send_pack.op_info[i].rd_phy = new_phy_reg_id[used_phy_reg_cnt++];
                                         rat->set_map_sync(rev_pack.rd, send_pack.op_info[i].rd_phy);
 
@@ -462,6 +465,11 @@ namespace pipeline
                                         this->tdb.update_signal_bit<uint8_t>(trace::domain_t::output, "rename_rat_phy_id_valid", 1, i, 0);
                                         this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rat_arch_id", rev_pack.rd, i);
                                         this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rat_map", 1, 0);
+
+                                        rat->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rat_phy_id", send_pack.op_info[i].rd_phy, i);
+                                        rat->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rat_phy_id_valid", 1, i);
+                                        rat->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rat_arch_id", rev_pack.rd, i);
+                                        rat->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rat_map", 1, 0);
 
                                         rat->cp_set_map(global_cp, rev_pack.rd, send_pack.op_info[i].rd_phy);
 
@@ -539,6 +547,9 @@ namespace pipeline
                                     assert(rat->get_phy_id(rev_pack.rs1, &send_pack.op_info[i].rs1_phy));
                                     this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rat_read_arch_id", rev_pack.rs1, i * 3);
                                     this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rat_rename_read_phy_id", send_pack.op_info[i].rs1_phy, i * 3);
+
+                                    rat->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rat_read_arch_id", rev_pack.rs1, i * 3);
+                                    rat->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rat_rename_read_phy_id", send_pack.op_info[i].rs1_phy, i * 3);
                                 }
 
                                 if(rev_pack.rs2_need_map)
@@ -546,6 +557,9 @@ namespace pipeline
                                     assert(rat->get_phy_id(rev_pack.rs2, &send_pack.op_info[i].rs2_phy));
                                     this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rat_read_arch_id", rev_pack.rs2, i * 3 + 1);
                                     this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rat_rename_read_phy_id", send_pack.op_info[i].rs2_phy, i * 3 + 1);
+
+                                    rat->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rat_read_arch_id", rev_pack.rs2, i * 3 + 1);
+                                    rat->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rat_rename_read_phy_id", send_pack.op_info[i].rs2_phy, i * 3 + 1);
                                 }
 
                                 //source registers feedback

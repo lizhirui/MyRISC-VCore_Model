@@ -1,5 +1,28 @@
-this->tdb.mark_signal(trace::domain_t::output, "ras_csrf_ras_full_add", sizeof(uint8_t), 1);
-                this->tdb.mark_signal(trace::domain_t::input, "bp_ras_addr", sizeof(uint32_t), 1);
-                this->tdb.mark_signal(trace::domain_t::input, "bp_ras_push", sizeof(uint8_t), 1);
-                this->tdb.mark_signal(trace::domain_t::input, "bp_ras_pop", sizeof(uint8_t), 1);
-                this->tdb.mark_signal(trace::domain_t::output, "ras_bp_addr", sizeof(uint32_t), 1);
+this->tdb.mark_signal(trace::domain_t::output, "rat_rename_new_phy_id", sizeof(uint8_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::output, "rat_rename_new_phy_id_valid", sizeof(uint8_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rat_phy_id", sizeof(uint8_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rat_phy_id_valid", sizeof(uint8_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rat_arch_id", sizeof(uint8_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rat_map", sizeof(uint8_t), 1);
+
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rat_read_arch_id", sizeof(uint8_t), RENAME_WIDTH * 3);
+                this->tdb.mark_signal(trace::domain_t::output, "rat_rename_read_phy_id", sizeof(uint8_t), RENAME_WIDTH * 3);
+
+                this->tdb.mark_signal_bitmap(trace::domain_t::output, "rat_rename_map_table_valid", PHY_REG_NUM, 1);
+                this->tdb.mark_signal_bitmap(trace::domain_t::output, "rat_rename_map_table_visible", PHY_REG_NUM, 1);
+
+                this->tdb.mark_signal_bitmap(trace::domain_t::input, "commit_rat_map_table_valid", PHY_REG_NUM, 1);
+                this->tdb.mark_signal_bitmap(trace::domain_t::input, "commit_rat_map_table_visible", PHY_REG_NUM, 1);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rat_map_table_restore", sizeof(uint8_t), 1);
+
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rat_release_phy_id", sizeof(uint8_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rat_release_phy_id_valid", sizeof(uint8_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rat_release_map", sizeof(uint8_t), 1);
+
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rat_commit_phy_id", sizeof(uint8_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rat_commit_phy_id_valid", sizeof(uint8_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rat_commit_map", sizeof(uint8_t), 1);
+
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rat_restore_new_phy_id", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rat_restore_old_phy_id", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rat_restore_map", sizeof(uint8_t), 1);

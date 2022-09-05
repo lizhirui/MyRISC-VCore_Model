@@ -1,5 +1,47 @@
-this->tdb.update_signal<uint8_t>(trace::domain_t::output, "ras_csrf_ras_full_add", 0, 0);
-                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "bp_ras_addr", 0, 0);
-                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "bp_ras_push", 0, 0);
-                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "bp_ras_pop", 0, 0);
-                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "ras_bp_addr", 0, 0);
+                
+                for(auto i = 0;i < RENAME_WIDTH;i++)
+                {
+    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rat_rename_new_phy_id", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rat_rename_new_phy_id_valid", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_rat_phy_id", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_rat_phy_id_valid", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_rat_arch_id", 0, i);
+                }
+
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_rat_map", 0, 0);
+
+                
+                for(auto i = 0;i < RENAME_WIDTH * 3;i++)
+                {
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_rat_read_arch_id", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rat_rename_read_phy_id", 0, i);
+                }
+
+                this->tdb.update_signal_bitmap_all(trace::domain_t::output, "rat_rename_map_table_valid", 0, 0);
+                this->tdb.update_signal_bitmap_all(trace::domain_t::output, "rat_rename_map_table_visible", 0, 0);
+
+                this->tdb.update_signal_bitmap_all(trace::domain_t::input, "commit_rat_map_table_valid", 0, 0);
+                this->tdb.update_signal_bitmap_all(trace::domain_t::input, "commit_rat_map_table_visible", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rat_map_table_restore", 0, 0);
+
+                
+                for(auto i = 0;i < COMMIT_WIDTH;i++)
+                {
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rat_release_phy_id", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rat_release_phy_id_valid", 0, i);
+                }
+
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rat_release_map", 0, 0);
+
+                
+                for(auto i = 0;i < COMMIT_WIDTH;i++)
+                {
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rat_commit_phy_id", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rat_commit_phy_id_valid", 0, i);
+                }
+
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rat_commit_map", 0, 0);
+
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rat_restore_new_phy_id", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rat_restore_old_phy_id", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rat_restore_map", 0, 0);

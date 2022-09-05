@@ -4,7 +4,7 @@
 
 namespace component
 {
-    class rat : public if_print_t
+    class rat : public if_print_t, public if_reset_t
     {
         private:
             enum class sync_request_type_t
@@ -34,6 +34,8 @@ namespace component
             uint64_t *phy_map_table_commit;
             uint32_t bitmap_size;
             bool init_rat;
+
+            trace::trace_database tdb;
 
             void set_valid(uint32_t phy_id, bool v)
             {
@@ -95,8 +97,10 @@ namespace component
                 return phy_map_table_commit[phy_id / bitsizeof(phy_map_table_commit[0])] & (1ULL << (phy_id % bitsizeof(phy_map_table_commit[0])));
             }
 
+
+
         public:
-            rat(uint32_t phy_reg_num, uint32_t arch_reg_num)
+            rat(uint32_t phy_reg_num, uint32_t arch_reg_num) : tdb(TRACE_RAT)
             {
                 this -> phy_reg_num = phy_reg_num;         
                 this -> arch_reg_num = arch_reg_num;
@@ -128,6 +132,118 @@ namespace component
             void init_finish()
             {
                 init_rat = false;
+            }
+
+            virtual void reset()
+            {
+                this->tdb.create(TRACE_DIR + "rat.tdb");
+                this->tdb.mark_signal(trace::domain_t::output, "rat_rename_new_phy_id", sizeof(uint8_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::output, "rat_rename_new_phy_id_valid", sizeof(uint8_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rat_phy_id", sizeof(uint8_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rat_phy_id_valid", sizeof(uint8_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rat_arch_id", sizeof(uint8_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rat_map", sizeof(uint8_t), 1);
+
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rat_read_arch_id", sizeof(uint8_t), RENAME_WIDTH * 3);
+                this->tdb.mark_signal(trace::domain_t::output, "rat_rename_read_phy_id", sizeof(uint8_t), RENAME_WIDTH * 3);
+
+                this->tdb.mark_signal_bitmap(trace::domain_t::output, "rat_rename_map_table_valid", PHY_REG_NUM, 1);
+                this->tdb.mark_signal_bitmap(trace::domain_t::output, "rat_rename_map_table_visible", PHY_REG_NUM, 1);
+
+                this->tdb.mark_signal_bitmap(trace::domain_t::input, "commit_rat_map_table_valid", PHY_REG_NUM, 1);
+                this->tdb.mark_signal_bitmap(trace::domain_t::input, "commit_rat_map_table_visible", PHY_REG_NUM, 1);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rat_map_table_restore", sizeof(uint8_t), 1);
+
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rat_release_phy_id", sizeof(uint8_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rat_release_phy_id_valid", sizeof(uint8_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rat_release_map", sizeof(uint8_t), 1);
+
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rat_commit_phy_id", sizeof(uint8_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rat_commit_phy_id_valid", sizeof(uint8_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rat_commit_map", sizeof(uint8_t), 1);
+
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rat_restore_new_phy_id", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rat_restore_old_phy_id", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rat_restore_map", sizeof(uint8_t), 1);
+                this->tdb.write_metainfo();
+                this->tdb.trace_on();
+                this->tdb.capture_status();
+                this->tdb.write_row();
+            }
+
+            void trace_pre()
+            {
+                this->tdb.capture_input();
+                                
+                for(auto i = 0;i < RENAME_WIDTH;i++)
+                {
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rat_rename_new_phy_id", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rat_rename_new_phy_id_valid", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_rat_phy_id", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_rat_phy_id_valid", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_rat_arch_id", 0, i);
+                }
+
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_rat_map", 0, 0);
+
+                
+                for(auto i = 0;i < RENAME_WIDTH * 3;i++)
+                {
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_rat_read_arch_id", 255, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rat_rename_read_phy_id", 0, i);
+                }
+
+                this->tdb.update_signal_bitmap_all(trace::domain_t::output, "rat_rename_map_table_valid", 0, 0);
+                this->tdb.update_signal_bitmap_all(trace::domain_t::output, "rat_rename_map_table_visible", 0, 0);
+
+                this->tdb.update_signal_bitmap_all(trace::domain_t::input, "commit_rat_map_table_valid", 0, 0);
+                this->tdb.update_signal_bitmap_all(trace::domain_t::input, "commit_rat_map_table_visible", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rat_map_table_restore", 0, 0);
+
+                
+                for(auto i = 0;i < COMMIT_WIDTH;i++)
+                {
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rat_release_phy_id", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rat_release_phy_id_valid", 0, i);
+                }
+
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rat_release_map", 0, 0);
+
+                
+                for(auto i = 0;i < COMMIT_WIDTH;i++)
+                {
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rat_commit_phy_id", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rat_commit_phy_id_valid", 0, i);
+                }
+
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rat_commit_map", 0, 0);
+
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rat_restore_new_phy_id", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rat_restore_old_phy_id", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rat_restore_map", 0, 0);
+
+                uint32_t free_reg[RENAME_WIDTH];
+                uint32_t free_reg_count = get_free_phy_id(RENAME_WIDTH, free_reg);
+
+                for(uint32_t i = 0;i < free_reg_count;i++)
+                {
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rat_rename_new_phy_id", free_reg[i], i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rat_rename_new_phy_id_valid", 1, i);
+                }
+
+                this->tdb.update_signal_bitmap(trace::domain_t::output, "rat_rename_map_table_valid", phy_map_table_valid, 0);
+                this->tdb.update_signal_bitmap(trace::domain_t::output, "rat_rename_map_table_visible", phy_map_table_visible, 0);
+            }
+
+            void trace_post()
+            {
+                this->tdb.capture_output_status();
+                this->tdb.write_row();
+            }
+
+            trace::trace_database *get_tdb()
+            {
+                return &tdb;
             }
 
             void cp_set_valid(checkpoint_t &cp, uint32_t phy_id, bool v)
@@ -241,6 +357,10 @@ namespace component
                 memcpy(phy_map_table_valid, cp.rat_phy_map_table_valid, sizeof(cp.rat_phy_map_table_valid));
                 memcpy(phy_map_table_visible, cp.rat_phy_map_table_visible, sizeof(cp.rat_phy_map_table_visible));
                 //memcpy(phy_map_table_commit, cp.rat_phy_map_table_commit, sizeof(cp.rat_phy_map_table_commit));
+
+                this->tdb.update_signal_bitmap(trace::domain_t::input, "commit_rat_map_table_valid", phy_map_table_valid, 0);
+                this->tdb.update_signal_bitmap(trace::domain_t::input, "commit_rat_map_table_visible", phy_map_table_visible, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rat_map_table_restore", 1, 0);
             }
 
             void restore_sync(checkpoint_t &cp)
@@ -355,7 +475,7 @@ namespace component
                 {
                     set_visible(old_phy_id, false);
                 }
-
+                
                 return old_phy_id;
             }
 
@@ -389,6 +509,10 @@ namespace component
                 set_visible(new_phy_id, false);
                 set_valid(old_phy_id, true);
                 set_visible(old_phy_id, true);
+
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rat_restore_new_phy_id", new_phy_id, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rat_restore_old_phy_id", old_phy_id, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rat_restore_map", 1, 0);
             }
 
             /*

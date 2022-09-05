@@ -632,13 +632,26 @@ namespace pipeline
 									this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_rat_release_phy_id", rob_item.old_phy_reg_id, i);
 									this->tdb.update_signal_bit<uint8_t>(trace::domain_t::output, "commit_rat_release_phy_id_valid", 1, i, 0);
 									this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_rat_release_map", 1, 0);
+
+									rat->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_rat_release_phy_id", rob_item.old_phy_reg_id, i);
+									rat->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_rat_release_phy_id_valid", 1, i);
+									rat->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_rat_release_map", 1, 0);
+
 									rat->release_map_sync(rob_item.old_phy_reg_id);
+
 									this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_phyf_id", rob_item.old_phy_reg_id, i);
 									this->tdb.update_signal_bit<uint8_t>(trace::domain_t::output, "commit_phyf_invalid", 1, i, 0);
+
 									phy_regfile->write_sync(rob_item.old_phy_reg_id, default_phy_reg_item, false);
+
 									this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_rat_commit_phy_id", rob_item.new_phy_reg_id, i);			
 									this->tdb.update_signal_bit<uint8_t>(trace::domain_t::output, "commit_rat_commit_phy_id_valid", 1, i, 0);
 									this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_rat_commit_map", 1, 0);
+
+									rat->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_rat_commit_phy_id", rob_item.new_phy_reg_id, i);
+									rat->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_rat_commit_phy_id_valid", 1, i);
+									rat->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_rat_commit_map", 1, 0);
+
 									rat->commit_map_sync(rob_item.new_phy_reg_id);
 								}
 							

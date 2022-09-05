@@ -374,6 +374,7 @@ static void reset()
     wb_commit_port.reset();
     bus.reset();
     phy_regfile.reset();
+    rat.reset();
     rat.init_start();
 
     for(uint32_t i = 1;i < 32;i++)
@@ -928,10 +929,12 @@ uint64_t get_cpu_clock_cycle()
 static void trace_pre()
 {
     branch_predictor.trace_pre();
+    rat.trace_pre();
 }
 
 static void trace_post()
 {
+    rat.trace_post();
     branch_predictor.trace_post();
 }
 

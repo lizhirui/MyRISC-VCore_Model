@@ -78,8 +78,6 @@ namespace trace
                 break;
             }
         }
-
-        assert(false);
     }
 
     void trace_database::create(std::string filename)

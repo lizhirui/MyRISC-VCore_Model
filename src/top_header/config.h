@@ -100,7 +100,8 @@ const std::string TRACE_DIR = R"(D:\program\project\MyRISC-VCore\model\MyRISC-VC
     const bool TRACE_WB = false;
     const bool TRACE_COMMIT = false;
     const bool TRACE_BRANCH_PREDICTOR = false;
-    const bool TRACE_RAS = true;
+    const bool TRACE_RAS = false;
+    const bool TRACE_RAT = true;
 #else
     const bool TRACE_FETCH = false;
     const bool TRACE_DECODE = false;
@@ -117,4 +118,5 @@ const std::string TRACE_DIR = R"(D:\program\project\MyRISC-VCore\model\MyRISC-VC
     const bool TRACE_COMMIT = false;
     const bool TRACE_BRANCH_PREDICTOR = false;
     const bool TRACE_RAS = false;
+    const bool TRACE_RAT = false;
 #endif
