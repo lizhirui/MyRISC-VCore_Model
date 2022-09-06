@@ -90,6 +90,8 @@ namespace component
 
             std::queue<sync_request_t> sync_request_q;
 
+            trace::trace_database tdb;
+
             bool committed = false;
             uint32_t commit_num = 0;
             uint32_t global_commit_num = 0;
@@ -127,7 +129,7 @@ namespace component
             }
 
         public:
-            rob(uint32_t size) : fifo<rob_item_t>(size)
+            rob(uint32_t size) : fifo<rob_item_t>(size), tdb(TRACE_ROB)
             {
                 
             }
@@ -139,6 +141,342 @@ namespace component
                 committed = false;
                 commit_num = 0;
                 global_commit_num = 0;
+
+                this->tdb.create(TRACE_DIR + "rob.tdb");
+
+                this->tdb.mark_signal(trace::domain_t::output, "rob_rename_new_id", sizeof(uint8_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_rename_new_id_valid", sizeof(uint8_t), RENAME_WIDTH);
+                
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rob_data.new_phy_reg_id", sizeof(uint8_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rob_data.old_phy_reg_id", sizeof(uint8_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rob_data.old_phy_reg_id_valid", sizeof(uint8_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rob_data.finish", sizeof(uint8_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rob_data.pc", sizeof(uint32_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rob_data.inst_value", sizeof(uint32_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rob_data.has_exception", sizeof(uint8_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rob_data.exception_id", sizeof(uint32_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rob_data.exception_value", sizeof(uint32_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rob_data.predicted", sizeof(uint8_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rob_data.predicted_jump", sizeof(uint8_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rob_data.predicted_next_pc", sizeof(uint32_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rob_data.checkpoint_id_valid", sizeof(uint8_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rob_data.checkpoint_id", sizeof(uint16_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rob_data.bru_op", sizeof(uint8_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rob_data.bru_jump", sizeof(uint8_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rob_data.bru_next_pc", sizeof(uint32_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rob_data.is_mret", sizeof(uint8_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rob_data.csr_addr", sizeof(uint16_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rob_data.csr_newvalue", sizeof(uint32_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rob_data.csr_newvalue_valid", sizeof(uint8_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rob_data_valid", sizeof(uint8_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_rob_push", sizeof(uint8_t), 1);
+
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rob_input_id", sizeof(uint8_t), EXECUTE_UNIT_NUM);
+		        this->tdb.mark_signal(trace::domain_t::input, "commit_rob_input_data.new_phy_reg_id", sizeof(uint8_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rob_input_data.old_phy_reg_id", sizeof(uint8_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rob_input_data.old_phy_reg_id_valid", sizeof(uint8_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rob_input_data.finish", sizeof(uint8_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rob_input_data.pc", sizeof(uint32_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rob_input_data.inst_value", sizeof(uint32_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rob_input_data.has_exception", sizeof(uint8_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rob_input_data.exception_id", sizeof(uint32_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rob_input_data.exception_value", sizeof(uint32_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rob_input_data.predicted", sizeof(uint8_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rob_input_data.predicted_jump", sizeof(uint8_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rob_input_data.predicted_next_pc", sizeof(uint32_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rob_input_data.checkpoint_id_valid", sizeof(uint8_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rob_input_data.checkpoint_id", sizeof(uint16_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rob_input_data.bru_op", sizeof(uint8_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rob_input_data.bru_jump", sizeof(uint8_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rob_input_data.bru_next_pc", sizeof(uint32_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rob_input_data.is_mret", sizeof(uint8_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rob_input_data.csr_addr", sizeof(uint16_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rob_input_data.csr_newvalue", sizeof(uint32_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rob_input_data.csr_newvalue_valid", sizeof(uint8_t), EXECUTE_UNIT_NUM);
+		        this->tdb.mark_signal(trace::domain_t::output, "rob_commit_input_data.new_phy_reg_id", sizeof(uint8_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_input_data.old_phy_reg_id", sizeof(uint8_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_input_data.old_phy_reg_id_valid", sizeof(uint8_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_input_data.finish", sizeof(uint8_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_input_data.pc", sizeof(uint32_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_input_data.inst_value", sizeof(uint32_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_input_data.has_exception", sizeof(uint8_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_input_data.exception_id", sizeof(uint32_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_input_data.exception_value", sizeof(uint32_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_input_data.predicted", sizeof(uint8_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_input_data.predicted_jump", sizeof(uint8_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_input_data.predicted_next_pc", sizeof(uint32_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_input_data.checkpoint_id_valid", sizeof(uint8_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_input_data.checkpoint_id", sizeof(uint16_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_input_data.bru_op", sizeof(uint8_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_input_data.bru_jump", sizeof(uint8_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_input_data.bru_next_pc", sizeof(uint32_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_input_data.is_mret", sizeof(uint8_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_input_data.csr_addr", sizeof(uint16_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_input_data.csr_newvalue", sizeof(uint32_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_input_data.csr_newvalue_valid", sizeof(uint8_t), EXECUTE_UNIT_NUM);
+		        this->tdb.mark_signal(trace::domain_t::input, "commit_rob_input_data_we", sizeof(uint8_t), EXECUTE_UNIT_NUM);
+
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_retire_head_id", sizeof(uint8_t), 1);
+		        this->tdb.mark_signal(trace::domain_t::output, "rob_commit_retire_head_id_valid" ,sizeof(uint8_t), 1);
+
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rob_retire_id", sizeof(uint8_t), COMMIT_WIDTH);
+		        this->tdb.mark_signal(trace::domain_t::output, "rob_commit_retire_data.new_phy_reg_id", sizeof(uint8_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_retire_data.old_phy_reg_id", sizeof(uint8_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_retire_data.old_phy_reg_id_valid", sizeof(uint8_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_retire_data.finish", sizeof(uint8_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_retire_data.pc", sizeof(uint32_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_retire_data.inst_value", sizeof(uint32_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_retire_data.has_exception", sizeof(uint8_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_retire_data.exception_id", sizeof(uint32_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_retire_data.exception_value", sizeof(uint32_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_retire_data.predicted", sizeof(uint8_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_retire_data.predicted_jump", sizeof(uint8_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_retire_data.predicted_next_pc", sizeof(uint32_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_retire_data.checkpoint_id_valid", sizeof(uint8_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_retire_data.checkpoint_id", sizeof(uint16_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_retire_data.bru_op", sizeof(uint8_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_retire_data.bru_jump", sizeof(uint8_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_retire_data.bru_next_pc", sizeof(uint32_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_retire_data.is_mret", sizeof(uint8_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_retire_data.csr_addr", sizeof(uint16_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_retire_data.csr_newvalue", sizeof(uint32_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_retire_data.csr_newvalue_valid", sizeof(uint8_t), COMMIT_WIDTH);
+		        this->tdb.mark_signal(trace::domain_t::output, "rob_commit_retire_id_valid", sizeof(uint8_t), COMMIT_WIDTH);
+		        this->tdb.mark_signal(trace::domain_t::input, "commit_rob_retire_pop", sizeof(uint8_t), COMMIT_WIDTH);
+
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rob_next_id", sizeof(uint8_t), 1);
+		        this->tdb.mark_signal(trace::domain_t::output, "rob_commit_next_id_valid", sizeof(uint8_t), 1);
+
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_flush_tail_id", sizeof(uint8_t), 1);
+		        this->tdb.mark_signal(trace::domain_t::output, "rob_commit_flush_tail_id_valid", sizeof(uint8_t), 1);
+
+                this->tdb.mark_signal(trace::domain_t::input, "commit_rob_flush_id", sizeof(uint8_t), 1);
+		        this->tdb.mark_signal(trace::domain_t::output, "rob_commit_flush_data.new_phy_reg_id", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_flush_data.old_phy_reg_id", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_flush_data.old_phy_reg_id_valid", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_flush_data.finish", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_flush_data.pc", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_flush_data.inst_value", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_flush_data.has_exception", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_flush_data.exception_id", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_flush_data.exception_value", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_flush_data.predicted", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_flush_data.predicted_jump", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_flush_data.predicted_next_pc", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_flush_data.checkpoint_id_valid", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_flush_data.checkpoint_id", sizeof(uint16_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_flush_data.bru_op", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_flush_data.bru_jump", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_flush_data.bru_next_pc", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_flush_data.is_mret", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_flush_data.csr_addr", sizeof(uint16_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_flush_data.csr_newvalue", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_flush_data.csr_newvalue_valid", sizeof(uint8_t), 1);
+		        this->tdb.mark_signal(trace::domain_t::output, "rob_commit_flush_next_id", sizeof(uint8_t), 1);
+		        this->tdb.mark_signal(trace::domain_t::output, "rob_commit_flush_next_id_valid", sizeof(uint8_t), 1);
+
+                this->tdb.mark_signal(trace::domain_t::output, "rob_commit_empty", sizeof(uint8_t), 1);
+		        this->tdb.mark_signal(trace::domain_t::output, "rob_commit_full", sizeof(uint8_t), 1);
+		        this->tdb.mark_signal(trace::domain_t::input, "commit_rob_flush", sizeof(uint8_t), 1);
+
+                this->tdb.write_metainfo();
+                this->tdb.trace_on();
+                this->tdb.capture_status();
+                this->tdb.write_row();
+            }
+
+            void trace_pre()
+            {
+                this->tdb.capture_input();
+                                
+                for(auto i = 0;i < RENAME_WIDTH;i++)
+                {
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_rename_new_id", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_rename_new_id_valid", 0, i);
+                    
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.new_phy_reg_id", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.old_phy_reg_id", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.old_phy_reg_id_valid", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.finish", 0, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "rename_rob_data.pc", 0, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "rename_rob_data.inst_value", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.has_exception", 0, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "rename_rob_data.exception_id", 0, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "rename_rob_data.exception_value", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.predicted", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.predicted_jump", 0, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "rename_rob_data.predicted_next_pc", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.checkpoint_id_valid", 0, i);
+                    this->tdb.update_signal<uint16_t>(trace::domain_t::input, "rename_rob_data.checkpoint_id", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.bru_op", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.bru_jump", 0, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "rename_rob_data.bru_next_pc", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.is_mret", 0, i);
+                    this->tdb.update_signal<uint16_t>(trace::domain_t::input, "rename_rob_data.csr_addr", 0, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "rename_rob_data.csr_newvalue", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.csr_newvalue_valid", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data_valid", 0, i);
+                }
+
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_rob_push", 0, 0);
+
+                
+                for(auto i = 0;i < EXECUTE_UNIT_NUM;i++)
+                {
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rob_input_id", 0, i);
+    		        this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rob_input_data.new_phy_reg_id", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rob_input_data.old_phy_reg_id", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rob_input_data.old_phy_reg_id_valid", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rob_input_data.finish", 0, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "commit_rob_input_data.pc", 0, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "commit_rob_input_data.inst_value", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rob_input_data.has_exception", 0, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "commit_rob_input_data.exception_id", 0, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "commit_rob_input_data.exception_value", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rob_input_data.predicted", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rob_input_data.predicted_jump", 0, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "commit_rob_input_data.predicted_next_pc", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rob_input_data.checkpoint_id_valid", 0, i);
+                    this->tdb.update_signal<uint16_t>(trace::domain_t::input, "commit_rob_input_data.checkpoint_id", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rob_input_data.bru_op", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rob_input_data.bru_jump", 0, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "commit_rob_input_data.bru_next_pc", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rob_input_data.is_mret", 0, i);
+                    this->tdb.update_signal<uint16_t>(trace::domain_t::input, "commit_rob_input_data.csr_addr", 0, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "commit_rob_input_data.csr_newvalue", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rob_input_data.csr_newvalue_valid", 0, i);
+    		        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_input_data.new_phy_reg_id", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_input_data.old_phy_reg_id", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_input_data.old_phy_reg_id_valid", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_input_data.finish", 0, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rob_commit_input_data.pc", 0, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rob_commit_input_data.inst_value", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_input_data.has_exception", 0, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rob_commit_input_data.exception_id", 0, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rob_commit_input_data.exception_value", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_input_data.predicted", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_input_data.predicted_jump", 0, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rob_commit_input_data.predicted_next_pc", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_input_data.checkpoint_id_valid", 0, i);
+                    this->tdb.update_signal<uint16_t>(trace::domain_t::output, "rob_commit_input_data.checkpoint_id", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_input_data.bru_op", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_input_data.bru_jump", 0, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rob_commit_input_data.bru_next_pc", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_input_data.is_mret", 0, i);
+                    this->tdb.update_signal<uint16_t>(trace::domain_t::output, "rob_commit_input_data.csr_addr", 0, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rob_commit_input_data.csr_newvalue", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_input_data.csr_newvalue_valid", 0, i);
+    		        this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rob_input_data_we", 0, i);
+                }
+
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_head_id", 0, 0);
+		        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_head_id_valid" ,0, 0);
+
+                
+                for(auto i = 0;i < COMMIT_WIDTH;i++)
+                {
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rob_retire_id", 255, i);
+    		        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_data.new_phy_reg_id", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_data.old_phy_reg_id", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_data.old_phy_reg_id_valid", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_data.finish", 0, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rob_commit_retire_data.pc", 0, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rob_commit_retire_data.inst_value", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_data.has_exception", 0, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rob_commit_retire_data.exception_id", 0, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rob_commit_retire_data.exception_value", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_data.predicted", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_data.predicted_jump", 0, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rob_commit_retire_data.predicted_next_pc", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_data.checkpoint_id_valid", 0, i);
+                    this->tdb.update_signal<uint16_t>(trace::domain_t::output, "rob_commit_retire_data.checkpoint_id", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_data.bru_op", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_data.bru_jump", 0, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rob_commit_retire_data.bru_next_pc", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_data.is_mret", 0, i);
+                    this->tdb.update_signal<uint16_t>(trace::domain_t::output, "rob_commit_retire_data.csr_addr", 0, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rob_commit_retire_data.csr_newvalue", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_data.csr_newvalue_valid", 0, i);
+    		        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_id_valid", 0, i);
+    		        this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rob_retire_pop", 0, i);
+                }
+
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rob_next_id", 255, 0);
+		        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_next_id_valid", 0, 0);
+
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_tail_id", 0, 0);
+		        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_tail_id_valid", 0, 0);
+
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rob_flush_id", 255, 0);
+		        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.new_phy_reg_id", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.old_phy_reg_id", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.old_phy_reg_id_valid", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.finish", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rob_commit_flush_data.pc", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rob_commit_flush_data.inst_value", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.has_exception", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rob_commit_flush_data.exception_id", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rob_commit_flush_data.exception_value", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.predicted", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.predicted_jump", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rob_commit_flush_data.predicted_next_pc", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.checkpoint_id_valid", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "rob_commit_flush_data.checkpoint_id", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.bru_op", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.bru_jump", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rob_commit_flush_data.bru_next_pc", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.is_mret", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "rob_commit_flush_data.csr_addr", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rob_commit_flush_data.csr_newvalue", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.csr_newvalue_valid", 0, 0);
+		        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_next_id", 255, 0);
+		        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_next_id_valid", 0, 0);
+
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_empty", 0, 0);
+		        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_full", 0, 0);
+		        this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_rob_flush", 0, 0);
+
+                {
+                    uint32_t new_id;
+                    bool new_id_valid = get_new_id(&new_id);
+
+                    for(auto i = 0;i < RENAME_WIDTH;i++)
+                    {
+                        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_rename_new_id", new_id, i);
+                        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_rename_new_id_valid", new_id_valid, i);
+                        new_id_valid = get_next_new_id(new_id, &new_id);
+                    }
+                }
+
+                {
+                    uint32_t front_id;
+                    bool front_id_valid = get_front_id(&front_id);
+
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_head_id", front_id, 0);
+		            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_head_id_valid" , front_id_valid, 0);
+                }
+
+                {
+                    uint32_t tail_id;
+                    bool tail_id_valid = get_tail_id(&tail_id);
+
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_tail_id", tail_id, 0);
+		            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_tail_id_valid", tail_id_valid, 0);
+                }
+
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_empty", is_empty(), 0);
+		        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rob_commit_full", is_full(), 0);
+            }
+
+            void trace_post()
+            {
+                this->tdb.capture_output_status();
+                this->tdb.write_row();
+            }
+
+            trace::trace_database *get_tdb()
+            {
+                return &tdb;
             }
 
             bool get_committed()

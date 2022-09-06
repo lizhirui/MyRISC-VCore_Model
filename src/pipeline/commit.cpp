@@ -561,7 +561,7 @@ namespace pipeline
 			{
 				assert(rob->get_front_id(&this->rob_item_id));
 				this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rob_commit_retire_head_id", this->rob_item_id, 0);
-				this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rob_commit_retire_head_id_valid" ,1, 0);
+				this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rob_commit_retire_head_id_valid", 1, 0);
 				feedback_pack.enable = true;
 				feedback_pack.next_handle_rob_id = this->rob_item_id;
 				feedback_pack.next_handle_rob_id_valid = true;
@@ -607,9 +607,40 @@ namespace pipeline
 						this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rob_commit_retire_data.csr_newvalue_valid", this->rob_item.csr_newvalue_valid, i);
 						this->tdb.update_signal_bit<uint8_t>(trace::domain_t::input, "rob_commit_retire_id_valid", 1, i, 0);
 
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_rob_retire_id", this->rob_item_id, i);
+    					rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_data.new_phy_reg_id", this->rob_item.new_phy_reg_id, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_data.old_phy_reg_id", this->rob_item.old_phy_reg_id, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_data.old_phy_reg_id_valid", this->rob_item.old_phy_reg_id_valid, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_data.finish", this->rob_item.finish, i);
+						rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "rob_commit_retire_data.pc", this->rob_item.pc, i);
+						rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "rob_commit_retire_data.inst_value", this->rob_item.inst_value, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_data.has_exception", this->rob_item.has_exception, i);
+						rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "rob_commit_retire_data.exception_id", (uint32_t)this->rob_item.exception_id, i);
+						rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "rob_commit_retire_data.exception_value", this->rob_item.exception_value, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_data.predicted", this->rob_item.predicted, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_data.predicted_jump", this->rob_item.predicted_jump, i);
+						rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "rob_commit_retire_data.predicted_next_pc", this->rob_item.predicted_next_pc, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_data.checkpoint_id_valid", this->rob_item.checkpoint_id_valid, i);
+						rob->get_tdb()->update_signal<uint16_t>(trace::domain_t::output, "rob_commit_retire_data.checkpoint_id", this->rob_item.checkpoint_id, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_data.bru_op", this->rob_item.bru_op, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_data.bru_jump", this->rob_item.bru_jump, i);
+						rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "rob_commit_retire_data.bru_next_pc", this->rob_item.bru_next_pc, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_data.is_mret", this->rob_item.is_mret, i);
+						rob->get_tdb()->update_signal<uint16_t>(trace::domain_t::output, "rob_commit_retire_data.csr_addr", this->rob_item.csr_addr, i);
+						rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "rob_commit_retire_data.csr_newvalue", this->rob_item.csr_newvalue, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_data.csr_newvalue_valid", this->rob_item.csr_newvalue_valid, i);
+    					rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_retire_id_valid", 1, i);
+
 						if(rob_item.finish)
 						{
 							feedback_pack.next_handle_rob_id_valid = rob->get_next_id(this->rob_item_id, &feedback_pack.next_handle_rob_id) && (feedback_pack.next_handle_rob_id != first_id);
+
+							this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_rob_next_id", feedback_pack.next_handle_rob_id, 0);
+							this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rob_commit_next_id_valid", feedback_pack.next_handle_rob_id_valid, 0);
+
+							rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_rob_next_id", feedback_pack.next_handle_rob_id, 0);
+							rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_next_id_valid", feedback_pack.next_handle_rob_id_valid, 0);
+
 							feedback_pack.committed_rob_id_valid[i] = true;
 							feedback_pack.committed_rob_id[i] = this->rob_item_id;
 
@@ -625,6 +656,7 @@ namespace pipeline
 							else
 							{
 								this->tdb.update_signal_bit<uint8_t>(trace::domain_t::output, "commit_rob_retire_pop", 1, i, 0);
+								rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_rob_retire_pop", 1, i);
 								rob->pop_sync();
 
 								if(rob_item.old_phy_reg_id_valid)
@@ -757,6 +789,7 @@ namespace pipeline
 											feedback_pack.next_pc = rob_item.bru_jump ? rob_item.bru_next_pc : (rob_item.pc + 4);
 											rob->flush();
 											this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_rob_flush", 1, 0);
+											rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_rob_flush", 1, 0);
 											checkpoint_buffer->flush();
 											this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_cpbuf_flush", 1, 0);
 											need_flush = true;
@@ -865,6 +898,29 @@ namespace pipeline
 						this->tdb.update_signal<uint32_t>(trace::domain_t::input, "rob_commit_input_data.csr_newvalue", rob_item.csr_newvalue, i);
 						this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rob_commit_input_data.csr_newvalue_valid", rob_item.csr_newvalue_valid, i);
 
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_rob_input_id", rev_pack.op_info[i].rob_id, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_input_data.new_phy_reg_id", rob_item.new_phy_reg_id, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_input_data.old_phy_reg_id", rob_item.old_phy_reg_id, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_input_data.old_phy_reg_id_valid", rob_item.old_phy_reg_id_valid, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_input_data.finish", rob_item.finish, i);
+						rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "rob_commit_input_data.pc", rob_item.pc, i);
+						rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "rob_commit_input_data.inst_value", rob_item.inst_value, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_input_data.has_exception", rob_item.has_exception, i);
+						rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "rob_commit_input_data.exception_id", (uint32_t)rob_item.exception_id, i);
+						rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "rob_commit_input_data.exception_value", rob_item.exception_value, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_input_data.predicted", rob_item.predicted, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_input_data.predicted_jump", rob_item.predicted_jump, i);
+						rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "rob_commit_input_data.predicted_next_pc", rob_item.predicted_next_pc, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_input_data.checkpoint_id_valid", rob_item.checkpoint_id_valid, i);
+						rob->get_tdb()->update_signal<uint16_t>(trace::domain_t::output, "rob_commit_input_data.checkpoint_id", rob_item.checkpoint_id, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_input_data.bru_op", rob_item.bru_op, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_input_data.bru_jump", rob_item.bru_jump, i);
+						rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "rob_commit_input_data.bru_next_pc", rob_item.bru_next_pc, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_input_data.is_mret", rob_item.is_mret, i);
+						rob->get_tdb()->update_signal<uint16_t>(trace::domain_t::output, "rob_commit_input_data.csr_addr", rob_item.csr_addr, i);
+						rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "rob_commit_input_data.csr_newvalue", rob_item.csr_newvalue, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_input_data.csr_newvalue_valid", rob_item.csr_newvalue_valid, i);
+
 						rob_item.finish = true;
 						rob_item.has_exception = rev_pack.op_info[i].has_exception;
 						rob_item.exception_id = rev_pack.op_info[i].exception_id;
@@ -903,12 +959,32 @@ namespace pipeline
 						this->tdb.update_signal<uint32_t>(trace::domain_t::output, "commit_rob_input_data.csr_newvalue", rob_item.csr_newvalue, i);
 						this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_rob_input_data.csr_newvalue_valid", rob_item.csr_newvalue_valid, i);
 						this->tdb.update_signal_bit<uint8_t>(trace::domain_t::output, "commit_rob_input_data_we", 1, i, 0);
+
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_rob_input_data.new_phy_reg_id", rob_item.new_phy_reg_id, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_rob_input_data.old_phy_reg_id", rob_item.old_phy_reg_id, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_rob_input_data.old_phy_reg_id_valid", rob_item.old_phy_reg_id_valid, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_rob_input_data.finish", rob_item.finish, i);
+						rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "commit_rob_input_data.pc", rob_item.pc, i);
+						rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "commit_rob_input_data.inst_value", rob_item.inst_value, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_rob_input_data.has_exception", rob_item.has_exception, i);
+						rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "commit_rob_input_data.exception_id", (uint32_t)rob_item.exception_id, i);
+						rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "commit_rob_input_data.exception_value", rob_item.exception_value, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_rob_input_data.predicted", rob_item.predicted, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_rob_input_data.predicted_jump", rob_item.predicted_jump, i);
+						rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "commit_rob_input_data.predicted_next_pc", rob_item.predicted_next_pc, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_rob_input_data.checkpoint_id_valid", rob_item.checkpoint_id_valid, i);
+						rob->get_tdb()->update_signal<uint16_t>(trace::domain_t::input, "commit_rob_input_data.checkpoint_id", rob_item.checkpoint_id, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_rob_input_data.bru_op", rob_item.bru_op, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_rob_input_data.bru_jump", rob_item.bru_jump, i);
+						rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "commit_rob_input_data.bru_next_pc", rob_item.bru_next_pc, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_rob_input_data.is_mret", rob_item.is_mret, i);
+						rob->get_tdb()->update_signal<uint16_t>(trace::domain_t::input, "commit_rob_input_data.csr_addr", rob_item.csr_addr, i);
+						rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "commit_rob_input_data.csr_newvalue", rob_item.csr_newvalue, i);
+						rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_rob_input_data.csr_newvalue_valid", rob_item.csr_newvalue_valid, i);
+    					rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_rob_input_data_we", 1, i);
 					}
 				}
 			}
-
-			this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_rob_next_id", feedback_pack.next_handle_rob_id, 0);
-			this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rob_commit_next_id_valid", feedback_pack.next_handle_rob_id_valid, 0);
 		}
 		else if(this->cur_state == state_t::flush)//flush
 		{
@@ -936,6 +1012,29 @@ namespace pipeline
 			this->tdb.update_signal<uint16_t>(trace::domain_t::input, "rob_commit_flush_data.csr_addr", t_rob_item.csr_addr, 0);
 			this->tdb.update_signal<uint32_t>(trace::domain_t::input, "rob_commit_flush_data.csr_newvalue", t_rob_item.csr_newvalue, 0);
 			this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rob_commit_flush_data.csr_newvalue_valid", t_rob_item.csr_newvalue_valid, 0);
+
+			rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_rob_flush_id", this->restore_rob_item_id, 0);
+		    rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.new_phy_reg_id", t_rob_item.new_phy_reg_id, 0);
+            rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.old_phy_reg_id", t_rob_item.old_phy_reg_id, 0);
+            rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.old_phy_reg_id_valid", t_rob_item.old_phy_reg_id_valid, 0);
+            rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.finish", t_rob_item.finish, 0);
+            rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "rob_commit_flush_data.pc", t_rob_item.pc, 0);
+            rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "rob_commit_flush_data.inst_value", t_rob_item.inst_value, 0);
+            rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.has_exception", t_rob_item.has_exception, 0);
+            rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "rob_commit_flush_data.exception_id", (uint32_t)t_rob_item.exception_id, 0);
+            rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "rob_commit_flush_data.exception_value", t_rob_item.exception_value, 0);
+            rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.predicted", t_rob_item.predicted, 0);
+            rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.predicted_jump", t_rob_item.predicted_jump, 0);
+            rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "rob_commit_flush_data.predicted_next_pc", t_rob_item.predicted_next_pc, 0);
+            rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.checkpoint_id_valid", t_rob_item.checkpoint_id_valid, 0);
+            rob->get_tdb()->update_signal<uint16_t>(trace::domain_t::output, "rob_commit_flush_data.checkpoint_id", t_rob_item.checkpoint_id, 0);
+            rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.bru_op", t_rob_item.bru_op, 0);
+            rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.bru_jump", t_rob_item.bru_jump, 0);
+            rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "rob_commit_flush_data.bru_next_pc", t_rob_item.bru_next_pc, 0);
+            rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.is_mret", t_rob_item.is_mret, 0);
+            rob->get_tdb()->update_signal<uint16_t>(trace::domain_t::output, "rob_commit_flush_data.csr_addr", t_rob_item.csr_addr, 0);
+            rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "rob_commit_flush_data.csr_newvalue", t_rob_item.csr_newvalue, 0);
+            rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.csr_newvalue_valid", t_rob_item.csr_newvalue_valid, 0);
 			
 			if(t_rob_item.old_phy_reg_id_valid)
 			{
@@ -953,6 +1052,8 @@ namespace pipeline
 				auto t = rob->get_prev_id(this->restore_rob_item_id, &id);
 				this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rob_commit_flush_next_id", id, 0);
 				this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rob_commit_flush_next_id_valid", t, 0);
+				rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_next_id", id, 0);
+				rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_next_id_valid", t, 0);
 			}
 
 			if((this->restore_rob_item_id != this->rob_item_id) && rob->get_prev_id(this->restore_rob_item_id, &this->restore_rob_item_id))
@@ -964,6 +1065,7 @@ namespace pipeline
 			{
 				rob->flush();
 				this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_rob_flush", 1, 0);
+				rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_rob_flush", 1, 0);
 				feedback_pack.enable = true;
 				feedback_pack.has_exception = true;
 				csr_file->write_sys_sync(CSR_MEPC, rob_item.pc);
@@ -1011,6 +1113,29 @@ namespace pipeline
 			this->tdb.update_signal<uint16_t>(trace::domain_t::input, "rob_commit_flush_data.csr_addr", t_rob_item.csr_addr, 0);
 			this->tdb.update_signal<uint32_t>(trace::domain_t::input, "rob_commit_flush_data.csr_newvalue", t_rob_item.csr_newvalue, 0);
 			this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rob_commit_flush_data.csr_newvalue_valid", t_rob_item.csr_newvalue_valid, 0);
+
+			rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_rob_flush_id", this->restore_rob_item_id, 0);
+		    rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.new_phy_reg_id", t_rob_item.new_phy_reg_id, 0);
+            rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.old_phy_reg_id", t_rob_item.old_phy_reg_id, 0);
+            rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.old_phy_reg_id_valid", t_rob_item.old_phy_reg_id_valid, 0);
+            rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.finish", t_rob_item.finish, 0);
+            rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "rob_commit_flush_data.pc", t_rob_item.pc, 0);
+            rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "rob_commit_flush_data.inst_value", t_rob_item.inst_value, 0);
+            rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.has_exception", t_rob_item.has_exception, 0);
+            rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "rob_commit_flush_data.exception_id", (uint32_t)t_rob_item.exception_id, 0);
+            rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "rob_commit_flush_data.exception_value", t_rob_item.exception_value, 0);
+            rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.predicted", t_rob_item.predicted, 0);
+            rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.predicted_jump", t_rob_item.predicted_jump, 0);
+            rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "rob_commit_flush_data.predicted_next_pc", t_rob_item.predicted_next_pc, 0);
+            rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.checkpoint_id_valid", t_rob_item.checkpoint_id_valid, 0);
+            rob->get_tdb()->update_signal<uint16_t>(trace::domain_t::output, "rob_commit_flush_data.checkpoint_id", t_rob_item.checkpoint_id, 0);
+            rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.bru_op", t_rob_item.bru_op, 0);
+            rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.bru_jump", t_rob_item.bru_jump, 0);
+            rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "rob_commit_flush_data.bru_next_pc", t_rob_item.bru_next_pc, 0);
+            rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.is_mret", t_rob_item.is_mret, 0);
+            rob->get_tdb()->update_signal<uint16_t>(trace::domain_t::output, "rob_commit_flush_data.csr_addr", t_rob_item.csr_addr, 0);
+            rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "rob_commit_flush_data.csr_newvalue", t_rob_item.csr_newvalue, 0);
+            rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_data.csr_newvalue_valid", t_rob_item.csr_newvalue_valid, 0);
 			
 			if(t_rob_item.old_phy_reg_id_valid)
 			{
@@ -1023,6 +1148,15 @@ namespace pipeline
 				phy_regfile->write_sync(t_rob_item.new_phy_reg_id, default_phy_reg_item, false);
 			}
 
+			{
+				uint32_t id;
+				auto t = rob->get_prev_id(this->restore_rob_item_id, &id);
+				this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rob_commit_flush_next_id", id, 0);
+				this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rob_commit_flush_next_id_valid", t, 0);
+				rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_next_id", id, 0);
+				rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rob_commit_flush_next_id_valid", t, 0);
+			}
+
 			if((this->restore_rob_item_id != this->rob_item_id) && rob->get_prev_id(this->restore_rob_item_id, &this->restore_rob_item_id))
 			{
 				feedback_pack.enable = true;
@@ -1032,6 +1166,7 @@ namespace pipeline
 			{
 				rob->flush();
 				this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_rob_flush", 1, 0);
+				rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_rob_flush", 1, 0);
 				feedback_pack.enable = true;
 				feedback_pack.has_exception = true;
 				csr_file->write_sys_sync(CSR_MEPC, interrupt_pc);

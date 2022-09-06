@@ -930,10 +930,12 @@ static void trace_pre()
 {
     branch_predictor.trace_pre();
     rat.trace_pre();
+    rob.trace_pre();
 }
 
 static void trace_post()
 {
+    rob.trace_post();
     rat.trace_post();
     branch_predictor.trace_post();
 }

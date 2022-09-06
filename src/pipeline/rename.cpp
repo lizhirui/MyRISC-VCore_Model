@@ -541,6 +541,30 @@ namespace pipeline
                                 this->tdb.update_signal_bit<uint8_t>(trace::domain_t::output, "rename_rob_data_valid", 1, i, 0);
                                 this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rob_push", 1, 0);
 
+                                rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.new_phy_reg_id", rob_item[i].new_phy_reg_id, i);
+                                rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.old_phy_reg_id", rob_item[i].old_phy_reg_id, i);
+                                rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.old_phy_reg_id_valid", rob_item[i].old_phy_reg_id_valid, i);
+                                rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.finish", rob_item[i].finish, i);
+                                rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "rename_rob_data.pc", rob_item[i].pc, i);
+                                rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "rename_rob_data.inst_value", rob_item[i].inst_value, i);
+                                rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.has_exception", rob_item[i].has_exception, i);
+                                rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "rename_rob_data.exception_id", (uint32_t)rob_item[i].exception_id, i);
+                                rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "rename_rob_data.exception_value", rob_item[i].exception_value, i);
+                                rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.predicted", rob_item[i].predicted, i);
+                                rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.predicted_jump", rob_item[i].predicted_jump, i);
+                                rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "rename_rob_data.predicted_next_pc", rob_item[i].predicted_next_pc, i);
+                                rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.checkpoint_id_valid", rob_item[i].checkpoint_id_valid, i);
+                                rob->get_tdb()->update_signal<uint16_t>(trace::domain_t::input, "rename_rob_data.checkpoint_id", rob_item[i].checkpoint_id, i);
+                                rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.bru_op", rob_item[i].bru_op, i);
+                                rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.bru_jump", rob_item[i].bru_jump, i);
+                                rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "rename_rob_data.bru_next_pc", rob_item[i].bru_next_pc, i);
+                                rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.is_mret", rob_item[i].is_mret, i);
+                                rob->get_tdb()->update_signal<uint16_t>(trace::domain_t::input, "rename_rob_data.csr_addr", rob_item[i].csr_addr, i);
+                                rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "rename_rob_data.csr_newvalue", rob_item[i].csr_newvalue, i);
+                                rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.csr_newvalue_valid", rob_item[i].csr_newvalue_valid, i);
+                                rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data_valid", 1, i);
+                                rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rob_push", 1, 0);
+
                                 //start to map source registers
                                 if(rev_pack.rs1_need_map)
                                 {
