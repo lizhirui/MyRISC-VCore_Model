@@ -527,7 +527,7 @@ namespace pipeline
 		this->tdb.update_signal<uint32_t>(trace::domain_t::output, "commit_feedback_pack.next_pc", 0, 0);
 
 		{
-			riscv_interrupt_t t;
+			riscv_interrupt_t t = riscv_interrupt_t::user_software;
 			this->tdb.update_signal<uint8_t>(trace::domain_t::input, "intif_commit_has_interrupt", interrupt_interface->get_cause(&t), 0);
 			this->tdb.update_signal<uint32_t>(trace::domain_t::input, "intif_commit_mcause_data", (uint32_t)t, 0);
 			this->tdb.update_signal<uint32_t>(trace::domain_t::input, "intif_commit_ack_data", 1U << ((uint32_t)t), 0);
