@@ -674,6 +674,9 @@ namespace pipeline
 									this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_phyf_id", rob_item.old_phy_reg_id, i);
 									this->tdb.update_signal_bit<uint8_t>(trace::domain_t::output, "commit_phyf_invalid", 1, i, 0);
 
+									phy_regfile->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_phyf_id", rob_item.old_phy_reg_id, i);
+									phy_regfile->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_phyf_invalid", 1, i);
+
 									phy_regfile->write_sync(rob_item.old_phy_reg_id, default_phy_reg_item, false);
 
 									this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_rat_commit_phy_id", rob_item.new_phy_reg_id, i);			
@@ -781,6 +784,9 @@ namespace pipeline
 											rat->restore_sync(cp);
 											this->tdb.update_signal_bitmap(trace::domain_t::output, "commit_phyf_data_valid", &cp.phy_regfile_data_valid, 0);
 											this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_phyf_data_valid_restore", 1, 0);
+
+											phy_regfile->get_tdb()->update_signal_bitmap(trace::domain_t::input, "commit_phyf_data_valid", &cp.phy_regfile_data_valid, 0);
+											phy_regfile->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_phyf_data_valid_restore", 1, 0);
 											phy_regfile->restore_sync(cp);
 											feedback_pack.enable = true;
 											feedback_pack.flush = true;
@@ -1044,6 +1050,10 @@ namespace pipeline
 				rat->restore_map_sync(t_rob_item.new_phy_reg_id, t_rob_item.old_phy_reg_id);
 				this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_phyf_flush_id", t_rob_item.new_phy_reg_id, 0);
 				this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_phyf_flush_invalid", 1, 0);
+
+				phy_regfile->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_phyf_flush_id", t_rob_item.new_phy_reg_id, 0);
+                phy_regfile->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_phyf_flush_invalid", 1, 0);
+
 				phy_regfile->write_sync(t_rob_item.new_phy_reg_id, default_phy_reg_item, false);
 			}
 

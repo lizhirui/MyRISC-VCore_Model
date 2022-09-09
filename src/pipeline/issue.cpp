@@ -1287,6 +1287,32 @@ namespace pipeline
                                     case lsu_op_t::lhu:
                                     case lsu_op_t::lw:
                                         this->tdb.update_signal<uint8_t>(trace::domain_t::output, "issue_stbuf_rd", !send_pack.has_exception, 0);
+
+                                        store_buffer->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "issue_stbuf_read_addr", send_pack.lsu_addr, 0);
+                                        store_buffer->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "issue_stbuf_rd", 1, 0);
+
+                                        store_buffer->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "stbuf_bus_read_addr", send_pack.lsu_addr, 0);
+                                        store_buffer->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "stbuf_bus_read_req", 1, 0);
+                                        break;
+                                }
+
+                                switch(items[i].sub_op.lsu_op)
+                                {
+                                    case lsu_op_t::lb:
+                                    case lsu_op_t::lbu:
+                                        store_buffer->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "issue_stbuf_read_size", 1, 0);
+                                        store_buffer->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "stbuf_bus_read_size", 1, 0);
+                                        break;
+
+                                    case lsu_op_t::lh:
+                                    case lsu_op_t::lhu:
+                                        store_buffer->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "issue_stbuf_read_size", 2, 0);
+                                        store_buffer->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "stbuf_bus_read_size", 2, 0);
+                                        break;
+
+                                    case lsu_op_t::lw:
+                                        store_buffer->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "issue_stbuf_read_size", 4, 0);
+                                        store_buffer->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "stbuf_bus_read_size", 4, 0);
                                         break;
                                 }
                             }
@@ -1457,7 +1483,11 @@ namespace pipeline
             for(auto i = 0;i < READREG_WIDTH;i++)
             {
                 this->tdb.update_signal<uint8_t>(trace::domain_t::output, "issue_phyf_id", rev_pack.op_info[i].rs1_phy, i * 2);
+                phy_regfile->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "phyf_issue_data", phy_regfile->read(rev_pack.op_info[i].rs1_phy).value, i * 2);
+	            phy_regfile->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "phyf_issue_data_valid", phy_regfile->read_data_valid(rev_pack.op_info[i].rs1_phy), i * 2);
                 this->tdb.update_signal<uint8_t>(trace::domain_t::output, "issue_phyf_id", rev_pack.op_info[i].rs2_phy, i * 2 + 1);
+                phy_regfile->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "phyf_issue_data", phy_regfile->read(rev_pack.op_info[i].rs2_phy).value, i * 2 + 1);
+	            phy_regfile->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "phyf_issue_data_valid", phy_regfile->read_data_valid(rev_pack.op_info[i].rs2_phy), i * 2 + 1);
             }
         
             auto finish = true;
@@ -1521,6 +1551,8 @@ namespace pipeline
                 t_item.op_unit = cur_op.op_unit;
                 memcpy(&t_item.sub_op, &cur_op.sub_op, sizeof(t_item.sub_op));
 
+                phy_regfile->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "issue_phyf_id", t_item.rs1_phy, this->last_index * 2);
+
                 if(!t_item.src1_loaded && t_item.rs1_need_map && phy_regfile->read_data_valid(t_item.rs1_phy))
                 {
                     t_item.src1_loaded = true;
@@ -1528,6 +1560,8 @@ namespace pipeline
                     this->tdb.update_signal<uint32_t>(trace::domain_t::input, "phyf_issue_data", t_item.src1_value, this->last_index * 2);
                     this->tdb.update_signal<uint8_t>(trace::domain_t::input, "phyf_issue_data_valid", 1, this->last_index * 2);
                 }
+
+                phy_regfile->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "issue_phyf_id", t_item.rs2_phy, this->last_index * 2 + 1);
 
                 if(!t_item.src2_loaded && t_item.rs2_need_map && phy_regfile->read_data_valid(t_item.rs2_phy))
                 {

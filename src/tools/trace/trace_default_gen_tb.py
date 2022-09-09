@@ -98,7 +98,7 @@ for line in lines:
             if size.isdigit():
                 func_str = "tdb.get_uint" + size + "(" + domain + ", \"" + name + "\", " + num + ")"
             else:
-                func_str = "tdb_reader::get_vector#(" + size + ")::_do(tdb, " + domain + ", " + name + ", " + num + ")"
+                func_str = "tdb_reader::get_vector#(" + size + ")::_do(tdb, " + domain + ", \"" + name + "\", " + num + ")"
 
             if domain == "DOMAIN_INPUT":
                 line = cur_tab + var_name + " = " + func_str + ";"
@@ -114,7 +114,7 @@ for line in lines:
 
 if cur_count_text != "":
     cur_tab = cur_tab[len(tab_unit):]
-    out_buf += cur_tab + "}\n\n"
+    out_buf += cur_tab + "end\n\n"
 
 old_out_buf = out_buf
 

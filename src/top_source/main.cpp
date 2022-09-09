@@ -931,10 +931,14 @@ static void trace_pre()
     branch_predictor.trace_pre();
     rat.trace_pre();
     rob.trace_pre();
+    phy_regfile.trace_pre();
+    store_buffer.trace_pre();
 }
 
 static void trace_post()
 {
+    store_buffer.trace_post();
+    phy_regfile.trace_post();
     rob.trace_post();
     rat.trace_post();
     branch_predictor.trace_post();
@@ -953,12 +957,12 @@ static void run()
 
     while(1)
     {
-        if((cpu_clock_cycle >= 838510) && need_to_trigger)
+        /*if((cpu_clock_cycle >= 17601) && need_to_trigger)
         {
             step_state = true;
             wait_commit = false;
             need_to_trigger = false;
-        }
+        }*/
 
         /*if((committed_instruction_num >= 16590) && need_to_trigger)
         {

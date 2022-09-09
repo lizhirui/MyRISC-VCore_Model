@@ -316,6 +316,10 @@ namespace pipeline
                             this->tdb.update_signal<uint32_t>(trace::domain_t::input, "phyf_readreg_data", reg_item.value, i * 2);
                             this->tdb.update_signal<uint8_t>(trace::domain_t::input, "phyf_readreg_data_valid", reg_data_valid, i * 2);
 
+                            phy_regfile->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "readreg_phyf_id", rev_pack.op_info[i].rs1_phy, i * 2);
+	                        phy_regfile->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "phyf_readreg_data", reg_item.value, i * 2);
+	                        phy_regfile->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "phyf_readreg_data_valid", reg_data_valid, i * 2);
+
                             if(reg_data_valid)
                             {
                                 send_pack.op_info[i].src1_value = reg_item.value;
@@ -359,6 +363,10 @@ namespace pipeline
                             this->tdb.update_signal<uint8_t>(trace::domain_t::output, "readreg_phyf_id", rev_pack.op_info[i].rs2_phy, i * 2 + 1);
                             this->tdb.update_signal<uint32_t>(trace::domain_t::input, "phyf_readreg_data", reg_item.value, i * 2 + 1);
                             this->tdb.update_signal<uint8_t>(trace::domain_t::input, "phyf_readreg_data_valid", reg_data_valid, i * 2 + 1);
+
+                            phy_regfile->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "readreg_phyf_id", rev_pack.op_info[i].rs2_phy, i * 2 + 1);
+	                        phy_regfile->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "phyf_readreg_data", reg_item.value, i * 2 + 1);
+	                        phy_regfile->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "phyf_readreg_data_valid", reg_data_valid, i * 2 + 1);
 
                             if(reg_data_valid)
                             {

@@ -7,8 +7,8 @@ project ("MyRISC-VCore_Model")
 
 include_directories(./src/top_header ./src/tools)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
-set(CMAKE_BUILD_TYPE "Debug")
-#set(CMAKE_BUILD_TYPE "Release")
+#set(CMAKE_BUILD_TYPE "Debug")
+set(CMAKE_BUILD_TYPE "Release")
 
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("/std:c++17" _cpp_17_flag_supported)

@@ -370,6 +370,11 @@ namespace pipeline
                     this->tdb.update_signal<uint8_t>(trace::domain_t::output, "wb_phyf_id", rev_pack.rd_phy, i);
                     this->tdb.update_signal<uint32_t>(trace::domain_t::output, "wb_phyf_data", t_item.value, i);
                     this->tdb.update_signal_bit<uint8_t>(trace::domain_t::output, "wb_phyf_we", 1, i, 0);
+
+                    phy_regfile->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "wb_phyf_id", rev_pack.rd_phy, i);
+	                phy_regfile->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "wb_phyf_data", t_item.value, i);
+	                phy_regfile->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "wb_phyf_we", 1, i);
+
                     phy_regfile->write_sync(rev_pack.rd_phy, t_item, true);
                     feedback_pack.channel[i].enable = true;
                     feedback_pack.channel[i].phy_id = rev_pack.rd_phy;

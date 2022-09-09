@@ -45,6 +45,8 @@ namespace component
 
             bus *bus_if;
 
+            trace::trace_database tdb;
+
             bool check_id_valid(uint32_t id)
             {
                 if(this->is_empty())
@@ -123,7 +125,7 @@ namespace component
             }
         
         public:
-            store_buffer(uint32_t size, bus *bus_if) : fifo<store_buffer_item_t>(size)
+            store_buffer(uint32_t size, bus *bus_if) : fifo<store_buffer_item_t>(size), tdb(TRACE_STORE_BUFFER)
             {
                 this->bus_if = bus_if;
             }
@@ -132,6 +134,103 @@ namespace component
             {
                 fifo<store_buffer_item_t>::reset();
                 clear_queue(sync_request_q);
+
+                this->tdb.create(TRACE_DIR + "store_buffer.tdb");
+
+                this->tdb.mark_signal(trace::domain_t::status, "rptr", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::status, "wptr", sizeof(uint8_t), 1);
+
+                this->tdb.mark_signal(trace::domain_t::input, "issue_stbuf_read_addr", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "issue_stbuf_read_size", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "issue_stbuf_rd", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "stbuf_exlsu_bus_data", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "stbuf_exlsu_bus_data_feedback", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "stbuf_exlsu_bus_ready", sizeof(uint32_t), 1);
+
+                this->tdb.mark_signal(trace::domain_t::input, "exlsu_stbuf_rob_id", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "exlsu_stbuf_write_addr", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "exlsu_stbuf_write_size", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "exlsu_stbuf_write_data", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "exlsu_stbuf_push", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "stbuf_exlsu_full", sizeof(uint8_t), 1);
+
+                this->tdb.mark_signal(trace::domain_t::output, "stbuf_bus_read_addr", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "stbuf_bus_write_addr", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "stbuf_bus_read_size", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "stbuf_bus_write_size", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "stbuf_bus_data", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "stbuf_bus_read_req", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "stbuf_bus_write_req", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "bus_stbuf_data", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "bus_stbuf_read_ack", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "bus_stbuf_write_ack", sizeof(uint8_t), 1);
+
+                this->tdb.mark_signal(trace::domain_t::input, "commit_feedback_pack.enable", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_feedback_pack.flush", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_feedback_pack.committed_rob_id", sizeof(uint8_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_feedback_pack.committed_rob_id_valid", sizeof(uint8_t), COMMIT_WIDTH);
+
+                this->tdb.write_metainfo();
+                this->tdb.trace_on();
+                this->tdb.capture_status();
+                this->tdb.write_row();
+            }
+
+            void trace_pre()
+            {
+                this->tdb.capture_input();
+                                
+                this->tdb.update_signal<uint8_t>(trace::domain_t::status, "rptr", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::status, "wptr", 0, 0);
+
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "issue_stbuf_read_addr", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "issue_stbuf_read_size", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "issue_stbuf_rd", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "stbuf_exlsu_bus_data", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "stbuf_exlsu_bus_data_feedback", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "stbuf_exlsu_bus_ready", 0, 0);
+
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "exlsu_stbuf_rob_id", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "exlsu_stbuf_write_addr", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "exlsu_stbuf_write_size", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "exlsu_stbuf_write_data", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "exlsu_stbuf_push", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "stbuf_exlsu_full", 0, 0);
+
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "stbuf_bus_read_addr", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "stbuf_bus_write_addr", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "stbuf_bus_read_size", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "stbuf_bus_write_size", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "stbuf_bus_data", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "stbuf_bus_read_req", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "stbuf_bus_write_req", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "bus_stbuf_data", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "bus_stbuf_read_ack", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "bus_stbuf_write_ack", 0, 0);
+
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_feedback_pack.enable", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_feedback_pack.flush", 0, 0);
+                
+                for(auto i = 0;i < COMMIT_WIDTH;i++)
+                {
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_feedback_pack.committed_rob_id", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_feedback_pack.committed_rob_id_valid", 0, i);
+                }
+
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "stbuf_exlsu_full", is_full(), 0);
+            }
+
+            void trace_post()
+            {
+                this->tdb.update_signal<uint8_t>(trace::domain_t::status, "rptr", rptr + (rstage & 0x01) * size, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::status, "wptr", wptr + (wstage & 0x01) * size, 0);
+                this->tdb.capture_output_status();
+                this->tdb.write_row();
+            }
+
+            trace::trace_database *get_tdb()
+            {
+                return &tdb;
             }
 
             store_buffer_state_pack_t save()
@@ -165,6 +264,12 @@ namespace component
                 item.req = sync_request_type_t::push;
                 item.arg1_store_buffer_item = element;
                 sync_request_q.push(item);
+
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "exlsu_stbuf_rob_id", element.rob_id, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "exlsu_stbuf_write_addr", element.addr, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "exlsu_stbuf_write_size", element.size, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "exlsu_stbuf_write_data", element.data, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "exlsu_stbuf_push", 1, 0);
             }
             
             void pop_sync()
@@ -207,11 +312,26 @@ namespace component
                     }while(get_next_id(cur_id, &cur_id) && (cur_id != first_id));
                 }
 
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "stbuf_exlsu_bus_data", bus_value, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "stbuf_exlsu_bus_data_feedback", result, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "stbuf_exlsu_bus_ready", 1, 0);  
+
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "bus_stbuf_data", bus_value, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "bus_stbuf_read_ack", 1, 0);
                 return result;
             }
 
             void run(pipeline::commit_feedback_pack_t commit_feedback_pack)
             {
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_feedback_pack.enable", commit_feedback_pack.enable, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_feedback_pack.flush", commit_feedback_pack.flush, 0);
+
+                for(auto i = 0;i < COMMIT_WIDTH;i++)
+                {
+	                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_feedback_pack.committed_rob_id", commit_feedback_pack.committed_rob_id[i], i);
+	                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_feedback_pack.committed_rob_id_valid", commit_feedback_pack.committed_rob_id_valid[i], i);
+                }
+
                 if(commit_feedback_pack.enable && commit_feedback_pack.flush)
                 {
                     uint32_t cur_id;
@@ -275,6 +395,11 @@ namespace component
                             store_buffer_item_t t_item;
                             pop(&t_item);
                             assert((item.size == 1) || (item.size == 2) || (item.size == 4));
+
+                            this->tdb.update_signal<uint32_t>(trace::domain_t::output, "stbuf_bus_write_addr", item.addr, 0);
+                            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "stbuf_bus_write_size", item.size, 0);
+                            this->tdb.update_signal<uint32_t>(trace::domain_t::output, "stbuf_bus_data", item.data, 0);
+                            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "stbuf_bus_write_req", 1, 0);
 
                             switch(item.size)
                             {

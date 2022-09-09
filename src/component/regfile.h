@@ -30,8 +30,10 @@ namespace component
             uint32_t size;
             uint32_t bitmap_size;
 
+            trace::trace_database tdb;
+
         public:
-            regfile(uint32_t size)
+            regfile(uint32_t size) : tdb(TRACE_PHY_REGFILE)
             {
                 this->size = size;
                 reg_data = new T[size];
@@ -52,6 +54,80 @@ namespace component
                 memset(reg_data, 0, sizeof(reg_data[0]) * size);
                 memset(reg_data_valid, 0, sizeof(reg_data_valid) * bitmap_size);
                 clear_queue(sync_request_q);
+
+                this->tdb.create(TRACE_DIR + "phy_regfile.tdb");
+
+                this->tdb.mark_signal(trace::domain_t::input, "readreg_phyf_id", sizeof(uint8_t), READREG_WIDTH * 2);
+                this->tdb.mark_signal(trace::domain_t::output, "phyf_readreg_data", sizeof(uint32_t), READREG_WIDTH * 2);
+                this->tdb.mark_signal(trace::domain_t::output, "phyf_readreg_data_valid", sizeof(uint8_t), READREG_WIDTH * 2);
+
+                this->tdb.mark_signal(trace::domain_t::input, "issue_phyf_id", sizeof(uint8_t), READREG_WIDTH * 2);
+                this->tdb.mark_signal(trace::domain_t::output, "phyf_issue_data", sizeof(uint32_t), READREG_WIDTH * 2);
+                this->tdb.mark_signal(trace::domain_t::output, "phyf_issue_data_valid", sizeof(uint8_t), READREG_WIDTH * 2);
+
+                this->tdb.mark_signal(trace::domain_t::input, "wb_phyf_id", sizeof(uint8_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::input, "wb_phyf_data", sizeof(uint32_t), EXECUTE_UNIT_NUM);
+                this->tdb.mark_signal(trace::domain_t::input, "wb_phyf_we", sizeof(uint8_t), EXECUTE_UNIT_NUM);
+
+                this->tdb.mark_signal(trace::domain_t::input, "commit_phyf_id", sizeof(uint8_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_phyf_invalid", sizeof(uint8_t), COMMIT_WIDTH);
+
+                this->tdb.mark_signal(trace::domain_t::input, "commit_phyf_flush_id", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_phyf_flush_invalid", sizeof(uint8_t), 1);
+
+                this->tdb.mark_signal_bitmap(trace::domain_t::input, "commit_phyf_data_valid", PHY_REG_NUM, 1);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_phyf_data_valid_restore", sizeof(uint8_t), 1);
+
+                this->tdb.write_metainfo();
+                this->tdb.trace_on();
+                this->tdb.capture_status();
+                this->tdb.write_row();
+            }
+
+            void trace_pre()
+            {
+                this->tdb.capture_input();               
+                                
+                for(auto i = 0;i < READREG_WIDTH * 2;i++)
+                {
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "readreg_phyf_id", 255, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "phyf_readreg_data", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "phyf_readreg_data_valid", 0, i);
+    
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "issue_phyf_id", 255, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "phyf_issue_data", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "phyf_issue_data_valid", 0, i);
+                }
+
+                for(auto i = 0;i < EXECUTE_UNIT_NUM;i++)
+                {
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "wb_phyf_id", 0, i);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "wb_phyf_data", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "wb_phyf_we", 0, i);
+                }
+
+                for(auto i = 0;i < COMMIT_WIDTH;i++)
+                {
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_phyf_id", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_phyf_invalid", 0, i);;
+                }
+
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_phyf_flush_id", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_phyf_flush_invalid", 0, 0);
+
+                this->tdb.update_signal_bitmap_all(trace::domain_t::input, "commit_phyf_data_valid", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_phyf_data_valid_restore", 0, 0);
+            }
+
+            void trace_post()
+            {
+                this->tdb.capture_output_status();
+                this->tdb.write_row();
+            }
+
+            trace::trace_database *get_tdb()
+            {
+                return &tdb;
             }
 
             void write(uint32_t addr, T value, bool valid)

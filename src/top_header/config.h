@@ -83,7 +83,7 @@ const uint32_t NORMAL_GLOBAL_HISTORY_MASK = (1U << NORMAL_GLOBAL_HISTORY_WIDTH) 
 
 const std::string TRACE_DIR = R"(D:\program\project\MyRISC-VCore\model\MyRISC-VCore_Model_CMake\trace\coremark_10\)";
 
-//#define TRACE_ENABLE
+#define TRACE_ENABLE
 //#define TRACE_ENABLE_FULL
 
 #ifdef TRACE_ENABLE_FULL
@@ -104,10 +104,12 @@ const std::string TRACE_DIR = R"(D:\program\project\MyRISC-VCore\model\MyRISC-VC
     const bool TRACE_RAS = true;
     const bool TRACE_RAT = true;
     const bool TRACE_ROB = true;
+    const bool TRACE_PHY_REGFILE = true;
+    const bool TRACE_STORE_BUFFER = true;
 #elif defined(TRACE_ENABLE)
     const bool TRACE_FETCH = false;
     const bool TRACE_DECODE = false;
-    const bool TRACE_RENAME = true;
+    const bool TRACE_RENAME = false;
     const bool TRACE_READREG = false;
     const bool TRACE_ISSUE = false;
     const bool TRACE_EXECUTE_ALU = false;
@@ -117,11 +119,13 @@ const std::string TRACE_DIR = R"(D:\program\project\MyRISC-VCore\model\MyRISC-VC
     const bool TRACE_EXECUTE_LSU = false;
     const bool TRACE_EXECUTE_MUL = false;
     const bool TRACE_WB = false;
-    const bool TRACE_COMMIT = true;
+    const bool TRACE_COMMIT = false;
     const bool TRACE_BRANCH_PREDICTOR = false;
     const bool TRACE_RAS = false;
     const bool TRACE_RAT = false;
     const bool TRACE_ROB = false;
+    const bool TRACE_PHY_REGFILE = false;
+    const bool TRACE_STORE_BUFFER = true;
 #else
     const bool TRACE_FETCH = false;
     const bool TRACE_DECODE = false;
@@ -140,4 +144,6 @@ const std::string TRACE_DIR = R"(D:\program\project\MyRISC-VCore\model\MyRISC-VC
     const bool TRACE_RAS = false;
     const bool TRACE_RAT = false;
     const bool TRACE_ROB = false;
+    const bool TRACE_PHY_REGFILE = false;
+    const bool TRACE_STORE_BUFFER = false;
 #endif
