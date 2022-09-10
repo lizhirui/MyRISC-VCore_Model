@@ -59,6 +59,8 @@ namespace component
 
             std::queue<sync_request_t> sync_request_q;
 
+            trace::trace_database tdb;
+
             bool check_new_id_valid(uint32_t id)
             {
                 if(this->is_full())
@@ -92,7 +94,7 @@ namespace component
             }
 
         public:
-            checkpoint_buffer(uint32_t size) : fifo<checkpoint_t>(size)
+            checkpoint_buffer(uint32_t size) : fifo<checkpoint_t>(size), tdb(TRACE_CHECKPOINT_BUFFER)
             {
                 
             }
@@ -101,6 +103,115 @@ namespace component
             {
                 fifo<checkpoint_t>::reset();
                 clear_queue(sync_request_q);
+
+                this->tdb.create(TRACE_DIR + "checkpoint_buffer.tdb");
+
+                this->tdb.mark_signal(trace::domain_t::status, "rptr", sizeof(uint16_t), 1);
+                this->tdb.mark_signal(trace::domain_t::status, "wptr", sizeof(uint16_t), 1);
+
+                this->tdb.mark_signal(trace::domain_t::output, "cpbuf_fetch_new_id", sizeof(uint16_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "cpbuf_fetch_new_id_valid", sizeof(uint8_t), 1);
+                this->tdb.mark_signal_bitmap(trace::domain_t::input, "fetch_cpbuf_data.rat_phy_map_table_valid", PHY_REG_NUM, 1);
+                this->tdb.mark_signal_bitmap(trace::domain_t::input, "fetch_cpbuf_data.rat_phy_map_table_visible", PHY_REG_NUM, 1);
+                this->tdb.mark_signal(trace::domain_t::input, "fetch_cpbuf_data.global_history", sizeof(uint16_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "fetch_cpbuf_data.local_history", sizeof(uint16_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "fetch_cpbuf_push", sizeof(uint8_t), 1);
+
+                this->tdb.mark_signal(trace::domain_t::input, "rename_cpbuf_id", sizeof(uint16_t), RENAME_WIDTH);
+                this->tdb.mark_signal_bitmap(trace::domain_t::input, "rename_cpbuf_data.rat_phy_map_table_valid", PHY_REG_NUM, RENAME_WIDTH);
+                this->tdb.mark_signal_bitmap(trace::domain_t::input, "rename_cpbuf_data.rat_phy_map_table_visible", PHY_REG_NUM, RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_cpbuf_data.global_history", sizeof(uint16_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_cpbuf_data.local_history", sizeof(uint16_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "rename_cpbuf_we", sizeof(uint8_t), RENAME_WIDTH);
+                this->tdb.mark_signal_bitmap(trace::domain_t::output, "cpbuf_rename_data.rat_phy_map_table_valid", PHY_REG_NUM, RENAME_WIDTH);
+                this->tdb.mark_signal_bitmap(trace::domain_t::output, "cpbuf_rename_data.rat_phy_map_table_visible", PHY_REG_NUM, RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::output, "cpbuf_rename_data.global_history", sizeof(uint16_t), RENAME_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::output, "cpbuf_rename_data.local_history", sizeof(uint16_t), RENAME_WIDTH);
+
+                this->tdb.mark_signal(trace::domain_t::input, "exbru_cpbuf_id", sizeof(uint16_t), 1);
+                this->tdb.mark_signal_bitmap(trace::domain_t::output, "cpbuf_exbru_data.rat_phy_map_table_valid", PHY_REG_NUM, 1);
+                this->tdb.mark_signal_bitmap(trace::domain_t::output, "cpbuf_exbru_data.rat_phy_map_table_visible", PHY_REG_NUM, 1);
+                this->tdb.mark_signal(trace::domain_t::output, "cpbuf_exbru_data.global_history", sizeof(uint16_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "cpbuf_exbru_data.local_history", sizeof(uint16_t), 1);
+
+                this->tdb.mark_signal(trace::domain_t::input, "commit_cpbuf_id", sizeof(uint16_t), COMMIT_WIDTH);
+                this->tdb.mark_signal_bitmap(trace::domain_t::output, "cpbuf_commit_data.rat_phy_map_table_valid", PHY_REG_NUM, COMMIT_WIDTH);
+                this->tdb.mark_signal_bitmap(trace::domain_t::output, "cpbuf_commit_data.rat_phy_map_table_visible", PHY_REG_NUM, COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::output, "cpbuf_commit_data.global_history", sizeof(uint16_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::output, "cpbuf_commit_data.local_history", sizeof(uint16_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_cpbuf_pop", sizeof(uint8_t), COMMIT_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_cpbuf_flush", sizeof(uint8_t), 1);
+
+                this->tdb.write_metainfo();
+                this->tdb.trace_on();
+                this->tdb.capture_status();
+                this->tdb.write_row();
+            }
+
+            void trace_pre()
+            {
+                this->tdb.capture_input();
+
+                this->tdb.update_signal<uint16_t>(trace::domain_t::status, "rptr", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::status, "wptr", 0, 0);
+
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "cpbuf_fetch_new_id", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "cpbuf_fetch_new_id_valid", 0, 0);
+                this->tdb.update_signal_bitmap_all(trace::domain_t::input, "fetch_cpbuf_data.rat_phy_map_table_valid", 0, 0);
+                this->tdb.update_signal_bitmap_all(trace::domain_t::input, "fetch_cpbuf_data.rat_phy_map_table_visible", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::input, "fetch_cpbuf_data.global_history", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::input, "fetch_cpbuf_data.local_history", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_cpbuf_push", 0, 0);
+
+
+                for(auto i = 0;i < RENAME_WIDTH;i++)
+                {
+	                this->tdb.update_signal<uint16_t>(trace::domain_t::input, "rename_cpbuf_id", 65535, i);
+	                this->tdb.update_signal_bitmap_all(trace::domain_t::input, "rename_cpbuf_data.rat_phy_map_table_valid", 0, i);
+	                this->tdb.update_signal_bitmap_all(trace::domain_t::input, "rename_cpbuf_data.rat_phy_map_table_visible", 0, i);
+	                this->tdb.update_signal<uint16_t>(trace::domain_t::input, "rename_cpbuf_data.global_history", 0, i);
+	                this->tdb.update_signal<uint16_t>(trace::domain_t::input, "rename_cpbuf_data.local_history", 0, i);
+	                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_cpbuf_we", 0, i);
+	                this->tdb.update_signal_bitmap_all(trace::domain_t::output, "cpbuf_rename_data.rat_phy_map_table_valid", 0, i);
+	                this->tdb.update_signal_bitmap_all(trace::domain_t::output, "cpbuf_rename_data.rat_phy_map_table_visible", 0, i);
+	                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "cpbuf_rename_data.global_history", 0, i);
+	                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "cpbuf_rename_data.local_history", 0, i);
+                }
+
+                this->tdb.update_signal<uint16_t>(trace::domain_t::input, "exbru_cpbuf_id", 65535, 0);
+                this->tdb.update_signal_bitmap_all(trace::domain_t::output, "cpbuf_exbru_data.rat_phy_map_table_valid", 0, 0);
+                this->tdb.update_signal_bitmap_all(trace::domain_t::output, "cpbuf_exbru_data.rat_phy_map_table_visible", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "cpbuf_exbru_data.global_history", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "cpbuf_exbru_data.local_history", 0, 0);
+
+
+                for(auto i = 0;i < COMMIT_WIDTH;i++)
+                {
+	                this->tdb.update_signal<uint16_t>(trace::domain_t::input, "commit_cpbuf_id", 65535, i);
+	                this->tdb.update_signal_bitmap_all(trace::domain_t::output, "cpbuf_commit_data.rat_phy_map_table_valid", 0, i);
+	                this->tdb.update_signal_bitmap_all(trace::domain_t::output, "cpbuf_commit_data.rat_phy_map_table_visible", 0, i);
+	                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "cpbuf_commit_data.global_history", 0, i);
+	                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "cpbuf_commit_data.local_history", 0, i);
+	                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_cpbuf_pop", 0, i);
+                }
+
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_cpbuf_flush", 0, 0);
+
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "cpbuf_fetch_new_id", this->wptr, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "cpbuf_fetch_new_id_valid", !is_full(), 0);
+            }
+
+            void trace_post()
+            {
+                this->tdb.update_signal<uint16_t>(trace::domain_t::status, "rptr", rptr + (rstage & 0x01) * size, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::status, "wptr", wptr + (wstage & 0x01) * size, 0);
+                this->tdb.capture_output_status();
+                this->tdb.write_row();
+            }
+
+            trace::trace_database *get_tdb()
+            {
+                return &tdb;
             }
 
             bool push(checkpoint_t element, uint32_t *item_id)

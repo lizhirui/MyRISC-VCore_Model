@@ -393,6 +393,13 @@ namespace pipeline
                     this->tdb.update_signal_bitmap(trace::domain_t::output, "exbru_bp_cp.rat_phy_map_table_visible", cp_item.rat_phy_map_table_visible, 0);
                     this->tdb.update_signal<uint16_t>(trace::domain_t::output, "exbru_bp_cp.global_history", cp_item.global_history, 0);
                     this->tdb.update_signal<uint16_t>(trace::domain_t::output, "exbru_bp_cp.local_history", cp_item.local_history, 0);
+
+                    checkpoint_buffer->get_tdb()->update_signal<uint16_t>(trace::domain_t::input, "exbru_cpbuf_id", send_pack.checkpoint_id, 0);
+                    checkpoint_buffer->get_tdb()->update_signal_bitmap(trace::domain_t::output, "cpbuf_exbru_data.rat_phy_map_table_valid", cp_item.rat_phy_map_table_valid, 0);
+                    checkpoint_buffer->get_tdb()->update_signal_bitmap(trace::domain_t::output, "cpbuf_exbru_data.rat_phy_map_table_visible", cp_item.rat_phy_map_table_visible, 0);
+                    checkpoint_buffer->get_tdb()->update_signal<uint16_t>(trace::domain_t::output, "cpbuf_exbru_data.global_history", cp_item.global_history, 0);
+                    checkpoint_buffer->get_tdb()->update_signal<uint16_t>(trace::domain_t::output, "cpbuf_exbru_data.local_history", cp_item.local_history, 0);
+
                     this->tdb.update_signal<uint32_t>(trace::domain_t::output, "exbru_bp_pc", send_pack.pc, 0);
                     this->tdb.update_signal<uint32_t>(trace::domain_t::output, "exbru_bp_instruction", send_pack.value, 0);
                     this->tdb.update_signal<uint8_t>(trace::domain_t::output, "exbru_bp_jump", send_pack.bru_jump, 0);

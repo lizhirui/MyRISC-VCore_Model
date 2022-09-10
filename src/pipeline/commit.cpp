@@ -737,6 +737,7 @@ namespace pipeline
     										this->tdb.update_signal_bit<uint8_t>(trace::domain_t::output, "commit_bp_hit", 1, i, 0);		
 											checkpoint_buffer->pop_sync();
 											this->tdb.update_signal_bit<uint8_t>(trace::domain_t::output, "commit_cpbuf_pop", 1, i, 0);
+											checkpoint_buffer->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_cpbuf_pop", 1, i);
 											break;
 											//nothing to do
 										}
@@ -751,6 +752,12 @@ namespace pipeline
 											this->tdb.update_signal_bitmap(trace::domain_t::input, "cpbuf_commit_data.rat_phy_map_table_visible", &cp.rat_phy_map_table_visible, i);
 											this->tdb.update_signal<uint16_t>(trace::domain_t::input, "cpbuf_commit_data.global_history", cp.global_history, i);
 											this->tdb.update_signal<uint16_t>(trace::domain_t::input, "cpbuf_commit_data.local_history", cp.local_history, i);
+
+											checkpoint_buffer->get_tdb()->update_signal<uint16_t>(trace::domain_t::input, "commit_cpbuf_id", rob_item.checkpoint_id, i);
+											checkpoint_buffer->get_tdb()->update_signal_bitmap(trace::domain_t::output, "cpbuf_commit_data.rat_phy_map_table_valid", &cp.rat_phy_map_table_valid, i);
+											checkpoint_buffer->get_tdb()->update_signal_bitmap(trace::domain_t::output, "cpbuf_commit_data.rat_phy_map_table_visible", &cp.rat_phy_map_table_visible, i);
+											checkpoint_buffer->get_tdb()->update_signal<uint16_t>(trace::domain_t::output, "cpbuf_commit_data.global_history", cp.global_history, i);
+											checkpoint_buffer->get_tdb()->update_signal<uint16_t>(trace::domain_t::output, "cpbuf_commit_data.local_history", cp.local_history, i);
 
 											if(rob_item.old_phy_reg_id_valid)
 											{
@@ -798,6 +805,7 @@ namespace pipeline
 											rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_rob_flush", 1, 0);
 											checkpoint_buffer->flush();
 											this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_cpbuf_flush", 1, 0);
+											checkpoint_buffer->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_cpbuf_flush", 1, 0);
 											need_flush = true;
 											break;
 										}

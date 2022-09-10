@@ -933,10 +933,12 @@ static void trace_pre()
     rob.trace_pre();
     phy_regfile.trace_pre();
     store_buffer.trace_pre();
+    checkpoint_buffer.trace_pre();
 }
 
 static void trace_post()
 {
+    checkpoint_buffer.trace_post();
     store_buffer.trace_post();
     phy_regfile.trace_post();
     rob.trace_post();

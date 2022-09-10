@@ -226,6 +226,11 @@ namespace pipeline
                                 this->tdb.update_signal<uint16_t>(trace::domain_t::output, "fetch_cpbuf_data.global_history", cp.global_history, 0);
                                 this->tdb.update_signal<uint16_t>(trace::domain_t::output, "fetch_cpbuf_data.local_history", cp.local_history, 0);
                                 this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_cpbuf_push", 1, 0);
+                                
+                                checkpoint_buffer->get_tdb()->update_signal<uint16_t>(trace::domain_t::input, "fetch_cpbuf_data.global_history", cp.global_history, 0);
+                                checkpoint_buffer->get_tdb()->update_signal<uint16_t>(trace::domain_t::input, "fetch_cpbuf_data.local_history", cp.local_history, 0);
+                                checkpoint_buffer->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "fetch_cpbuf_push", 1, 0);
+
                                 branch_predictor->update_prediction_guess(cur_pc, opcode, jump_result, jump_next_pc);
 
                                 this->tdb.update_signal<uint8_t>(trace::domain_t::input, "bp_fetch_jump", jump_result, 0);

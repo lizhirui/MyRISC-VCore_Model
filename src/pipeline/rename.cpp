@@ -623,6 +623,15 @@ namespace pipeline
                                     this->tdb.update_signal_bit<uint8_t>(trace::domain_t::output, "rename_cpbuf_we", 1, i, 0);
                                     this->tdb.update_signal<uint16_t>(trace::domain_t::input, "cpbuf_rename_data.global_history", origin_cp.global_history, i);
                                     this->tdb.update_signal<uint16_t>(trace::domain_t::input, "cpbuf_rename_data.local_history", origin_cp.local_history, i);
+
+                                    checkpoint_buffer->get_tdb()->update_signal<uint16_t>(trace::domain_t::input, "rename_cpbuf_id", rev_pack.checkpoint_id, i);
+	                                checkpoint_buffer->get_tdb()->update_signal_bitmap(trace::domain_t::input, "rename_cpbuf_data.rat_phy_map_table_valid", &cp.rat_phy_map_table_valid, i);
+	                                checkpoint_buffer->get_tdb()->update_signal_bitmap(trace::domain_t::input, "rename_cpbuf_data.rat_phy_map_table_visible", &cp.rat_phy_map_table_visible, i);
+	                                checkpoint_buffer->get_tdb()->update_signal<uint16_t>(trace::domain_t::input, "rename_cpbuf_data.global_history", cp.global_history, i);
+	                                checkpoint_buffer->get_tdb()->update_signal<uint16_t>(trace::domain_t::input, "rename_cpbuf_data.local_history", cp.local_history, i);
+	                                checkpoint_buffer->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_cpbuf_we", 1, i);
+	                                checkpoint_buffer->get_tdb()->update_signal<uint16_t>(trace::domain_t::output, "cpbuf_rename_data.global_history", origin_cp.global_history, i);
+	                                checkpoint_buffer->get_tdb()->update_signal<uint16_t>(trace::domain_t::output, "cpbuf_rename_data.local_history", origin_cp.local_history, i);
                                 }
 
                                 /*if(rev_pack.valid && (rev_pack.op_unit == op_unit_t::bru))

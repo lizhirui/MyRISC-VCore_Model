@@ -1,37 +1,41 @@
-this->tdb.update_signal<uint8_t>(trace::domain_t::status, "rptr", 0, 0);
-                this->tdb.update_signal<uint8_t>(trace::domain_t::status, "wptr", 0, 0);
+this->tdb.update_signal<uint16_t>(trace::domain_t::output, "cpbuf_fetch_new_id", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "cpbuf_fetch_new_id_valid", 0, 0);
+                this->tdb.update_signal_bitmap_all(trace::domain_t::input, "fetch_cpbuf_data.rat_phy_map_table_valid", 0, 0);
+                this->tdb.update_signal_bitmap_all(trace::domain_t::input, "fetch_cpbuf_data.rat_phy_map_table_visible", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::input, "fetch_cpbuf_data.global_history", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::input, "fetch_cpbuf_data.local_history", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_cpbuf_push", 0, 0);
 
-                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "issue_stbuf_read_addr", 0, 0);
-                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "issue_stbuf_read_size", 0, 0);
-                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "issue_stbuf_rd", 0, 0);
-                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "stbuf_exlsu_bus_data", 0, 0);
-                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "stbuf_exlsu_bus_data_feedback", 0, 0);
-                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "stbuf_exlsu_bus_ready", 0, 0);
+                
+                for(auto i = 0;i < RENAME_WIDTH;i++)
+                {
+                    this->tdb.update_signal<uint16_t>(trace::domain_t::input, "rename_cpbuf_id", 0, i);
+                    this->tdb.update_signal_bitmap_all(trace::domain_t::input, "rename_cpbuf_data.rat_phy_map_table_valid", 0, i);
+                    this->tdb.update_signal_bitmap_all(trace::domain_t::input, "rename_cpbuf_data.rat_phy_map_table_visible", 0, i);
+                    this->tdb.update_signal<uint16_t>(trace::domain_t::input, "rename_cpbuf_data.global_history", 0, i);
+                    this->tdb.update_signal<uint16_t>(trace::domain_t::input, "rename_cpbuf_data.local_history", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_cpbuf_we", 0, i);
+                    this->tdb.update_signal_bitmap_all(trace::domain_t::output, "cpbuf_rename_data.rat_phy_map_table_valid", 0, i);
+                    this->tdb.update_signal_bitmap_all(trace::domain_t::output, "cpbuf_rename_data.rat_phy_map_table_visible", 0, i);
+                    this->tdb.update_signal<uint16_t>(trace::domain_t::output, "cpbuf_rename_data.global_history", 0, i);
+                    this->tdb.update_signal<uint16_t>(trace::domain_t::output, "cpbuf_rename_data.local_history", 0, i);
+                }
 
-                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "exlsu_stbuf_rob_id", 0, 0);
-                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "exlsu_stbuf_write_addr", 0, 0);
-                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "exlsu_stbuf_write_size", 0, 0);
-                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "exlsu_stbuf_write_data", 0, 0);
-                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "exlsu_stbuf_push", 0, 0);
-                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "stbuf_exlsu_full", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::input, "exbru_cpbuf_id", 0, 0);
+                this->tdb.update_signal_bitmap_all(trace::domain_t::output, "cpbuf_exbru_data.rat_phy_map_table_valid", 0, 0);
+                this->tdb.update_signal_bitmap_all(trace::domain_t::output, "cpbuf_exbru_data.rat_phy_map_table_visible", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "cpbuf_exbru_data.global_history", 0, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "cpbuf_exbru_data.local_history", 0, 0);
 
-                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "stbuf_bus_read_addr", 0, 0);
-                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "stbuf_bus_write_addr", 0, 0);
-                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "stbuf_bus_read_size", 0, 0);
-                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "stbuf_bus_write_size", 0, 0);
-                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "stbuf_bus_data", 0, 0);
-                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "stbuf_bus_read_req", 0, 0);
-                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "stbuf_bus_write_req", 0, 0);
-                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "bus_stbuf_data", 0, 0);
-                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "bus_stbuf_read_ack", 0, 0);
-                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "bus_stbuf_write_ack", 0, 0);
-
-                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_feedback_pack.enable", 0, 0);
-                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_feedback_pack.flush", 0, 0);
                 
                 for(auto i = 0;i < COMMIT_WIDTH;i++)
                 {
-                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_feedback_pack.committed_rob_id", 0, i);
-                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_feedback_pack.committed_rob_id_valid", 0, i);
+                    this->tdb.update_signal<uint16_t>(trace::domain_t::input, "commit_cpbuf_id", 0, i);
+                    this->tdb.update_signal_bitmap_all(trace::domain_t::output, "cpbuf_commit_data.rat_phy_map_table_valid", 0, i);
+                    this->tdb.update_signal_bitmap_all(trace::domain_t::output, "cpbuf_commit_data.rat_phy_map_table_visible", 0, i);
+                    this->tdb.update_signal<uint16_t>(trace::domain_t::output, "cpbuf_commit_data.global_history", 0, i);
+                    this->tdb.update_signal<uint16_t>(trace::domain_t::output, "cpbuf_commit_data.local_history", 0, i);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_cpbuf_pop", 0, i);
                 }
 
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_cpbuf_flush", 0, 0);
