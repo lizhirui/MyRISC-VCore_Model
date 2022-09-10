@@ -94,7 +94,7 @@ namespace component
 
             bool committed = false;
             uint32_t commit_num = 0;
-            uint32_t global_commit_num = 0;
+            uint64_t global_commit_num = 0;
 
             bool check_new_id_valid(uint32_t id)
             {
@@ -495,7 +495,7 @@ namespace component
                 global_commit_num += add_num;
             }
 
-            uint32_t get_global_commit_num()
+            uint64_t get_global_commit_num()
             {
                 return global_commit_num;
             }

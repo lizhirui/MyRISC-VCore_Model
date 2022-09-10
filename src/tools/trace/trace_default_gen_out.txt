@@ -1,41 +1,34 @@
-this->tdb.update_signal<uint16_t>(trace::domain_t::output, "cpbuf_fetch_new_id", 0, 0);
-                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "cpbuf_fetch_new_id_valid", 0, 0);
-                this->tdb.update_signal_bitmap_all(trace::domain_t::input, "fetch_cpbuf_data.rat_phy_map_table_valid", 0, 0);
-                this->tdb.update_signal_bitmap_all(trace::domain_t::input, "fetch_cpbuf_data.rat_phy_map_table_visible", 0, 0);
-                this->tdb.update_signal<uint16_t>(trace::domain_t::input, "fetch_cpbuf_data.global_history", 0, 0);
-                this->tdb.update_signal<uint16_t>(trace::domain_t::input, "fetch_cpbuf_data.local_history", 0, 0);
-                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_cpbuf_push", 0, 0);
+this->tdb.update_signal<uint16_t>(trace::domain_t::input, "excsr_csrf_addr", 0, 0);
+this->tdb.update_signal<uint16_t>(trace::domain_t::output, "csrf_excsr_data", 0, 0);
 
-                
-                for(auto i = 0;i < RENAME_WIDTH;i++)
-                {
-                    this->tdb.update_signal<uint16_t>(trace::domain_t::input, "rename_cpbuf_id", 0, i);
-                    this->tdb.update_signal_bitmap_all(trace::domain_t::input, "rename_cpbuf_data.rat_phy_map_table_valid", 0, i);
-                    this->tdb.update_signal_bitmap_all(trace::domain_t::input, "rename_cpbuf_data.rat_phy_map_table_visible", 0, i);
-                    this->tdb.update_signal<uint16_t>(trace::domain_t::input, "rename_cpbuf_data.global_history", 0, i);
-                    this->tdb.update_signal<uint16_t>(trace::domain_t::input, "rename_cpbuf_data.local_history", 0, i);
-                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_cpbuf_we", 0, i);
-                    this->tdb.update_signal_bitmap_all(trace::domain_t::output, "cpbuf_rename_data.rat_phy_map_table_valid", 0, i);
-                    this->tdb.update_signal_bitmap_all(trace::domain_t::output, "cpbuf_rename_data.rat_phy_map_table_visible", 0, i);
-                    this->tdb.update_signal<uint16_t>(trace::domain_t::output, "cpbuf_rename_data.global_history", 0, i);
-                    this->tdb.update_signal<uint16_t>(trace::domain_t::output, "cpbuf_rename_data.local_history", 0, i);
-                }
 
-                this->tdb.update_signal<uint16_t>(trace::domain_t::input, "exbru_cpbuf_id", 0, 0);
-                this->tdb.update_signal_bitmap_all(trace::domain_t::output, "cpbuf_exbru_data.rat_phy_map_table_valid", 0, 0);
-                this->tdb.update_signal_bitmap_all(trace::domain_t::output, "cpbuf_exbru_data.rat_phy_map_table_visible", 0, 0);
-                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "cpbuf_exbru_data.global_history", 0, 0);
-                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "cpbuf_exbru_data.local_history", 0, 0);
+for(auto i = 0;i < 4;i++)
+{
+    this->tdb.update_signal<uint16_t>(trace::domain_t::input, "commit_csrf_read_addr", 0, i);
+    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "csrf_commit_read_data", 0, i);
+    this->tdb.update_signal<uint16_t>(trace::domain_t::input, "commit_csrf_write_addr", 0, i);
+    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "commit_csrf_write_data", 0, i);
+    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_csrf_we", 0, i);
+}
 
-                
-                for(auto i = 0;i < COMMIT_WIDTH;i++)
-                {
-                    this->tdb.update_signal<uint16_t>(trace::domain_t::input, "commit_cpbuf_id", 0, i);
-                    this->tdb.update_signal_bitmap_all(trace::domain_t::output, "cpbuf_commit_data.rat_phy_map_table_valid", 0, i);
-                    this->tdb.update_signal_bitmap_all(trace::domain_t::output, "cpbuf_commit_data.rat_phy_map_table_visible", 0, i);
-                    this->tdb.update_signal<uint16_t>(trace::domain_t::output, "cpbuf_commit_data.global_history", 0, i);
-                    this->tdb.update_signal<uint16_t>(trace::domain_t::output, "cpbuf_commit_data.local_history", 0, i);
-                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_cpbuf_pop", 0, i);
-                }
+this->tdb.update_signal<uint32_t>(trace::domain_t::input, "intif_csrf_mip_data", 0, 0);
 
-                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_cpbuf_flush", 0, 0);
+this->tdb.update_signal<uint32_t>(trace::domain_t::output, "csrf_all_mie_data", 0, 0);
+this->tdb.update_signal<uint32_t>(trace::domain_t::output, "csrf_all_mstatus_data", 0, 0);
+this->tdb.update_signal<uint32_t>(trace::domain_t::output, "csrf_all_mip_data", 0, 0);
+this->tdb.update_signal<uint32_t>(trace::domain_t::output, "csrf_all_mepc_data", 0, 0);
+
+this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_csrf_checkpoint_buffer_full_add", 0, 0);
+this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_csrf_fetch_not_full_add", 0, 0);
+this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_csrf_fetch_decode_fifo_full_add", 0, 0);
+this->tdb.update_signal<uint8_t>(trace::domain_t::input, "decode_csrf_decode_rename_fifo_full_add", 0, 0);
+this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_csrf_phy_regfile_full_add", 0, 0);
+this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_csrf_rob_full_add", 0, 0);
+this->tdb.update_signal<uint8_t>(trace::domain_t::input, "issue_csrf_issue_execute_fifo_full_add", 0, 0);
+this->tdb.update_signal<uint8_t>(trace::domain_t::input, "issue_csrf_issue_queue_full_add", 0, 0);
+this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_csrf_branch_num_add", 0, 0);
+this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_csrf_branch_predicted_add", 0, 0);
+this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_csrf_branch_hit_add", 0, 0);
+this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_csrf_branch_miss_add", 0, 0);
+this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_csrf_commit_num_add", 0, 0);
+this->tdb.update_signal<uint8_t>(trace::domain_t::input, "ras_csrf_ras_full_add", 0, 0);

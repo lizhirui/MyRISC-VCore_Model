@@ -547,6 +547,9 @@ namespace pipeline
 		this->tdb.update_signal<uint16_t>(trace::domain_t::output, "commit_csrf_read_addr", CSR_MTVEC, 0);
 		this->tdb.update_signal<uint32_t>(trace::domain_t::input, "csrf_commit_read_data", csr_file->read_sys(CSR_MTVEC), 0);
 
+		csr_file->get_tdb()->update_signal<uint16_t>(trace::domain_t::input, "commit_csrf_read_addr", CSR_MTVEC, 0);
+		csr_file->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "csrf_commit_read_data", csr_file->read_sys(CSR_MTVEC), 0);
+
 		commit_feedback_pack_t feedback_pack;
 		phy_regfile_item_t default_phy_reg_item;
 		bool need_flush = false;
@@ -699,6 +702,10 @@ namespace pipeline
 									this->tdb.update_signal<uint16_t>(trace::domain_t::output, "commit_csrf_write_addr", rob_item.csr_addr, i);
     								this->tdb.update_signal<uint32_t>(trace::domain_t::output, "commit_csrf_write_data", rob_item.csr_newvalue, i);
 									this->tdb.update_signal_bit<uint8_t>(trace::domain_t::output, "commit_csrf_we", 1, i, 0);
+
+									csr_file->get_tdb()->update_signal<uint16_t>(trace::domain_t::input, "commit_csrf_write_addr", rob_item.csr_addr, i);
+									csr_file->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "commit_csrf_write_data", rob_item.csr_newvalue, i);
+									csr_file->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_csrf_we", 1, i);
 								}
 
 								//branch handle
@@ -716,6 +723,10 @@ namespace pipeline
 										this->tdb.update_signal<uint16_t>(trace::domain_t::output, "commit_csrf_write_addr", CSR_MSTATUS, i);
     									this->tdb.update_signal<uint32_t>(trace::domain_t::output, "commit_csrf_write_data", mstatus.get_value(), i);
 										this->tdb.update_signal_bit<uint8_t>(trace::domain_t::output, "commit_csrf_we", 1, i, 0);
+
+										csr_file->get_tdb()->update_signal<uint16_t>(trace::domain_t::input, "commit_csrf_write_addr", CSR_MSTATUS, i);
+										csr_file->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "commit_csrf_write_data", mstatus.get_value(), i);
+										csr_file->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_csrf_we", 1, i);
 									}
 
 									if(rob_item.predicted)
@@ -1098,6 +1109,16 @@ namespace pipeline
 				this->tdb.update_signal<uint16_t>(trace::domain_t::output, "commit_csrf_write_addr", CSR_MCAUSE, 2);
     			this->tdb.update_signal<uint32_t>(trace::domain_t::output, "commit_csrf_write_data", (uint32_t)rob_item.exception_id, 2);
 				this->tdb.update_signal_bit<uint8_t>(trace::domain_t::output, "commit_csrf_we", 1, 2, 0);
+
+				csr_file->get_tdb()->update_signal<uint16_t>(trace::domain_t::input, "commit_csrf_write_addr", CSR_MEPC, 0);
+				csr_file->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "commit_csrf_write_data", rob_item.pc, 0);
+				csr_file->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_csrf_we", 1, 0);
+				csr_file->get_tdb()->update_signal<uint16_t>(trace::domain_t::input, "commit_csrf_write_addr", CSR_MTVAL, 1);
+				csr_file->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "commit_csrf_write_data", rob_item.exception_value, 1);
+				csr_file->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_csrf_we", 1, 1);
+				csr_file->get_tdb()->update_signal<uint16_t>(trace::domain_t::input, "commit_csrf_write_addr", CSR_MCAUSE, 2);
+				csr_file->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "commit_csrf_write_data", (uint32_t)rob_item.exception_id, 2);
+				csr_file->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_csrf_we", 1, 2);
 				feedback_pack.exception_pc = csr_file->read_sys(CSR_MTVEC);
 				feedback_pack.flush = true;
 				cur_state = state_t::normal;
@@ -1199,6 +1220,16 @@ namespace pipeline
 				this->tdb.update_signal<uint16_t>(trace::domain_t::output, "commit_csrf_write_addr", CSR_MCAUSE, 2);
     			this->tdb.update_signal<uint32_t>(trace::domain_t::output, "commit_csrf_write_data", 0x80000000 | static_cast<uint32_t>(interrupt_id), 2);
 				this->tdb.update_signal_bit<uint8_t>(trace::domain_t::output, "commit_csrf_we", 1, 2, 0);
+
+				csr_file->get_tdb()->update_signal<uint16_t>(trace::domain_t::input, "commit_csrf_write_addr", CSR_MEPC, 0);
+				csr_file->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "commit_csrf_write_data", rob_item.pc, 0);
+				csr_file->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_csrf_we", 1, 0);
+				csr_file->get_tdb()->update_signal<uint16_t>(trace::domain_t::input, "commit_csrf_write_addr", CSR_MTVAL, 1);
+				csr_file->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "commit_csrf_write_data", 0, 1);
+				csr_file->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_csrf_we", 1, 1);
+				csr_file->get_tdb()->update_signal<uint16_t>(trace::domain_t::input, "commit_csrf_write_addr", CSR_MCAUSE, 2);
+				csr_file->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "commit_csrf_write_data", 0x80000000 | static_cast<uint32_t>(interrupt_id), 2);
+				csr_file->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_csrf_we", 1, 2);
 				component::csr::mstatus mstatus;
 				mstatus.load(csr_file->read_sys(CSR_MSTATUS));
 				mstatus.set_mpie(mstatus.get_mie());

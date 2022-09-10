@@ -311,6 +311,8 @@ namespace pipeline
                             else
                             {
                                 this->tdb.update_signal<uint32_t>(trace::domain_t::input, "csrf_excsr_data", csr_value, 0);
+                                csr_file->get_tdb()->update_signal<uint16_t>(trace::domain_t::input, "excsr_csrf_addr", this->rev_pack.csr, 0);
+                                csr_file->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "csrf_excsr_data", csr_value, 0);
                                 send_pack.rd_value = csr_value;
                                 send_pack.csr_newvalue_valid = false;
 

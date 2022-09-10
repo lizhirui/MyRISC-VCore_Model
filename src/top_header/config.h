@@ -107,6 +107,7 @@ const std::string TRACE_DIR = R"(D:\program\project\MyRISC-VCore\model\MyRISC-VC
     const bool TRACE_PHY_REGFILE = true;
     const bool TRACE_STORE_BUFFER = true;
     const bool TRACE_CHECKPOINT_BUFFER = true;
+    const bool TRACE_CSRFILE = true;
 #elif defined(TRACE_ENABLE)
     const bool TRACE_FETCH = false;
     const bool TRACE_DECODE = false;
@@ -127,7 +128,8 @@ const std::string TRACE_DIR = R"(D:\program\project\MyRISC-VCore\model\MyRISC-VC
     const bool TRACE_ROB = false;
     const bool TRACE_PHY_REGFILE = false;
     const bool TRACE_STORE_BUFFER = false;
-    const bool TRACE_CHECKPOINT_BUFFER = true;
+    const bool TRACE_CHECKPOINT_BUFFER = false;
+    const bool TRACE_CSRFILE = true;
 #else
     const bool TRACE_FETCH = false;
     const bool TRACE_DECODE = false;
@@ -149,4 +151,5 @@ const std::string TRACE_DIR = R"(D:\program\project\MyRISC-VCore\model\MyRISC-VC
     const bool TRACE_PHY_REGFILE = false;
     const bool TRACE_STORE_BUFFER = false;
     const bool TRACE_CHECKPOINT_BUFFER = false;
+    const bool TRACE_CSRFILE = false;
 #endif

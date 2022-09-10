@@ -1,6 +1,8 @@
 #pragma once
 #include "common.h"
+#include "config.h"
 #include "csr_base.h"
+#include "csr_all.h"
 
 namespace component
 {
@@ -29,6 +31,8 @@ namespace component
             std::queue<sync_request_t> sync_request_q;
 
 			std::unordered_map<uint32_t, csr_item_t> csr_map_table;
+
+			trace::trace_database tdb;
 
 			static bool csr_out_list_cmp(const std::pair<std::string, std::string> &a, const std::pair<std::string, std::string> &b)
 			{
@@ -90,6 +94,11 @@ namespace component
 			}
 
 		public:
+			csrfile() : tdb(TRACE_CSRFILE)
+			{
+			
+			}
+
 			virtual void reset()
 			{
 				for(auto iter = csr_map_table.begin();iter != csr_map_table.end();iter++)
@@ -98,7 +107,101 @@ namespace component
 				}
 
 				clear_queue(sync_request_q);
+
+				this->tdb.create(TRACE_DIR + "csrfile.tdb");
+
+				this->tdb.mark_signal(trace::domain_t::input, "excsr_csrf_addr", sizeof(uint16_t), 1);
+				this->tdb.mark_signal(trace::domain_t::output, "csrf_excsr_data", sizeof(uint32_t), 1);
+
+				this->tdb.mark_signal(trace::domain_t::input, "commit_csrf_read_addr", sizeof(uint16_t), 4);
+				this->tdb.mark_signal(trace::domain_t::output, "csrf_commit_read_data", sizeof(uint32_t), 4);
+				this->tdb.mark_signal(trace::domain_t::input, "commit_csrf_write_addr", sizeof(uint16_t), 4);
+				this->tdb.mark_signal(trace::domain_t::input, "commit_csrf_write_data", sizeof(uint32_t), 4);
+				this->tdb.mark_signal(trace::domain_t::input, "commit_csrf_we", sizeof(uint8_t), 4);
+
+				this->tdb.mark_signal(trace::domain_t::input, "intif_csrf_mip_data", sizeof(uint32_t), 1);
+
+				this->tdb.mark_signal(trace::domain_t::output, "csrf_all_mie_data", sizeof(uint32_t), 1);
+				this->tdb.mark_signal(trace::domain_t::output, "csrf_all_mstatus_data", sizeof(uint32_t), 1);
+				this->tdb.mark_signal(trace::domain_t::output, "csrf_all_mip_data", sizeof(uint32_t), 1);
+				this->tdb.mark_signal(trace::domain_t::output, "csrf_all_mepc_data", sizeof(uint32_t), 1);
+
+				this->tdb.mark_signal(trace::domain_t::input, "fetch_csrf_checkpoint_buffer_full_add", sizeof(uint8_t), 1);
+				this->tdb.mark_signal(trace::domain_t::input, "fetch_csrf_fetch_not_full_add", sizeof(uint8_t), 1);
+				this->tdb.mark_signal(trace::domain_t::input, "fetch_csrf_fetch_decode_fifo_full_add", sizeof(uint8_t), 1);
+				this->tdb.mark_signal(trace::domain_t::input, "decode_csrf_decode_rename_fifo_full_add", sizeof(uint8_t), 1);
+				this->tdb.mark_signal(trace::domain_t::input, "rename_csrf_phy_regfile_full_add", sizeof(uint8_t), 1);
+				this->tdb.mark_signal(trace::domain_t::input, "rename_csrf_rob_full_add", sizeof(uint8_t), 1);
+				this->tdb.mark_signal(trace::domain_t::input, "issue_csrf_issue_execute_fifo_full_add", sizeof(uint8_t), 1);
+				this->tdb.mark_signal(trace::domain_t::input, "issue_csrf_issue_queue_full_add", sizeof(uint8_t), 1);
+				this->tdb.mark_signal(trace::domain_t::input, "commit_csrf_branch_num_add", sizeof(uint8_t), 1);
+				this->tdb.mark_signal(trace::domain_t::input, "commit_csrf_branch_predicted_add", sizeof(uint8_t), 1);
+				this->tdb.mark_signal(trace::domain_t::input, "commit_csrf_branch_hit_add", sizeof(uint8_t), 1);
+				this->tdb.mark_signal(trace::domain_t::input, "commit_csrf_branch_miss_add", sizeof(uint8_t), 1);
+				this->tdb.mark_signal(trace::domain_t::input, "commit_csrf_commit_num_add", sizeof(uint8_t), 1);
+				this->tdb.mark_signal(trace::domain_t::input, "ras_csrf_ras_full_add", sizeof(uint8_t), 1);
+
+				this->tdb.write_metainfo();
+                this->tdb.trace_on();
+                this->tdb.capture_status();
+                this->tdb.write_row();
 			}
+
+			void trace_pre()
+            {
+                this->tdb.capture_input();
+				
+				this->tdb.update_signal<uint16_t>(trace::domain_t::input, "excsr_csrf_addr", 65535, 0);
+				this->tdb.update_signal<uint16_t>(trace::domain_t::output, "csrf_excsr_data", 0, 0);
+
+
+				for(auto i = 0;i < 4;i++)
+				{
+					this->tdb.update_signal<uint16_t>(trace::domain_t::input, "commit_csrf_read_addr", 65535, i);
+					this->tdb.update_signal<uint32_t>(trace::domain_t::output, "csrf_commit_read_data", 0, i);
+					this->tdb.update_signal<uint16_t>(trace::domain_t::input, "commit_csrf_write_addr", 0, i);
+					this->tdb.update_signal<uint32_t>(trace::domain_t::input, "commit_csrf_write_data", 0, i);
+					this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_csrf_we", 0, i);
+				}
+
+				this->tdb.update_signal<uint32_t>(trace::domain_t::input, "intif_csrf_mip_data", 0, 0);
+
+				this->tdb.update_signal<uint32_t>(trace::domain_t::output, "csrf_all_mie_data", 0, 0);
+				this->tdb.update_signal<uint32_t>(trace::domain_t::output, "csrf_all_mstatus_data", 0, 0);
+				this->tdb.update_signal<uint32_t>(trace::domain_t::output, "csrf_all_mip_data", 0, 0);
+				this->tdb.update_signal<uint32_t>(trace::domain_t::output, "csrf_all_mepc_data", 0, 0);
+
+				this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_csrf_checkpoint_buffer_full_add", 0, 0);
+				this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_csrf_fetch_not_full_add", 0, 0);
+				this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_csrf_fetch_decode_fifo_full_add", 0, 0);
+				this->tdb.update_signal<uint8_t>(trace::domain_t::input, "decode_csrf_decode_rename_fifo_full_add", 0, 0);
+				this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_csrf_phy_regfile_full_add", 0, 0);
+				this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rename_csrf_rob_full_add", 0, 0);
+				this->tdb.update_signal<uint8_t>(trace::domain_t::input, "issue_csrf_issue_execute_fifo_full_add", 0, 0);
+				this->tdb.update_signal<uint8_t>(trace::domain_t::input, "issue_csrf_issue_queue_full_add", 0, 0);
+				this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_csrf_branch_num_add", 0, 0);
+				this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_csrf_branch_predicted_add", 0, 0);
+				this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_csrf_branch_hit_add", 0, 0);
+				this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_csrf_branch_miss_add", 0, 0);
+				this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_csrf_commit_num_add", 0, 0);
+				this->tdb.update_signal<uint8_t>(trace::domain_t::input, "ras_csrf_ras_full_add", 0, 0);
+
+				this->tdb.update_signal<uint32_t>(trace::domain_t::output, "csrf_all_mie_data", read_sys(CSR_MIE), 0);
+				this->tdb.update_signal<uint32_t>(trace::domain_t::output, "csrf_all_mstatus_data", read_sys(CSR_MSTATUS), 0);
+				this->tdb.update_signal<uint32_t>(trace::domain_t::output, "csrf_all_mip_data", read_sys(CSR_MIP), 0);
+				this->tdb.update_signal<uint32_t>(trace::domain_t::output, "csrf_all_mepc_data", read_sys(CSR_MEPC), 0);
+            }
+
+            void trace_post()
+            {
+                this->tdb.capture_output_status();
+                this->tdb.write_row();
+            }
+
+			trace::trace_database *get_tdb()
+            {
+                return &tdb;
+            }
 
 			void map(uint32_t addr, bool readonly, std::shared_ptr<csr_base> csr)
 			{

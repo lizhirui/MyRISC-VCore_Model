@@ -103,7 +103,7 @@ for line in lines:
             if domain == "DOMAIN_INPUT":
                 line = cur_tab + var_name + " = " + func_str + ";"
             else:
-                line = cur_tab + "`assert_equal(cur_cycle, " + func_str + ", " + var_name + ");"
+                line = cur_tab + "`assert_equal(cur_cycle, " + func_str + ", " + var_name + ")"
     except Exception as e:
         raise e
     

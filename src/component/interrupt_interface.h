@@ -157,6 +157,7 @@ namespace component
                 mip.set_msip(msip);
                 mip.set_mtip(mtip);
                 csr_file->write_sys_sync(CSR_MIP, mip.get_value());
+                csr_file->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "intif_csrf_mip_data", mip.get_value(), 0);
             }
 
             void sync()

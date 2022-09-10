@@ -60,71 +60,6 @@ static uint64_t phy_regfile_full = 0;
 static uint64_t ras_full = 0;
 static uint64_t fetch_not_full = 0;
 
-void branch_num_add()
-{
-    branch_num++;
-}
-
-void branch_predicted_add()
-{
-    branch_predicted++;
-}
-
-void branch_hit_add()
-{
-    branch_hit++;
-}
-
-void branch_miss_add()
-{
-    branch_miss++;
-}
-
-void fetch_decode_fifo_full_add()
-{
-    fetch_decode_fifo_full++;
-}
-
-void decode_rename_fifo_full_add()
-{
-    decode_rename_fifo_full++;
-}
-
-void issue_queue_full_add()
-{
-    issue_queue_full++;
-}
-
-void issue_execute_fifo_full_add()
-{
-    issue_execute_fifo_full++;
-}
-
-void checkpoint_buffer_full_add()
-{
-    checkpoint_buffer_full++;
-}
-
-void rob_full_add()
-{
-    rob_full++;
-}
-
-void phy_regfile_full_add()
-{
-    phy_regfile_full++;
-}
-
-void ras_full_add()
-{
-    ras_full++;
-}
-
-void fetch_not_full_add()
-{
-    fetch_not_full++;
-}
-
 static component::fifo<pipeline::fetch_decode_pack_t> fetch_decode_fifo(FETCH_DECODE_FIFO_SIZE);
 static component::fifo<pipeline::decode_rename_pack_t> decode_rename_fifo(FETCH_DECODE_FIFO_SIZE);
 static pipeline::rename_readreg_pack_t default_rename_readreg_pack;
@@ -196,6 +131,84 @@ static boost::lockfree::spsc_queue<char, boost::lockfree::capacity<1024>> charfi
 std::atomic<bool> charfifo_thread_stopped = false;
 std::atomic<bool> charfifo_recv_thread_stop = false;
 std::atomic<bool> charfifo_recv_thread_stopped = false;
+
+void branch_num_add()
+{
+    branch_num++;
+    csr_file.get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_csrf_branch_num_add", 1, 0);
+}
+
+void branch_predicted_add()
+{
+    branch_predicted++;
+    csr_file.get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_csrf_branch_predicted_add", 1, 0);
+}
+
+void branch_hit_add()
+{
+    branch_hit++;
+    csr_file.get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_csrf_branch_hit_add", 1, 0);
+}
+
+void branch_miss_add()
+{
+    branch_miss++;
+    csr_file.get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_csrf_branch_miss_add", 1, 0);
+}
+
+void fetch_decode_fifo_full_add()
+{
+    fetch_decode_fifo_full++;
+    csr_file.get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "fetch_csrf_fetch_decode_fifo_full_add", 1, 0);
+}
+
+void decode_rename_fifo_full_add()
+{
+    decode_rename_fifo_full++;
+    csr_file.get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "decode_csrf_decode_rename_fifo_full_add", 1, 0);
+}
+
+void issue_queue_full_add()
+{
+    issue_queue_full++;
+    csr_file.get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "issue_csrf_issue_queue_full_add", 1, 0);
+}
+
+void issue_execute_fifo_full_add()
+{
+    issue_execute_fifo_full++;
+    csr_file.get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "issue_csrf_issue_execute_fifo_full_add", 1, 0);
+}
+
+void checkpoint_buffer_full_add()
+{
+    checkpoint_buffer_full++;
+    csr_file.get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "fetch_csrf_checkpoint_buffer_full_add", 1, 0);
+}
+
+void rob_full_add()
+{
+    rob_full++;
+    csr_file.get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_csrf_rob_full_add", 1, 0);
+}
+
+void phy_regfile_full_add()
+{
+    phy_regfile_full++;
+    csr_file.get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_csrf_phy_regfile_full_add", 1, 0);
+}
+
+void ras_full_add()
+{
+    ras_full++;
+    csr_file.get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "ras_csrf_ras_full_add", 1, 0);
+}
+
+void fetch_not_full_add()
+{
+    fetch_not_full++;
+    csr_file.get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "fetch_csrf_fetch_not_full_add", 1, 0);
+}
 
 void tcp_charfifo_recv_thread_receive_entry(asio::ip::tcp::socket &soc)
 {
@@ -934,10 +947,12 @@ static void trace_pre()
     phy_regfile.trace_pre();
     store_buffer.trace_pre();
     checkpoint_buffer.trace_pre();
+    csr_file.trace_pre();
 }
 
 static void trace_post()
 {
+    csr_file.trace_post();
     checkpoint_buffer.trace_post();
     store_buffer.trace_post();
     phy_regfile.trace_post();
@@ -1118,6 +1133,7 @@ static void run()
         cpu_clock_cycle++;
         csr_file.write_sys(CSR_MCYCLE, (uint32_t)(cpu_clock_cycle & 0xffffffffu));
         csr_file.write_sys(CSR_MCYCLEH, (uint32_t)(cpu_clock_cycle >> 32));
+        csr_file.get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_csrf_commit_num_add", (uint8_t)(rob.get_global_commit_num() - committed_instruction_num), 0);
         committed_instruction_num = rob.get_global_commit_num();
         csr_file.write_sys(CSR_MINSTRET, (uint32_t)(committed_instruction_num & 0xffffffffu));
         csr_file.write_sys(CSR_MINSTRETH, (uint32_t)(committed_instruction_num >> 32));
