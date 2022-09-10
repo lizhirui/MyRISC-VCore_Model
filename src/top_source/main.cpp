@@ -948,10 +948,12 @@ static void trace_pre()
     store_buffer.trace_pre();
     checkpoint_buffer.trace_pre();
     csr_file.trace_pre();
+    interrupt_interface.trace_pre();
 }
 
 static void trace_post()
 {
+    interrupt_interface.trace_post();
     csr_file.trace_post();
     checkpoint_buffer.trace_post();
     store_buffer.trace_post();
@@ -1078,6 +1080,7 @@ static void run()
 
         rob.set_committed(false);
         trace_pre();
+        clint.run();
         t_commit_feedback_pack = commit_stage.run();
         t_wb_feedback_pack = wb_stage.run(t_commit_feedback_pack);
 
@@ -1119,7 +1122,6 @@ static void run()
         t_decode_feedback_pack = decode_stage.run(t_commit_feedback_pack);
         fetch_stage.run(t_decode_feedback_pack, t_rename_feedback_pack, t_commit_feedback_pack);
         interrupt_interface.run();
-        clint.run();
         rat.sync();
         rob.sync();
         phy_regfile.sync();

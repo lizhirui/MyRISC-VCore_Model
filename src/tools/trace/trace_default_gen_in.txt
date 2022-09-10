@@ -1,30 +1,17 @@
-this->tdb.mark_signal(trace::domain_t::input, "excsr_csrf_addr", sizeof(uint16_t), 1);
-this->tdb.mark_signal(trace::domain_t::output, "csrf_excsr_data", sizeof(uint16_t), 1);
+this->tdb.mark_signal(trace::domain_t::input, "all_intif_int_ext_req", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "all_intif_int_software_req", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "all_intif_int_timer_req", sizeof(uint8_t), 1);
 
-this->tdb.mark_signal(trace::domain_t::input, "commit_csrf_read_addr", sizeof(uint16_t), 4);
-this->tdb.mark_signal(trace::domain_t::output, "csrf_commit_read_data", sizeof(uint32_t), 4);
-this->tdb.mark_signal(trace::domain_t::input, "commit_csrf_write_addr", sizeof(uint16_t), 4);
-this->tdb.mark_signal(trace::domain_t::input, "commit_csrf_write_data", sizeof(uint32_t), 4);
-this->tdb.mark_signal(trace::domain_t::input, "commit_csrf_we", sizeof(uint8_t), 4);
+                this->tdb.mark_signal(trace::domain_t::output, "intif_all_int_ext_ack", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "intif_all_int_software_ack", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "intif_all_int_timer_ack", sizeof(uint8_t), 1);
 
-this->tdb.mark_signal(trace::domain_t::input, "intif_csrf_mip_data", sizeof(uint32_t), 1);
-
-this->tdb.mark_signal(trace::domain_t::output, "csrf_all_mie_data", sizeof(uint32_t), 1);
-this->tdb.mark_signal(trace::domain_t::output, "csrf_all_mstatus_data", sizeof(uint32_t), 1);
-this->tdb.mark_signal(trace::domain_t::output, "csrf_all_mip_data", sizeof(uint32_t), 1);
-this->tdb.mark_signal(trace::domain_t::output, "csrf_all_mepc_data", sizeof(uint32_t), 1);
-
-this->tdb.mark_signal(trace::domain_t::input, "fetch_csrf_checkpoint_buffer_full_add", sizeof(uint8_t), 1);
-this->tdb.mark_signal(trace::domain_t::input, "fetch_csrf_fetch_not_full_add", sizeof(uint8_t), 1);
-this->tdb.mark_signal(trace::domain_t::input, "fetch_csrf_fetch_decode_fifo_full_add", sizeof(uint8_t), 1);
-this->tdb.mark_signal(trace::domain_t::input, "decode_csrf_decode_rename_fifo_full_add", sizeof(uint8_t), 1);
-this->tdb.mark_signal(trace::domain_t::input, "rename_csrf_phy_regfile_full_add", sizeof(uint8_t), 1);
-this->tdb.mark_signal(trace::domain_t::input, "rename_csrf_rob_full_add", sizeof(uint8_t), 1);
-this->tdb.mark_signal(trace::domain_t::input, "issue_csrf_issue_execute_fifo_full_add", sizeof(uint8_t), 1);
-this->tdb.mark_signal(trace::domain_t::input, "issue_csrf_issue_queue_full_add", sizeof(uint8_t), 1);
-this->tdb.mark_signal(trace::domain_t::input, "commit_csrf_branch_num_add", sizeof(uint8_t), 1);
-this->tdb.mark_signal(trace::domain_t::input, "commit_csrf_branch_predicted_add", sizeof(uint8_t), 1);
-this->tdb.mark_signal(trace::domain_t::input, "commit_csrf_branch_hit_add", sizeof(uint8_t), 1);
-this->tdb.mark_signal(trace::domain_t::input, "commit_csrf_branch_miss_add", sizeof(uint8_t), 1);
-this->tdb.mark_signal(trace::domain_t::input, "commit_csrf_commit_num_add", sizeof(uint8_t), 1);
-this->tdb.mark_signal(trace::domain_t::input, "ras_csrf_ras_full_add", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "csrf_all_mie_data", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "csrf_all_mstatus_data", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "csrf_all_mip_data", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "intif_csrf_mip_data", sizeof(uint32_t), 1);
+                
+                this->tdb.mark_signal(trace::domain_t::output, "intif_commit_has_interrupt", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "intif_commit_mcause_data", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "intif_commit_ack_data", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "commit_intif_ack_data", sizeof(uint32_t), 1);
