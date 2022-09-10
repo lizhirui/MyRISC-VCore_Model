@@ -3,6 +3,7 @@
 #include "fifo.h"
 #include "bus.h"
 #include "../pipeline/commit.h"
+#include "slave/clint.h"
 
 namespace component
 {
@@ -410,17 +411,26 @@ namespace component
                             switch(bus_if->find_slave_info(item.addr))
                             {
                                 case 0://memory
-                                    bus_if->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "bus_tcm_stbuf_write_addr", item.addr, 0);
+                                    bus_if->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "bus_tcm_stbuf_write_addr", bus_if->convert_to_slave_addr(item.addr), 0);
                                     bus_if->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "bus_tcm_stbuf_write_size", item.size, 0);
                                     bus_if->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "bus_tcm_stbuf_data", item.data, 0);
                                     bus_if->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "bus_tcm_stbuf_wr", 1, 0);
                                     break;
 
                                 case 1://clint
-                                    bus_if->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "bus_clint_write_addr", item.addr, 0);
+                                    bus_if->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "bus_clint_write_addr", bus_if->convert_to_slave_addr(item.addr), 0);
                                     bus_if->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "bus_clint_write_size", item.size, 0);
                                     bus_if->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "bus_clint_data", item.data, 0);
                                     bus_if->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "bus_clint_wr", 1, 0);
+
+                                    {
+                                        component::slave::clint *obj = (component::slave::clint *)bus_if->get_slave_obj(item.addr);
+                                        obj->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "bus_clint_write_addr", bus_if->convert_to_slave_addr(item.addr), 0);
+                                        obj->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "bus_clint_write_size", item.size, 0);
+                                        obj->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "bus_clint_data", item.data, 0);
+                                        obj->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "bus_clint_wr", 1, 0);
+                                    }
+
                                     break;
                             }
 

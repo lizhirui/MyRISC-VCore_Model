@@ -950,10 +950,12 @@ static void trace_pre()
     csr_file.trace_pre();
     interrupt_interface.trace_pre();
     bus.trace_pre();
+    clint.trace_pre();
 }
 
 static void trace_post()
 {
+    clint.trace_post();
     bus.trace_post();
     interrupt_interface.trace_post();
     csr_file.trace_post();

@@ -110,6 +110,7 @@ const std::string TRACE_DIR = R"(D:\program\project\MyRISC-VCore\model\MyRISC-VC
     const bool TRACE_CSRFILE = true;
     const bool TRACE_INTERRUPT_INTERFACE = true;
     const bool TRACE_BUS = true;
+    const bool TRACE_CLINT = true;
 #elif defined(TRACE_ENABLE)
     const bool TRACE_FETCH = false;
     const bool TRACE_DECODE = false;
@@ -134,6 +135,7 @@ const std::string TRACE_DIR = R"(D:\program\project\MyRISC-VCore\model\MyRISC-VC
     const bool TRACE_CSRFILE = false;
     const bool TRACE_INTERRUPT_INTERFACE = false;
     const bool TRACE_BUS = true;
+    const bool TRACE_CLINT = true;
 #else
     const bool TRACE_FETCH = false;
     const bool TRACE_DECODE = false;
@@ -158,4 +160,5 @@ const std::string TRACE_DIR = R"(D:\program\project\MyRISC-VCore\model\MyRISC-VC
     const bool TRACE_CSRFILE = false;
     const bool TRACE_INTERRUPT_INTERFACE = false;
     const bool TRACE_BUS = false;
+    const bool TRACE_CLINT = false;
 #endif

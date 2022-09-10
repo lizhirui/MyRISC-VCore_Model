@@ -71,6 +71,31 @@ namespace component
                 return -1;
             }
 
+            slave_base *get_slave_obj(uint32_t addr)
+            {
+                int slave_id = find_slave_info(addr);
+
+                if(slave_id >= 0)
+                {
+                    return slave_info_list[slave_id].slave.get();
+                }
+
+                return NULL;
+            }
+
+            uint32_t convert_to_slave_addr(uint32_t addr)
+            {
+                int slave_id = find_slave_info(addr);
+                uint32_t result = addr;
+
+                if(slave_id >= 0)
+                {
+                    result = addr - slave_info_list[slave_id].base;
+                }
+
+                return result;
+            }
+
             void map(uint32_t base, uint32_t size, std::shared_ptr<slave_base> slave)
             {
                 assert(!check_addr_override(base, size));

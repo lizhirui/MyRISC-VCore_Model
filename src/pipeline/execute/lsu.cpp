@@ -1,5 +1,6 @@
 #include "common.h"
 #include "lsu.h"
+#include "../../component/slave/clint.h"
 
 namespace pipeline
 {
@@ -482,17 +483,26 @@ namespace pipeline
                             switch(bus->find_slave_info(rev_pack.lsu_addr))
                             {
                                 case 0://memory
-                                    bus->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "bus_tcm_stbuf_read_addr_cur", rev_pack.lsu_addr, 0);
+                                    bus->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "bus_tcm_stbuf_read_addr_cur", bus->convert_to_slave_addr(rev_pack.lsu_addr), 0);
                                     bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "bus_tcm_stbuf_read_size_cur", record_size, 0);
                                     bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "bus_tcm_stbuf_rd_cur", record_read, 0);
                                     bus->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "tcm_bus_stbuf_data", bus_value, 0);
                                     break;
 
                                 case 1://clint
-                                    bus->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "bus_clint_read_addr_cur", rev_pack.lsu_addr, 0);
+                                    bus->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "bus_clint_read_addr_cur", bus->convert_to_slave_addr(rev_pack.lsu_addr), 0);
                                     bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "bus_clint_read_size_cur", record_size, 0);               
                                     bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "bus_clint_rd_cur", record_read, 0);          
                                     bus->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "clint_bus_data", bus_value, 0);
+
+                                    {
+                                        component::slave::clint *obj = (component::slave::clint *)bus->get_slave_obj(rev_pack.lsu_addr);
+                                        obj->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "bus_clint_read_addr_cur", bus->convert_to_slave_addr(rev_pack.lsu_addr), 0);
+                                        obj->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "bus_clint_read_size_cur", record_size, 0);
+                                        obj->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "bus_clint_rd_cur", record_read, 0);
+                                        obj->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "clint_bus_data", bus_value, 0);
+                                    }
+                                    
                                     break;
                             }
                         }

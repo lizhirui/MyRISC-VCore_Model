@@ -199,7 +199,7 @@ namespace pipeline
                     bus->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "bus_fetch_data", bus->read32(old_pc + i * 4), i);
                 }
 
-                bus->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "bus_tcm_fetch_addr_cur", old_pc, 0);
+                bus->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "bus_tcm_fetch_addr_cur", bus->convert_to_slave_addr(old_pc), 0);
                 bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "bus_tcm_fetch_rd_cur", bus->find_slave_info(old_pc) == 0, 0);
                 
                 for(auto i = 0;i < FETCH_WIDTH;i++)
