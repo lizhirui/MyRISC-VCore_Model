@@ -1,5 +1,6 @@
 #pragma once
 #include "common.h"
+#include "config.h"
 #include "slave_base.h"
 
 namespace component
@@ -35,19 +36,8 @@ namespace component
 
             std::queue<sync_request_t> sync_request_q;
             std::vector<slave_info_t> slave_info_list;
-
-            int find_slave_info(uint32_t addr)
-            {
-                for(auto i = 0;i < slave_info_list.size();i++)
-                {
-                    if((addr >= slave_info_list[i].base) && (addr < (slave_info_list[i].base + slave_info_list[i].size)))
-                    {
-                        return i;
-                    }
-                }
-
-                return -1;
-            }
+            
+            trace::trace_database tdb;
 
             bool check_addr_override(uint32_t base, uint32_t size)
             {
@@ -63,6 +53,24 @@ namespace component
             }
 
         public:
+            bus() : tdb(TRACE_BUS)
+            {
+            
+            }
+
+            int find_slave_info(uint32_t addr)
+            {
+                for(auto i = 0;i < slave_info_list.size();i++)
+                {
+                    if((addr >= slave_info_list[i].base) && (addr < (slave_info_list[i].base + slave_info_list[i].size)))
+                    {
+                        return i;
+                    }
+                }
+
+                return -1;
+            }
+
             void map(uint32_t base, uint32_t size, std::shared_ptr<slave_base> slave)
             {
                 assert(!check_addr_override(base, size));
@@ -77,6 +85,111 @@ namespace component
             virtual void reset()
             {
                 clear_queue(sync_request_q);
+
+                this->tdb.create(TRACE_DIR + "bus.tdb");
+                this->tdb.mark_signal(trace::domain_t::input, "fetch_bus_addr_cur", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "fetch_bus_read_req_cur", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "bus_fetch_data", sizeof(uint32_t), FETCH_WIDTH);
+                this->tdb.mark_signal(trace::domain_t::output, "bus_fetch_read_ack", sizeof(uint8_t), 1);
+
+                this->tdb.mark_signal(trace::domain_t::input, "stbuf_bus_read_addr_cur", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "stbuf_bus_write_addr", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "stbuf_bus_read_size_cur", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "stbuf_bus_write_size", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "stbuf_bus_data", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "stbuf_bus_read_req_cur", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "stbuf_bus_write_req", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "bus_stbuf_data", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "bus_stbuf_read_ack", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "bus_stbuf_write_ack_next", sizeof(uint8_t), 1);
+
+                this->tdb.mark_signal(trace::domain_t::output, "bus_tcm_fetch_addr_cur", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "bus_tcm_fetch_rd_cur", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "tcm_bus_fetch_data", sizeof(uint32_t), FETCH_WIDTH);
+
+                this->tdb.mark_signal(trace::domain_t::output, "bus_tcm_stbuf_read_addr_cur", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "bus_tcm_stbuf_write_addr", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "bus_tcm_stbuf_read_size_cur", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "bus_tcm_stbuf_write_size", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "bus_tcm_stbuf_data", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "bus_tcm_stbuf_rd_cur", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "bus_tcm_stbuf_wr", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "tcm_bus_stbuf_data", sizeof(uint32_t), 1);
+
+                this->tdb.mark_signal(trace::domain_t::output, "bus_clint_read_addr_cur", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "bus_clint_write_addr", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "bus_clint_read_size_cur", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "bus_clint_write_size", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "bus_clint_data", sizeof(uint32_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "bus_clint_rd_cur", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::output, "bus_clint_wr", sizeof(uint8_t), 1);
+                this->tdb.mark_signal(trace::domain_t::input, "clint_bus_data", sizeof(uint32_t), 1);
+                this->tdb.write_metainfo();
+                this->tdb.trace_on();
+                this->tdb.capture_status();
+                this->tdb.write_row();
+            }
+
+            void trace_pre()
+            {
+                this->tdb.capture_input();
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "fetch_bus_addr_cur", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_bus_read_req_cur", 0, 0);
+                
+                for(auto i = 0;i < FETCH_WIDTH;i++)
+                {
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "bus_fetch_data", 0, i);
+                }
+
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bus_fetch_read_ack", 0, 0);
+
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "stbuf_bus_read_addr_cur", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "stbuf_bus_write_addr", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "stbuf_bus_read_size_cur", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "stbuf_bus_write_size", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "stbuf_bus_data", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "stbuf_bus_read_req_cur", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "stbuf_bus_write_req", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "bus_stbuf_data", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bus_stbuf_read_ack", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bus_stbuf_write_ack_next", 0, 0);
+
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "bus_tcm_fetch_addr_cur", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bus_tcm_fetch_rd_cur", 0, 0);
+                
+                for(auto i = 0;i < FETCH_WIDTH;i++)
+                {
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "tcm_bus_fetch_data", 0, i);
+                }
+
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "bus_tcm_stbuf_read_addr_cur", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "bus_tcm_stbuf_write_addr", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bus_tcm_stbuf_read_size_cur", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bus_tcm_stbuf_write_size", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "bus_tcm_stbuf_data", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bus_tcm_stbuf_rd_cur", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bus_tcm_stbuf_wr", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "tcm_bus_stbuf_data", 0, 0);
+
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "bus_clint_read_addr_cur", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "bus_clint_write_addr", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bus_clint_read_size_cur", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bus_clint_write_size", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "bus_clint_data", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bus_clint_rd_cur", 0, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bus_clint_wr", 0, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "clint_bus_data", 0, 0);
+            }
+
+            void trace_post()
+            {
+                this->tdb.capture_output_status();
+                this->tdb.write_row();
+            }
+
+            trace::trace_database *get_tdb()
+            {
+                return &tdb;
             }
 
             bool check_align(uint32_t addr, uint32_t access_size)

@@ -333,6 +333,9 @@ namespace pipeline
                     if(!send_pack.has_exception)
                     {
                         component::store_buffer_item_t item;
+                        
+                        uint32_t record_size = 0;
+                        bool record_read = false;
 
                         switch(rev_pack.sub_op.lsu_op)
                         {
@@ -341,6 +344,11 @@ namespace pipeline
                                 feedback_value = store_buffer->get_feedback_value(addr, 1, bus_value);
                                 send_pack.rd_value = sign_extend(feedback_value, 8);
                                 this->tdb.update_signal<uint8_t>(trace::domain_t::input, "stbuf_exlsu_bus_ready", 1, 0);
+                                bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "stbuf_bus_read_size_cur", 1, 0);
+                                bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "stbuf_bus_read_req_cur", 1, 0);
+                                bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "bus_stbuf_read_ack", 1, 0);
+                                record_size = 1;
+                                record_read = true;
                                 break;
 
                             case lsu_op_t::lbu:
@@ -348,6 +356,11 @@ namespace pipeline
                                 feedback_value = store_buffer->get_feedback_value(addr, 1, bus_value);
                                 send_pack.rd_value = feedback_value;
                                 this->tdb.update_signal<uint8_t>(trace::domain_t::input, "stbuf_exlsu_bus_ready", 1, 0);
+                                bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "stbuf_bus_read_size_cur", 1, 0);
+                                bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "stbuf_bus_read_req_cur", 1, 0);
+                                bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "bus_stbuf_read_ack", 1, 0);
+                                record_size = 1;
+                                record_read = true;
                                 break;
 
                             case lsu_op_t::lh:
@@ -355,6 +368,11 @@ namespace pipeline
                                 feedback_value = store_buffer->get_feedback_value(addr, 2, bus_value);
                                 send_pack.rd_value = sign_extend(feedback_value, 16);
                                 this->tdb.update_signal<uint8_t>(trace::domain_t::input, "stbuf_exlsu_bus_ready", 1, 0);
+                                bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "stbuf_bus_read_size_cur", 2, 0);
+                                bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "stbuf_bus_read_req_cur", 1, 0);
+                                bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "bus_stbuf_read_ack", 1, 0);
+                                record_size = 2;
+                                record_read = true;
                                 break;
 
                             case lsu_op_t::lhu:
@@ -362,6 +380,11 @@ namespace pipeline
                                 feedback_value = store_buffer->get_feedback_value(addr, 2, bus_value);
                                 send_pack.rd_value = feedback_value;
                                 this->tdb.update_signal<uint8_t>(trace::domain_t::input, "stbuf_exlsu_bus_ready", 1, 0);
+                                bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "stbuf_bus_read_size_cur", 2, 0);
+                                bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "stbuf_bus_read_req_cur", 1, 0);
+                                bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "bus_stbuf_read_ack", 1, 0);
+                                record_size = 2;
+                                record_read = true;
                                 break;
 
                             case lsu_op_t::lw:
@@ -369,6 +392,11 @@ namespace pipeline
                                 feedback_value = store_buffer->get_feedback_value(addr, 4, bus_value);
                                 send_pack.rd_value = feedback_value;
                                 this->tdb.update_signal<uint8_t>(trace::domain_t::input, "stbuf_exlsu_bus_ready", 1, 0);
+                                bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "stbuf_bus_read_size_cur", 4, 0);
+                                bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "stbuf_bus_read_req_cur", 1, 0);
+                                bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "bus_stbuf_read_ack", 1, 0);
+                                record_size = 4;
+                                record_read = true;
                                 break;
 
                             case lsu_op_t::sb:
@@ -445,6 +473,29 @@ namespace pipeline
                         this->tdb.update_signal<uint8_t>(trace::domain_t::output, "exlsu_stbuf_write_size", (uint8_t)std::log2(item.size), 0);
                         this->tdb.update_signal<uint32_t>(trace::domain_t::output, "exlsu_stbuf_write_data", item.data, 0);
                         this->tdb.update_signal<uint8_t>(trace::domain_t::input, "stbuf_exlsu_full", store_buffer->is_full(), 0);
+
+                        bus->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "stbuf_bus_read_addr_cur", rev_pack.lsu_addr, 0);                  
+                        bus->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "bus_stbuf_data", bus_value, 0);
+
+                        if(record_read)
+                        {
+                            switch(bus->find_slave_info(rev_pack.lsu_addr))
+                            {
+                                case 0://memory
+                                    bus->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "bus_tcm_stbuf_read_addr_cur", rev_pack.lsu_addr, 0);
+                                    bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "bus_tcm_stbuf_read_size_cur", record_size, 0);
+                                    bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "bus_tcm_stbuf_rd_cur", record_read, 0);
+                                    bus->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "tcm_bus_stbuf_data", bus_value, 0);
+                                    break;
+
+                                case 1://clint
+                                    bus->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "bus_clint_read_addr_cur", rev_pack.lsu_addr, 0);
+                                    bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "bus_clint_read_size_cur", record_size, 0);               
+                                    bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "bus_clint_rd_cur", record_read, 0);          
+                                    bus->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "clint_bus_data", bus_value, 0);
+                                    break;
+                            }
+                        }
                     }
                 }
             }

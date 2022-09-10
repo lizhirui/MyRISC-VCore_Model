@@ -83,7 +83,7 @@ const uint32_t NORMAL_GLOBAL_HISTORY_MASK = (1U << NORMAL_GLOBAL_HISTORY_WIDTH) 
 
 const std::string TRACE_DIR = R"(D:\program\project\MyRISC-VCore\model\MyRISC-VCore_Model_CMake\trace\coremark_10\)";
 
-//#define TRACE_ENABLE
+#define TRACE_ENABLE
 //#define TRACE_ENABLE_FULL
 
 #ifdef TRACE_ENABLE_FULL
@@ -109,6 +109,7 @@ const std::string TRACE_DIR = R"(D:\program\project\MyRISC-VCore\model\MyRISC-VC
     const bool TRACE_CHECKPOINT_BUFFER = true;
     const bool TRACE_CSRFILE = true;
     const bool TRACE_INTERRUPT_INTERFACE = true;
+    const bool TRACE_BUS = true;
 #elif defined(TRACE_ENABLE)
     const bool TRACE_FETCH = false;
     const bool TRACE_DECODE = false;
@@ -131,7 +132,8 @@ const std::string TRACE_DIR = R"(D:\program\project\MyRISC-VCore\model\MyRISC-VC
     const bool TRACE_STORE_BUFFER = false;
     const bool TRACE_CHECKPOINT_BUFFER = false;
     const bool TRACE_CSRFILE = false;
-    const bool TRACE_INTERRUPT_INTERFACE = true;
+    const bool TRACE_INTERRUPT_INTERFACE = false;
+    const bool TRACE_BUS = true;
 #else
     const bool TRACE_FETCH = false;
     const bool TRACE_DECODE = false;
@@ -155,4 +157,5 @@ const std::string TRACE_DIR = R"(D:\program\project\MyRISC-VCore\model\MyRISC-VC
     const bool TRACE_CHECKPOINT_BUFFER = false;
     const bool TRACE_CSRFILE = false;
     const bool TRACE_INTERRUPT_INTERFACE = false;
+    const bool TRACE_BUS = false;
 #endif

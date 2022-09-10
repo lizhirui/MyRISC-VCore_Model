@@ -190,6 +190,23 @@ namespace pipeline
                 this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_bus_read_req_cur", 1, 0);
                 this->tdb.update_signal<uint8_t>(trace::domain_t::input, "bus_fetch_read_ack", 1, 0);
 
+                bus->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "fetch_bus_addr_cur", old_pc, 0);
+                bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "fetch_bus_read_req_cur", 1, 0);
+                bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "bus_fetch_read_ack", 1, 0);
+
+                for(auto i = 0;i < FETCH_WIDTH;i++)
+                {
+                    bus->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "bus_fetch_data", bus->read32(old_pc + i * 4), i);
+                }
+
+                bus->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "bus_tcm_fetch_addr_cur", old_pc, 0);
+                bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "bus_tcm_fetch_rd_cur", bus->find_slave_info(old_pc) == 0, 0);
+                
+                for(auto i = 0;i < FETCH_WIDTH;i++)
+                {
+                    bus->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "tcm_bus_fetch_data", bus->read32(old_pc + i * 4), i);
+                }
+
                 for(auto i = 0;i < FETCH_WIDTH;i++)
                 {
                     this->tdb.update_signal_bit<uint8_t>(trace::domain_t::input, "fetch_decode_fifo_data_in_enable", !this->fetch_decode_fifo->is_full(), i, 0);
