@@ -1,11 +1,16 @@
-this->tdb.update_signal<uint32_t>(trace::domain_t::input, "bus_clint_read_addr_cur", 0, 0);
-                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "bus_clint_write_addr", 0, 0);
-                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "bus_clint_read_size_cur", 0, 0);
-                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "bus_clint_write_size", 0, 0);
-                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "bus_clint_data", 0, 0);
-                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "bus_clint_rd_cur", 0, 0);
-                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "bus_clint_wr", 0, 0);
-                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "clint_bus_data", 0, 0);
+this->tdb.update_signal<uint32_t>(trace::domain_t::input, "bus_tcm_fetch_addr_cur", 0, 0);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "bus_tcm_fetch_rd_cur", 0, 0);
+                    
+                    for(auto i = 0;i < FETCH_WIDTH;i++)
+                    {
+                        this->tdb.update_signal<uint32_t>(trace::domain_t::output, "tcm_bus_fetch_data", 0, i);
+                    }
 
-                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "all_intif_int_software_req", 0, 0);
-                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "all_intif_int_timer_req", 0, 0);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "bus_tcm_stbuf_read_addr_cur", 0, 0);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "bus_tcm_stbuf_write_addr", 0, 0);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "bus_tcm_stbuf_read_size_cur", 0, 0);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "bus_tcm_stbuf_write_size", 0, 0);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "bus_tcm_stbuf_data", 0, 0);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "bus_tcm_stbuf_rd_cur", 0, 0);
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "bus_tcm_stbuf_wr", 0, 0);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "tcm_stbuf_bus_data", 0, 0);

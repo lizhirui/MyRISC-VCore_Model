@@ -1,11 +1,16 @@
-                    bus_clint_read_addr_cur = tdb.get_uint32(DOMAIN_INPUT, "bus_clint_read_addr_cur", 0);
-                    bus_clint_write_addr = tdb.get_uint32(DOMAIN_INPUT, "bus_clint_write_addr", 0);
-                    bus_clint_read_size_cur = tdb.get_uint8(DOMAIN_INPUT, "bus_clint_read_size_cur", 0);
-                    bus_clint_write_size = tdb.get_uint8(DOMAIN_INPUT, "bus_clint_write_size", 0);
-                    bus_clint_data = tdb.get_uint32(DOMAIN_INPUT, "bus_clint_data", 0);
-                    bus_clint_rd_cur = tdb.get_uint8(DOMAIN_INPUT, "bus_clint_rd_cur", 0);
-                    bus_clint_wr = tdb.get_uint8(DOMAIN_INPUT, "bus_clint_wr", 0);
-                    `assert_equal(cur_cycle, tdb.get_uint32(DOMAIN_OUTPUT, "clint_bus_data", 0), clint_bus_data)
+                    bus_tcm_fetch_addr_cur = tdb.get_uint32(DOMAIN_INPUT, "bus_tcm_fetch_addr_cur", 0);
+                    bus_tcm_fetch_rd_cur = tdb.get_uint8(DOMAIN_INPUT, "bus_tcm_fetch_rd_cur", 0);
+                    
+                    for(i = 0;i < `FETCH_WIDTH;i++) begin
+                        `assert_equal(cur_cycle, tdb.get_uint32(DOMAIN_OUTPUT, "tcm_bus_fetch_data", i), tcm_bus_fetch_data[i])
+    
+                    end
 
-                    `assert_equal(cur_cycle, tdb.get_uint8(DOMAIN_OUTPUT, "all_intif_int_software_req", 0), all_intif_int_software_req)
-                    `assert_equal(cur_cycle, tdb.get_uint8(DOMAIN_OUTPUT, "all_intif_int_timer_req", 0), all_intif_int_timer_req)
+                    bus_tcm_stbuf_read_addr_cur = tdb.get_uint32(DOMAIN_INPUT, "bus_tcm_stbuf_read_addr_cur", 0);
+                    bus_tcm_stbuf_write_addr = tdb.get_uint32(DOMAIN_INPUT, "bus_tcm_stbuf_write_addr", 0);
+                    bus_tcm_stbuf_read_size_cur = tdb.get_uint8(DOMAIN_INPUT, "bus_tcm_stbuf_read_size_cur", 0);
+                    bus_tcm_stbuf_write_size = tdb.get_uint8(DOMAIN_INPUT, "bus_tcm_stbuf_write_size", 0);
+                    bus_tcm_stbuf_data = tdb.get_uint32(DOMAIN_INPUT, "bus_tcm_stbuf_data", 0);
+                    bus_tcm_stbuf_rd_cur = tdb.get_uint8(DOMAIN_INPUT, "bus_tcm_stbuf_rd_cur", 0);
+                    bus_tcm_stbuf_wr = tdb.get_uint8(DOMAIN_INPUT, "bus_tcm_stbuf_wr", 0);
+                    `assert_equal(cur_cycle, tdb.get_uint32(DOMAIN_OUTPUT, "tcm_stbuf_bus_data", 0), tcm_stbuf_bus_data)

@@ -2,6 +2,7 @@
 #include "fetch.h"
 #include "../component/fifo.h"
 #include "../component/bus.h"
+#include "../component/slave/memory.h"
 #include "execute/bru.h"
 #include "fetch_decode.h"
 
@@ -201,6 +202,21 @@ namespace pipeline
 
                 bus->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "bus_tcm_fetch_addr_cur", bus->convert_to_slave_addr(old_pc), 0);
                 bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "bus_tcm_fetch_rd_cur", bus->find_slave_info(old_pc) == 0, 0);
+
+                {
+                    component::slave::memory *obj = (component::slave::memory *)bus->get_slave_obj(old_pc);
+
+                    if(obj != NULL)
+                    {
+                        obj->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "bus_tcm_fetch_addr_cur", bus->convert_to_slave_addr(old_pc), 0);
+                        obj->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "bus_tcm_fetch_rd_cur", bus->find_slave_info(old_pc) == 0, 0);
+                    
+                        for(auto i = 0;i < FETCH_WIDTH;i++)
+                        {
+                            obj->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "tcm_bus_fetch_data", bus->read32(old_pc + i * 4), i);
+                        }
+                    }
+                }
                 
                 for(auto i = 0;i < FETCH_WIDTH;i++)
                 {

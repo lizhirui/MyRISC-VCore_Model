@@ -407,6 +407,7 @@ static void reset()
     checkpoint_buffer.reset();
     branch_predictor.reset();
     interrupt_interface.reset();
+    ((component::slave::memory *)bus.get_slave_obj(0x80000000))->reset();
     clint.reset();
 
     fetch_stage.reset();
@@ -950,12 +951,14 @@ static void trace_pre()
     csr_file.trace_pre();
     interrupt_interface.trace_pre();
     bus.trace_pre();
+    ((component::slave::memory *)bus.get_slave_obj(0x80000000))->trace_pre();
     clint.trace_pre();
 }
 
 static void trace_post()
 {
     clint.trace_post();
+    ((component::slave::memory *)bus.get_slave_obj(0x80000000))->trace_post();
     bus.trace_post();
     interrupt_interface.trace_post();
     csr_file.trace_post();
@@ -980,7 +983,7 @@ static void run()
 
     while(1)
     {
-        /*if((cpu_clock_cycle >= 17601) && need_to_trigger)
+        /*if((cpu_clock_cycle >= 17804) && need_to_trigger)
         {
             step_state = true;
             wait_commit = false;

@@ -1,5 +1,6 @@
 #include "common.h"
 #include "lsu.h"
+#include "../../component/slave/memory.h"
 #include "../../component/slave/clint.h"
 
 namespace pipeline
@@ -487,6 +488,15 @@ namespace pipeline
                                     bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "bus_tcm_stbuf_read_size_cur", record_size, 0);
                                     bus->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "bus_tcm_stbuf_rd_cur", record_read, 0);
                                     bus->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "tcm_bus_stbuf_data", bus_value, 0);
+
+                                    {
+                                        component::slave::memory *obj = (component::slave::memory *)bus->get_slave_obj(rev_pack.lsu_addr);
+                                        obj->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "bus_tcm_stbuf_read_addr_cur", bus->convert_to_slave_addr(rev_pack.lsu_addr), 0);
+                                        obj->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "bus_tcm_stbuf_read_size_cur", record_size, 0);
+                                        obj->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "bus_tcm_stbuf_rd_cur", record_read, 0);
+                                        obj->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "tcm_bus_stbuf_data", bus_value, 0);
+                                    }
+
                                     break;
 
                                 case 1://clint
