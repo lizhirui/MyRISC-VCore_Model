@@ -61,7 +61,7 @@ static uint64_t ras_full = 0;
 static uint64_t fetch_not_full = 0;
 
 static component::fifo<pipeline::fetch_decode_pack_t> fetch_decode_fifo(FETCH_DECODE_FIFO_SIZE);
-static component::fifo<pipeline::decode_rename_pack_t> decode_rename_fifo(FETCH_DECODE_FIFO_SIZE);
+static component::fifo<pipeline::decode_rename_pack_t> decode_rename_fifo(DECODE_RENAME_FIFO_SIZE);
 static pipeline::rename_readreg_pack_t default_rename_readreg_pack;
 static pipeline::readreg_issue_pack_t default_readreg_issue_pack;
 static pipeline::execute_wb_pack_t default_execute_wb_pack;
@@ -468,6 +468,9 @@ static void init()
     }
 
     std::cout << "coremark.bin Read OK!Bytes(" << sizeof(buf) << "Byte-Block):" << n << std::endl;
+
+    fetch_decode_fifo.set_pop_status_save(true);
+    decode_rename_fifo.set_pop_status_save(true);
 
     for(auto i = 0;i < ALU_UNIT_NUM;i++)
     {
@@ -1086,6 +1089,8 @@ static void run()
         }
 
         rob.set_committed(false);
+        fetch_decode_fifo.reset_pop_status();
+        decode_rename_fifo.reset_pop_status();
         trace_pre();
         clint.run();
         t_commit_feedback_pack = commit_stage.run();

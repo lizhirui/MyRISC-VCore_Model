@@ -142,6 +142,9 @@ namespace pipeline
         this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_feedback_pack.enable", commit_feedback_pack.enable, 0);
         this->tdb.update_signal<uint8_t>(trace::domain_t::input, "commit_feedback_pack.flush", commit_feedback_pack.flush, 0);
 
+        this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_decode_fifo_data_out_valid", (1U << std::min(this->fetch_decode_fifo->get_size(), DECODE_WIDTH)) - 1U, 0);
+        this->tdb.update_signal<uint8_t>(trace::domain_t::input, "decode_rename_fifo_data_in_enable", (1U << std::min(this->decode_rename_fifo->get_remain_space(), DECODE_WIDTH)) - 1U, 0);
+
         decode_feedback_pack_t feedback_pack;
 
         feedback_pack.idle = this->fetch_decode_fifo->is_empty();
@@ -150,9 +153,6 @@ namespace pipeline
         {
             for(auto i = 0;i < DECODE_WIDTH;i++)
             {
-                this->tdb.update_signal_bit<uint8_t>(trace::domain_t::input, "fetch_decode_fifo_data_out_valid", !this->fetch_decode_fifo->is_empty(), i, 0);
-                this->tdb.update_signal_bit<uint8_t>(trace::domain_t::input, "decode_rename_fifo_data_in_enable", !this->decode_rename_fifo->is_full(), i, 0);
-
                 if(!this->fetch_decode_fifo->is_empty() && !this->decode_rename_fifo->is_full())
                 {
                     fetch_decode_pack_t rev_pack;
@@ -869,7 +869,6 @@ namespace pipeline
         else
         {
             decode_rename_fifo->flush();
-            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_decode_fifo_data_out_valid", (1U << std::min(this->fetch_decode_fifo->get_size(), DECODE_WIDTH)) - 1U, 0);
             this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_flush", 1, 0);
         }
 

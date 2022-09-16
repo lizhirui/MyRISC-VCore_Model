@@ -1292,7 +1292,7 @@ namespace pipeline
                                         store_buffer->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "issue_stbuf_rd", 1, 0);
 
                                         store_buffer->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "stbuf_bus_read_addr", send_pack.lsu_addr, 0);
-                                        store_buffer->get_tdb()->update_signal<uint32_t>(trace::domain_t::output, "stbuf_bus_read_req", 1, 0);
+                                        store_buffer->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "stbuf_bus_read_req", 1, 0);
                                         break;
                                 }
 

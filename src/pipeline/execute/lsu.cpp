@@ -472,7 +472,7 @@ namespace pipeline
                         this->tdb.update_signal<uint32_t>(trace::domain_t::input, "stbuf_exlsu_bus_data_feedback", feedback_value, 0);
                         this->tdb.update_signal<uint8_t>(trace::domain_t::output, "exlsu_stbuf_rob_id", item.rob_id, 0);
                         this->tdb.update_signal<uint32_t>(trace::domain_t::output, "exlsu_stbuf_write_addr", item.addr, 0);
-                        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "exlsu_stbuf_write_size", (uint8_t)std::log2(item.size), 0);
+                        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "exlsu_stbuf_write_size", (uint8_t)item.size, 0);
                         this->tdb.update_signal<uint32_t>(trace::domain_t::output, "exlsu_stbuf_write_data", item.data, 0);
                         this->tdb.update_signal<uint8_t>(trace::domain_t::input, "stbuf_exlsu_full", store_buffer->is_full(), 0);
 
@@ -569,7 +569,7 @@ namespace pipeline
             this->tdb.update_signal<uint8_t>(trace::domain_t::output, "lsu_wb_port_we", 1, 0);
 
             execute_feedback_channel_t feedback_pack;
-            feedback_pack.enable = send_pack.enable && send_pack.valid && send_pack.rd_enable && send_pack.need_rename;
+            feedback_pack.enable = send_pack.enable && send_pack.valid && send_pack.rd_enable && send_pack.need_rename && !send_pack.has_exception;
             feedback_pack.phy_id = send_pack.rd_phy;
             feedback_pack.value = send_pack.rd_value;
 

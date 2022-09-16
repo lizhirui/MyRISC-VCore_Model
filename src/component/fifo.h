@@ -13,6 +13,9 @@ namespace component
             bool wstage;
             uint32_t rptr;
             bool rstage;
+            bool pop_status_save;
+            uint32_t rptr_saved;
+            bool rstage_saved;
 
         public:
             fifo(uint32_t size);
@@ -24,8 +27,11 @@ namespace component
             bool get_front(T *element);
             bool get_tail(T *element);
             uint32_t get_size();
+            uint32_t get_remain_space();
             bool is_empty();
             bool is_full();
+            void set_pop_status_save(bool value);
+            void reset_pop_status();
             virtual void print(std::string indent);
             virtual json get_json();
     };
@@ -39,6 +45,7 @@ namespace component
         wstage = false;
         rptr = 0;
         rstage = false;
+        pop_status_save = false;
     }
 
     template<typename T>
@@ -130,7 +137,13 @@ namespace component
     template<typename T>
     uint32_t fifo<T>::get_size()
     {
-        return this->is_full() ? this->size : ((this->wptr + this->size - this->rptr) % this->size);
+        return this->is_full() ? this->size : pop_status_save ? ((this->wptr + this->size - this->rptr_saved) % this->size) : ((this->wptr + this->size - this->rptr) % this->size);
+    }
+
+    template<typename T>
+    uint32_t fifo<T>::get_remain_space()
+    {
+        return this->size - get_size();
     }
 
     template<typename T>
@@ -142,7 +155,26 @@ namespace component
     template<typename T>
     bool fifo<T>::is_full()
     {
+        if(pop_status_save)
+        {
+            return (rptr_saved == wptr) && (rstage_saved != wstage);
+        }
+
         return (rptr == wptr) && (rstage != wstage);
+    }
+
+    template<typename T>
+    void fifo<T>::set_pop_status_save(bool value)
+    {
+        pop_status_save = value;
+        reset_pop_status();
+    }
+
+    template<typename T>
+    void fifo<T>::reset_pop_status()
+    {
+        rptr_saved = rptr;
+        rstage_saved = rstage;
     }
 
     template<typename T>

@@ -84,7 +84,7 @@ const uint32_t NORMAL_GLOBAL_HISTORY_MASK = (1U << NORMAL_GLOBAL_HISTORY_WIDTH) 
 const std::string TRACE_DIR = R"(D:\program\project\MyRISC-VCore\model\MyRISC-VCore_Model_CMake\trace\coremark_10\)";
 
 #define TRACE_ENABLE
-//#define TRACE_ENABLE_FULL
+#define TRACE_ENABLE_FULL
 
 #ifdef TRACE_ENABLE_FULL
     const bool TRACE_FETCH = true;

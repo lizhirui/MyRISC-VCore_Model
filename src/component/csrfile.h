@@ -152,7 +152,7 @@ namespace component
                 this->tdb.capture_input();
 				
 				this->tdb.update_signal<uint16_t>(trace::domain_t::input, "excsr_csrf_addr", 65535, 0);
-				this->tdb.update_signal<uint16_t>(trace::domain_t::output, "csrf_excsr_data", 0, 0);
+				this->tdb.update_signal<uint32_t>(trace::domain_t::output, "csrf_excsr_data", 0, 0);
 
 
 				for(auto i = 0;i < 4;i++)

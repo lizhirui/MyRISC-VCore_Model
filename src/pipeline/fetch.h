@@ -24,6 +24,7 @@ namespace pipeline
             uint32_t init_pc;
             uint32_t pc;
             bool jump_wait;
+            bool wait_first_memory_result;
             trace::trace_database tdb;
 
         public:

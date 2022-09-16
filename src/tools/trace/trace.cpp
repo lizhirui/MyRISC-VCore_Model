@@ -1,5 +1,18 @@
 #include "trace.h"
 
+#define DEBUG
+
+#ifdef DEBUG
+    #define debug_assert(cond) \
+        if(!(cond)) \
+        { \
+            printf("In file %s, Line %d, %s\n", __FILE__, __LINE__, #cond);\
+            abort();\
+        }
+#else
+    #define debug_assert(...)
+#endif
+
 namespace trace
 {
     std::vector<trace_database *> trace_database::tdb_obj_list;
@@ -15,7 +28,7 @@ namespace trace
             case domain_t::status:
                 return status_fieldid_map;
             default:
-                assert(false);
+                debug_assert(false);
                 return input_fieldid_map;
         }
     }
@@ -31,7 +44,7 @@ namespace trace
             case domain_t::status:
                 return status_bind_list;
             default:
-                assert(false);
+                debug_assert(false);
                 return input_bind_list;
         }
     }
@@ -47,7 +60,7 @@ namespace trace
             case domain_t::status:
                 return status_fieldinfo_list;
             default:
-                assert(false);
+                debug_assert(false);
                 return input_fieldinfo_list;
         }
     }
@@ -93,7 +106,16 @@ namespace trace
             _is_open = db.is_open();
             _is_tracing = false;
             _metainfo_ok = false;
-            assert(_is_open);
+            input_bind_list.clear();
+            output_bind_list.clear();
+            status_bind_list.clear();
+            input_fieldinfo_list.clear();
+            output_fieldinfo_list.clear();
+            status_fieldinfo_list.clear();
+            input_fieldid_map.clear();
+            output_fieldid_map.clear();
+            status_fieldid_map.clear();
+            debug_assert(_is_open);
         }
     }
 
@@ -127,7 +149,7 @@ namespace trace
     {
         if(_is_enabled)
         {
-            assert(_is_open && !_metainfo_ok);
+            debug_assert(_is_open && !_metainfo_ok);
             input_bind_list.clear();
             output_bind_list.clear();
             status_bind_list.clear();
@@ -144,7 +166,7 @@ namespace trace
     {
         if(_is_enabled)
         {
-            assert(_is_open && _metainfo_ok);
+            debug_assert(_is_open && _metainfo_ok);
             _is_tracing = true;
         }
     }
@@ -178,8 +200,8 @@ namespace trace
             auto &fieldid_map = get_fieldid_map(domain);
             auto &bind_list = get_bind_list(domain);
             auto &fieldinfo_list = get_fieldinfo_list(domain);
-            assert(bind_list.find(name) == bind_list.end());
-            assert(name.length() <= FIELDNAME_LENGTH);
+            debug_assert(bind_list.find(name) == bind_list.end());
+            debug_assert(name.length() <= FIELDNAME_LENGTH);
             bind_list[name] = NULL;
             fieldinfo_t t_info;
             memset(&t_info, 0, sizeof(t_info));
@@ -200,8 +222,8 @@ namespace trace
             auto &fieldid_map = get_fieldid_map(domain);
             auto &bind_list = get_bind_list(domain);
             auto &fieldinfo_list = get_fieldinfo_list(domain);
-            assert(bind_list.find(name) == bind_list.end());
-            assert(name.length() <= FIELDNAME_LENGTH);
+            debug_assert(bind_list.find(name) == bind_list.end());
+            debug_assert(name.length() <= FIELDNAME_LENGTH);
             bind_list[name] = NULL;
             fieldinfo_t t_info;
             memset(&t_info, 0, sizeof(t_info));
@@ -232,7 +254,7 @@ namespace trace
     {
         if(_is_enabled)
         {
-            assert(!_metainfo_ok);
+            debug_assert(!_metainfo_ok);
             memset(&hinfo, 0, sizeof(hinfo));
             memcpy(hinfo.featurestr, FEATURE_STRING, strlen(FEATURE_STRING));
             hinfo.fieldinfo_num = (uint32_t)(input_fieldinfo_list.size() + output_fieldinfo_list.size() + status_fieldinfo_list.size());
@@ -261,7 +283,7 @@ namespace trace
             }
 
             row_buffer = new char[hinfo.row_size];
-            assert(row_buffer);
+            debug_assert(row_buffer);
             memset(row_buffer, 0, hinfo.row_size);
             db.write((const char *)&hinfo, sizeof(hinfo));
 
@@ -341,10 +363,10 @@ namespace trace
             auto &fieldid_map = get_fieldid_map(domain);
             auto &bind_list = get_bind_list(domain);
             auto &fieldinfo_list = get_fieldinfo_list(domain);
-            assert(bind_list.find(name) != bind_list.end());
-            assert(!bind_list[name]);
+            debug_assert(bind_list.find(name) != bind_list.end());
+            debug_assert(!bind_list[name]);
             auto const &item = fieldinfo_list[fieldid_map[name]];
-            assert(index < item.element_num);
+            debug_assert(index < item.element_num);
             memcpy(row_buffer + item.offset + item.element_size * index, buf, item.element_size);
         }
     }
@@ -356,9 +378,9 @@ namespace trace
             auto &fieldid_map = get_fieldid_map(domain);
             auto &bind_list = get_bind_list(domain);
             auto &fieldinfo_list = get_fieldinfo_list(domain);
-            assert(bind_list.find(name) != bind_list.end());
+            debug_assert(bind_list.find(name) != bind_list.end());
             auto const &item = fieldinfo_list[fieldid_map[name]];
-            assert(item.element_size == sizeof(T));
+            debug_assert(item.element_size == sizeof(T));
             update_signal_raw(domain, name, (void *)&value, index);
         }
     }
@@ -370,12 +392,12 @@ namespace trace
             auto &fieldid_map = get_fieldid_map(domain);
             auto &bind_list = get_bind_list(domain);
             auto &fieldinfo_list = get_fieldinfo_list(domain);
-            assert(bind_list.find(name) != bind_list.end());
-            assert(!bind_list[name]);
+            debug_assert(bind_list.find(name) != bind_list.end());
+            debug_assert(!bind_list[name]);
             auto const &item = fieldinfo_list[fieldid_map[name]];
-            assert(index < item.element_num);
-            assert(item.element_size == sizeof(T));
-            assert(bit_index < item.element_bitsize);
+            debug_assert(index < item.element_num);
+            debug_assert(item.element_size == sizeof(T));
+            debug_assert(bit_index < item.element_bitsize);
             T *stored_value = (T *)(row_buffer + item.offset + item.element_size * index);
             *stored_value = (*stored_value & (~(1 << bit_index))) | ((value & 0x01) << bit_index);
         }
@@ -388,11 +410,11 @@ namespace trace
             auto &fieldid_map = get_fieldid_map(domain);
             auto &bind_list = get_bind_list(domain);
             auto &fieldinfo_list = get_fieldinfo_list(domain);
-            assert(bind_list.find(name) != bind_list.end());
-            assert(!bind_list[name]);
+            debug_assert(bind_list.find(name) != bind_list.end());
+            debug_assert(!bind_list[name]);
             auto const &item = fieldinfo_list[fieldid_map[name]];
-            assert(index < item.element_num);
-            assert(bit_index < item.element_bitsize);
+            debug_assert(index < item.element_num);
+            debug_assert(bit_index < item.element_bitsize);
             uint32_t group_index = bit_index / (sizeof(uint8_t) * 8);
             uint32_t group_bit_index = bit_index % (sizeof(uint8_t) * 8);
             uint8_t *stored_value = (uint8_t *)(row_buffer + item.offset + item.element_size * index + sizeof(uint8_t) * group_index);
@@ -407,10 +429,10 @@ namespace trace
             auto &fieldid_map = get_fieldid_map(domain);
             auto &bind_list = get_bind_list(domain);
             auto &fieldinfo_list = get_fieldinfo_list(domain);
-            assert(bind_list.find(name) != bind_list.end());
-            assert(!bind_list[name]);
+            debug_assert(bind_list.find(name) != bind_list.end());
+            debug_assert(!bind_list[name]);
             auto const &item = fieldinfo_list[fieldid_map[name]];
-            assert(index < item.element_num);
+            debug_assert(index < item.element_num);
             memcpy(row_buffer + item.offset + item.element_size * index, buf, item.element_size);
         }
     }
@@ -422,10 +444,10 @@ namespace trace
             auto &fieldid_map = get_fieldid_map(domain);
             auto &bind_list = get_bind_list(domain);
             auto &fieldinfo_list = get_fieldinfo_list(domain);
-            assert(bind_list.find(name) != bind_list.end());
-            assert(!bind_list[name]);
+            debug_assert(bind_list.find(name) != bind_list.end());
+            debug_assert(!bind_list[name]);
             auto const &item = fieldinfo_list[fieldid_map[name]];
-            assert(index < item.element_num);
+            debug_assert(index < item.element_num);
             memset(row_buffer + item.offset + item.element_size * index, value ? 0xff : 0, item.element_size);
         }
     }
@@ -434,7 +456,7 @@ namespace trace
     {
         if(_is_enabled)
         {
-            assert(_metainfo_ok);
+            debug_assert(_metainfo_ok);
 
             if(_is_tracing)
             {

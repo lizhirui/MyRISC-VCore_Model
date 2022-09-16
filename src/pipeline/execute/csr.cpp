@@ -392,7 +392,7 @@ namespace pipeline
                     }
                 }
 
-                feedback_pack.enable = send_pack.enable && send_pack.valid && send_pack.rd_enable && send_pack.need_rename;
+                feedback_pack.enable = send_pack.enable && send_pack.valid && send_pack.rd_enable && send_pack.need_rename && !send_pack.has_exception;
                 feedback_pack.phy_id = send_pack.rd_phy;
                 feedback_pack.value = send_pack.rd_value;
             }

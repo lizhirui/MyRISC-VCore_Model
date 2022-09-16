@@ -453,7 +453,7 @@ namespace pipeline
             this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bru_wb_port_data_in.sub_op", *(uint8_t *)&send_pack.sub_op, 0);
             this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bru_wb_port_we", 1, 0);
             
-            feedback_pack.enable = send_pack.enable && send_pack.valid && send_pack.rd_enable && send_pack.need_rename;
+            feedback_pack.enable = send_pack.enable && send_pack.valid && send_pack.rd_enable && send_pack.need_rename && !send_pack.has_exception;
             feedback_pack.phy_id = send_pack.rd_phy;
             feedback_pack.value = send_pack.rd_value;
 
