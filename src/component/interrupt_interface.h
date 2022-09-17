@@ -100,14 +100,6 @@ namespace component
 
             void trace_post()
             {
-                {
-                    riscv_interrupt_t t;
-
-                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "intif_commit_has_interrupt", get_cause(&t), 0);
-                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "intif_commit_mcause_data", (uint32_t)t, 0);
-                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "intif_commit_ack_data", 1U << ((uint32_t)t), 0);
-                }
-
                 this->tdb.capture_output_status();
                 this->tdb.write_row();
             }
@@ -183,14 +175,17 @@ namespace component
                 switch(cause)
                 {
                     case riscv_interrupt_t::machine_external:
+                        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "intif_all_int_ext_ack", 1, 0);
                         mei_ack = true;
                         break;
 
                     case riscv_interrupt_t::machine_software:
+                        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "intif_all_int_software_ack", 1, 0);
                         msi_ack = true;
                         break;
 
                     case riscv_interrupt_t::machine_timer:
+                        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "intif_all_int_timer_ack", 1, 0);
                         mti_ack = true;
                         break;
                 }
@@ -224,9 +219,6 @@ namespace component
 
             void run()
             {
-                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "intif_all_int_ext_ack", mei_ack, 0);
-                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "intif_all_int_software_ack", msi_ack, 0);
-                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "intif_all_int_timer_ack", mti_ack, 0);
                 mei_ack = false;
                 msi_ack = false;
                 mti_ack = false;
@@ -243,6 +235,14 @@ namespace component
                 this->tdb.update_signal<uint8_t>(trace::domain_t::input, "all_intif_int_ext_req", meip, 0);
                 this->tdb.update_signal<uint8_t>(trace::domain_t::input, "all_intif_int_software_req", msip, 0);
                 this->tdb.update_signal<uint8_t>(trace::domain_t::input, "all_intif_int_timer_req", mtip, 0);
+
+                {
+                    riscv_interrupt_t t;
+
+                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "intif_commit_has_interrupt", get_cause(&t), 0);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "intif_commit_mcause_data", (uint32_t)t, 0);
+                    this->tdb.update_signal<uint32_t>(trace::domain_t::output, "intif_commit_ack_data", 1U << ((uint32_t)t), 0);
+                }
             }
 
             void sync()

@@ -13,9 +13,12 @@
 
 #include "drv_uart.h"
 
+long testapp();
+
 int main(int argc, char *argv[])
 {
     rt_hw_uart_start_rx_thread();
+    testapp();
     return RT_EOK;
 }
 

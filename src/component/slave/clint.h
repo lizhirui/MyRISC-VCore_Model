@@ -153,12 +153,16 @@ namespace component
                     }
                 }
 
-                void run()
+                void run_pre()
                 {
                     interrupt_interface->set_pending(riscv_interrupt_t::machine_timer, mtime >= mtimecmp);
                     interrupt_interface->set_pending(riscv_interrupt_t::machine_software, msip);
                     this->tdb.update_signal<uint8_t>(trace::domain_t::output, "all_intif_int_software_req", msip, 0);
                     this->tdb.update_signal<uint8_t>(trace::domain_t::output, "all_intif_int_timer_req", mtime >= mtimecmp, 0);
+                }
+
+                void run_post()
+                {
                     mtime++;
                 }
         };

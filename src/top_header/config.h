@@ -81,7 +81,7 @@ const uint32_t NORMAL_PC_P1_ADDR_MASK = (1U << NORMAL_PC_P1_ADDR_WIDTH) - 1U;
 const uint32_t NORMAL_PC_P2_ADDR_MASK = (1U << NORMAL_PC_P2_ADDR_WIDTH) - 1U;
 const uint32_t NORMAL_GLOBAL_HISTORY_MASK = (1U << NORMAL_GLOBAL_HISTORY_WIDTH) - 1U;
 
-const std::string TRACE_DIR = R"(D:\program\project\MyRISC-VCore\model\MyRISC-VCore_Model_CMake\trace\coremark_10\)";
+const std::string TRACE_DIR = R"(D:\program\project\MyRISC-VCore\model\MyRISC-VCore_Model_CMake\trace\rtthread\)";
 
 #define TRACE_ENABLE
 #define TRACE_ENABLE_FULL

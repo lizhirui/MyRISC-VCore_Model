@@ -580,6 +580,34 @@ namespace pipeline
 					feedback_pack.flush = true;
 					cur_state = state_t::interrupt_flush;
 					need_flush = true;
+
+					for(auto i = 0;i < COMMIT_WIDTH;i++)
+					{
+						this->rob_item = rob->get_item(this->rob_item_id);
+						this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_rob_retire_id", this->rob_item_id, i);
+						this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rob_commit_retire_data.new_phy_reg_id", this->rob_item.new_phy_reg_id, i);
+						this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rob_commit_retire_data.old_phy_reg_id", this->rob_item.old_phy_reg_id, i);
+						this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rob_commit_retire_data.old_phy_reg_id_valid", this->rob_item.old_phy_reg_id_valid, i);
+						this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rob_commit_retire_data.finish", this->rob_item.finish, i);
+						this->tdb.update_signal<uint32_t>(trace::domain_t::input, "rob_commit_retire_data.pc", this->rob_item.pc, i);
+						this->tdb.update_signal<uint32_t>(trace::domain_t::input, "rob_commit_retire_data.inst_value", this->rob_item.inst_value, i);
+						this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rob_commit_retire_data.has_exception", this->rob_item.has_exception, i);
+						this->tdb.update_signal<uint32_t>(trace::domain_t::input, "rob_commit_retire_data.exception_id", (uint32_t)this->rob_item.exception_id, i);
+						this->tdb.update_signal<uint32_t>(trace::domain_t::input, "rob_commit_retire_data.exception_value", this->rob_item.exception_value, i);
+						this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rob_commit_retire_data.predicted", this->rob_item.predicted, i);
+						this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rob_commit_retire_data.predicted_jump", this->rob_item.predicted_jump, i);
+						this->tdb.update_signal<uint32_t>(trace::domain_t::input, "rob_commit_retire_data.predicted_next_pc", this->rob_item.predicted_next_pc, i);
+						this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rob_commit_retire_data.checkpoint_id_valid", this->rob_item.checkpoint_id_valid, i);
+						this->tdb.update_signal<uint16_t>(trace::domain_t::input, "rob_commit_retire_data.checkpoint_id", this->rob_item.checkpoint_id, i);
+						this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rob_commit_retire_data.bru_op", this->rob_item.bru_op, i);
+						this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rob_commit_retire_data.bru_jump", this->rob_item.bru_jump, i);
+						this->tdb.update_signal<uint32_t>(trace::domain_t::input, "rob_commit_retire_data.bru_next_pc", this->rob_item.bru_next_pc, i);
+						this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rob_commit_retire_data.is_mret", this->rob_item.is_mret, i);
+						this->tdb.update_signal<uint16_t>(trace::domain_t::input, "rob_commit_retire_data.csr_addr", this->rob_item.csr_addr, i);
+						this->tdb.update_signal<uint32_t>(trace::domain_t::input, "rob_commit_retire_data.csr_newvalue", this->rob_item.csr_newvalue, i);
+						this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rob_commit_retire_data.csr_newvalue_valid", this->rob_item.csr_newvalue_valid, i);
+						this->tdb.update_signal_bit<uint8_t>(trace::domain_t::input, "rob_commit_retire_id_valid", 1, i, 0);
+					}
 				}
 				else
 				{
@@ -1184,6 +1212,8 @@ namespace pipeline
 				rat->restore_map_sync(t_rob_item.new_phy_reg_id, t_rob_item.old_phy_reg_id);
 				this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_phyf_flush_id", t_rob_item.new_phy_reg_id, 0);
 				this->tdb.update_signal<uint8_t>(trace::domain_t::output, "commit_phyf_flush_invalid", 1, 0);
+				phy_regfile->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_phyf_flush_id", t_rob_item.new_phy_reg_id, 0);
+                phy_regfile->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_phyf_flush_invalid", 1, 0);
 				phy_regfile->write_sync(t_rob_item.new_phy_reg_id, default_phy_reg_item, false);
 			}
 
@@ -1235,6 +1265,12 @@ namespace pipeline
 				mstatus.set_mpie(mstatus.get_mie());
 				mstatus.set_mie(false);
 				csr_file->write_sys_sync(CSR_MSTATUS, mstatus.get_value());
+				csr_file->get_tdb()->update_signal<uint16_t>(trace::domain_t::input, "commit_csrf_write_addr", CSR_MSTATUS, 3);
+				csr_file->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "commit_csrf_write_data", mstatus.get_value(), 3);
+				csr_file->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "commit_csrf_we", 1, 3);
+				this->tdb.update_signal<uint16_t>(trace::domain_t::output, "commit_csrf_write_addr", CSR_MSTATUS, 3);
+    			this->tdb.update_signal<uint32_t>(trace::domain_t::output, "commit_csrf_write_data", mstatus.get_value(), 3);
+				this->tdb.update_signal_bit<uint8_t>(trace::domain_t::output, "commit_csrf_we", 1, 3, 0);
 				this->tdb.update_signal<uint32_t>(trace::domain_t::output, "commit_intif_ack_data", 1U << ((uint32_t)interrupt_id), 0);
 				interrupt_interface->set_ack_sync(interrupt_id);
 				feedback_pack.exception_pc = csr_file->read_sys(CSR_MTVEC);

@@ -442,9 +442,9 @@ static void init()
 
     //std::ifstream binfile("../../../testprgenv/main/test.bin", std::ios::binary);
     //std::ifstream binfile("../../../testfile.bin", std::ios::binary);
-    std::ifstream binfile("../../../coremark_10.bin", std::ios::binary);
+    //std::ifstream binfile("../../../coremark_10.bin", std::ios::binary);
     //std::ifstream binfile("../../../dhrystone.bin", std::ios::binary);
-    //std::ifstream binfile("../../../rt-thread/bsp/MyRISCVCore/MyRISCVCore/rtthread.bin", std::ios::binary);
+    std::ifstream binfile("../../../rt-thread/bsp/MyRISCVCore/MyRISCVCore/rtthread.bin", std::ios::binary);
 
     if(!binfile || !binfile.is_open())
     {
@@ -457,6 +457,7 @@ static void init()
 
     while(!binfile.eof())
     {
+        memset(buf, 0, sizeof(buf));
         binfile.read((char *)&buf, sizeof(buf));
 
         for(auto i = 0;i < sizeof(buf);i++)
@@ -986,7 +987,7 @@ static void run()
 
     while(1)
     {
-        /*if((cpu_clock_cycle >= 17804) && need_to_trigger)
+        /*if((cpu_clock_cycle >= 103005) && need_to_trigger)
         {
             step_state = true;
             wait_commit = false;
@@ -1092,7 +1093,7 @@ static void run()
         fetch_decode_fifo.reset_pop_status();
         decode_rename_fifo.reset_pop_status();
         trace_pre();
-        clint.run();
+        clint.run_pre();
         t_commit_feedback_pack = commit_stage.run();
         t_wb_feedback_pack = wb_stage.run(t_commit_feedback_pack);
 
@@ -1134,6 +1135,7 @@ static void run()
         t_decode_feedback_pack = decode_stage.run(t_commit_feedback_pack);
         fetch_stage.run(t_decode_feedback_pack, t_rename_feedback_pack, t_commit_feedback_pack);
         interrupt_interface.run();
+        clint.run_post();
         rat.sync();
         rob.sync();
         phy_regfile.sync();

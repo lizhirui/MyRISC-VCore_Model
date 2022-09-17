@@ -610,6 +610,17 @@ namespace component
                 auto rd_is_link = (rd == 1) || (rd == 5);
                 auto rs1_is_link = (rs1 == 1) || (rs1 == 5);
 
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "fetch_bp_pc", pc, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "fetch_bp_instruction", instruction, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_bp_valid", 1, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_opcode", opcode, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_rd", rd, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_rs1", rs1, 0);
+                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "fetch_imm_b", imm_b, 0);
+                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "fetch_imm_j", imm_j, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_rd_is_link", rd_is_link, 0);
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_rs1_is_link", rs1_is_link, 0);
+
                 switch(opcode)
                 {
                     case 0x6f://jal
@@ -743,20 +754,10 @@ namespace component
                     *jump = instruction_next_pc_valid;
                     *next_pc = instruction_next_pc;
                 }
-
-                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "fetch_bp_pc", pc, 0);
-                this->tdb.update_signal<uint32_t>(trace::domain_t::input, "fetch_bp_instruction", instruction, 0);
-                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "fetch_bp_valid", 1, 0);
+                
+                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bp_fetch_valid", 1, 0);
                 this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bp_fetch_jump", *jump, 0);
                 this->tdb.update_signal<uint32_t>(trace::domain_t::output, "bp_fetch_next_pc", *next_pc, 0);
-                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "bp_fetch_valid", 1, 0);
-                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_opcode", opcode, 0);
-                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_rd", rd, 0);
-                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_rs1", rs1, 0);
-                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "fetch_imm_b", imm_b, 0);
-                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "fetch_imm_j", imm_j, 0);
-                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_rd_is_link", rd_is_link, 0);
-                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "fetch_rs1_is_link", rs1_is_link, 0);
                 return true;
             }
 
