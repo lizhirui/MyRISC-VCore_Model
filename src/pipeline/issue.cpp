@@ -1551,55 +1551,64 @@ namespace pipeline
                 t_item.op_unit = cur_op.op_unit;
                 memcpy(&t_item.sub_op, &cur_op.sub_op, sizeof(t_item.sub_op));
 
-                phy_regfile->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "issue_phyf_id", t_item.rs1_phy, this->last_index * 2);
-
-                if(!t_item.src1_loaded && t_item.rs1_need_map && phy_regfile->read_data_valid(t_item.rs1_phy))
+                if(t_item.valid)
                 {
-                    t_item.src1_loaded = true;
-                    t_item.src1_value = phy_regfile->read(t_item.rs1_phy).value;
-                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "phyf_issue_data", t_item.src1_value, this->last_index * 2);
-                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "phyf_issue_data_valid", 1, this->last_index * 2);
-                }
-
-                phy_regfile->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "issue_phyf_id", t_item.rs2_phy, this->last_index * 2 + 1);
-
-                if(!t_item.src2_loaded && t_item.rs2_need_map && phy_regfile->read_data_valid(t_item.rs2_phy))
-                {
-                    t_item.src2_loaded = true;
-                    t_item.src2_value = phy_regfile->read(t_item.rs2_phy).value;
-                    this->tdb.update_signal<uint32_t>(trace::domain_t::input, "phyf_issue_data", t_item.src2_value, this->last_index * 2 + 1);
-                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "phyf_issue_data_valid", 1, this->last_index * 2 + 1);
-                }
-
-                for(auto i = 0;i < EXECUTE_UNIT_NUM;i++)
-                {
-                    if(execute_feedback_pack.channel[i].enable)
+                    if(!t_item.src1_loaded && t_item.rs1_need_map)
                     {
-                        if(!t_item.src1_loaded && t_item.rs1_need_map && (t_item.rs1_phy == execute_feedback_pack.channel[i].phy_id))
+                        phy_regfile->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "issue_phyf_id", t_item.rs1_phy, this->last_index * 2);
+
+                        if(phy_regfile->read_data_valid(t_item.rs1_phy))
                         {
                             t_item.src1_loaded = true;
-                            t_item.src1_value = execute_feedback_pack.channel[i].value;
-                        }
-
-                        if(!t_item.src2_loaded && t_item.rs2_need_map && (t_item.rs2_phy == execute_feedback_pack.channel[i].phy_id))
-                        {
-                            t_item.src2_loaded = true;
-                            t_item.src2_value = execute_feedback_pack.channel[i].value;
+                            t_item.src1_value = phy_regfile->read(t_item.rs1_phy).value;
+                            this->tdb.update_signal<uint32_t>(trace::domain_t::input, "phyf_issue_data", t_item.src1_value, this->last_index * 2);
+                            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "phyf_issue_data_valid", 1, this->last_index * 2);
                         }
                     }
 
-                    if(wb_feedback_pack.channel[i].enable)
+                    if(!t_item.src2_loaded && t_item.rs2_need_map)
                     {
-                        if(!t_item.src1_loaded && t_item.rs1_need_map && (t_item.rs1_phy == wb_feedback_pack.channel[i].phy_id))
-                        {
-                            t_item.src1_loaded = true;
-                            t_item.src1_value = wb_feedback_pack.channel[i].value;
-                        }
+                        phy_regfile->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "issue_phyf_id", t_item.rs2_phy, this->last_index * 2 + 1);
 
-                        if(!t_item.src2_loaded && t_item.rs2_need_map && (t_item.rs2_phy == wb_feedback_pack.channel[i].phy_id))
+                        if(phy_regfile->read_data_valid(t_item.rs2_phy))
                         {
                             t_item.src2_loaded = true;
-                            t_item.src2_value = wb_feedback_pack.channel[i].value;
+                            t_item.src2_value = phy_regfile->read(t_item.rs2_phy).value;
+                            this->tdb.update_signal<uint32_t>(trace::domain_t::input, "phyf_issue_data", t_item.src2_value, this->last_index * 2 + 1);
+                            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "phyf_issue_data_valid", 1, this->last_index * 2 + 1);
+                        }
+                    }
+
+                    for(auto i = 0;i < EXECUTE_UNIT_NUM;i++)
+                    {
+                        if(execute_feedback_pack.channel[i].enable)
+                        {
+                            if(!t_item.src1_loaded && t_item.rs1_need_map && (t_item.rs1_phy == execute_feedback_pack.channel[i].phy_id))
+                            {
+                                t_item.src1_loaded = true;
+                                t_item.src1_value = execute_feedback_pack.channel[i].value;
+                            }
+
+                            if(!t_item.src2_loaded && t_item.rs2_need_map && (t_item.rs2_phy == execute_feedback_pack.channel[i].phy_id))
+                            {
+                                t_item.src2_loaded = true;
+                                t_item.src2_value = execute_feedback_pack.channel[i].value;
+                            }
+                        }
+
+                        if(wb_feedback_pack.channel[i].enable)
+                        {
+                            if(!t_item.src1_loaded && t_item.rs1_need_map && (t_item.rs1_phy == wb_feedback_pack.channel[i].phy_id))
+                            {
+                                t_item.src1_loaded = true;
+                                t_item.src1_value = wb_feedback_pack.channel[i].value;
+                            }
+
+                            if(!t_item.src2_loaded && t_item.rs2_need_map && (t_item.rs2_phy == wb_feedback_pack.channel[i].phy_id))
+                            {
+                                t_item.src2_loaded = true;
+                                t_item.src2_value = wb_feedback_pack.channel[i].value;
+                            }
                         }
                     }
                 }
